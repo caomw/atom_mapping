@@ -2,8 +2,12 @@
 external/install_isolated
 external/devel_isolated
 external/build_isolated
+external/src/CMakeLists.txt
+
 internal/build
 internal/devel
+internal/src/CMakeLists.txt
+
 *.catkin_workspace
 
 # Swap files
