@@ -4,6 +4,7 @@ external/devel_isolated
 external/build_isolated
 internal/build
 internal/devel
+*.catkin_workspace
 
 # Swap files
 *.swp
