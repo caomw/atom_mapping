@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<package>
+  <name>atom_map</name>
+  <version>0.0.1</version>
+  <description>The atom_map package</description>
+
+  <author email="dfk@eecs.berkeley.edu">DFK</author>
+  <author email="eanelson@eecs.berkeley.edu">EAN</author>
+  <maintainer email="dfk@eecs.berkeley.edu">DFK</maintainer>
+  <maintainer email="eanelson@eecs.berkeley.edu">EAN</maintainer>
+
+  <license>None</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roscpp</build_depend>
+  <build_depend>kdtree</build_depend>
+
+  <run_depend>roscpp</run_depend>
+  <run_depend>kdtree</run_depend>
+
+</package>
