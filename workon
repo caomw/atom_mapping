@@ -2,5 +2,5 @@
 
 TOP_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source ${TOP_DIR}/dry/install_isolated/setup.bash
-source ${TOP_DIR}/wet/devel/setup.bash --extend
+source ${TOP_DIR}/external/install_isolated/setup.bash
+source ${TOP_DIR}/internal/devel/setup.bash --extend
