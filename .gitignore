@@ -1,0 +1,37 @@
+# Data, build, binary directories
+external/install_isolated
+external/devel_isolated
+external/build_isolated
+internal/build
+internal/devel
+
+# Swap files
+*.swp
+*.swo
+*~
+
+# Glog log files
+*.log*
+*.INFO
+
+# OSX dir files
+.DS_store
+
+# Compiled object files
+*.slo
+*.lo
+*.o
+
+# Compiled dynamic and static libraries
+*.so
+*.dylib
+*.la
+*.a
+
+# Video files
+*.mp4
+*.MOV
+*.mov
+
+# CSV files
+*.csv
