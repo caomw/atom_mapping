@@ -8,6 +8,7 @@ endif(NOT PCL_FOUND)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  geometry_utils
   kdtree
 )
 
@@ -16,20 +17,30 @@ catkin_package(
   LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS
     roscpp
+    geometry_utils
     kdtree
   DEPENDS
     PCL
 )
 
+option(ENABLE_DEBUG_MESSAGES "Turn on to enable bound checking and debug messages" OFF)
+if(ENABLE_DEBUG_MESSAGES)
+  add_definitions(-DENABLE_DEBUG_MESSAGES=1)
+else()
+  add_definitions(-DENABLE_DEBUG_MESSAGES=0)
+endif()
+
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
+  ${GLOG_INCLUDE_DIRS}
 )
 
 link_directories(
   ${catkin_LIBRARY_DIRS}
   ${PCL_LIBRARY_DIRS}
+  ${GLOG_LIBRARY_DIRS}
 )
 
 file(GLOB_RECURSE ${PROJECT_NAME}_srcs ${CMAKE_SOURCE_DIR}/${PROJECT_NAME}/src/*.cc)
@@ -37,6 +48,7 @@ add_library(${PROJECT_NAME} ${${PROJECT_NAME}_srcs})
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
+  glog
 )
 
 if(CATKIN_ENABLE_TESTING)
