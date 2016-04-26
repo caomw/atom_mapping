@@ -85,6 +85,9 @@ class Atom {
   // the atom is closer to a surface more than those that say it is far away.
   void UpdateSignedDistance(double sdf_update);
 
+  // Check if this Atom contains a point.
+  bool Contains(double x, double y, double z);
+
   // Add a neighboring atom to this one.
   void AddNeighbor(Atom* neighbor);
   const std::vector<Ptr>& GetNeighbors() const;

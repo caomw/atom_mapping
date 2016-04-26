@@ -120,6 +120,16 @@ namespace atom {
     sdf_variance_ *= 1.0 - k;
   }
 
+  bool Atom::Contains(double x, double y, double z) {
+    double dx = x - position_(0);
+    double dy = y - position_(1);
+    double dz = z - position_(2);
+
+    if (dx*dx + dy*dy + dz*dz <= radius_)
+      return true;
+    return false;
+  }
+
   void Atom::AddNeighbor(Atom* neighbor) {
     CHECK_NOTNULL(neighbor);
     neighbors_.push_back(Atom::Ptr(neighbor));

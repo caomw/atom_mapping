@@ -55,7 +55,8 @@ namespace atom {
     bool Initialize(const ros::NodeHandle& n);
 
     // Getters.
-    double GetSignedDistance(double x, double y, double z) const;
+    void GetSignedDistance(double x, double y, double z,
+                           double& distance, double& variance) const;
     double GetProbability(double x, double y, double z) const;
 
     // Updates.
@@ -81,6 +82,9 @@ namespace atom {
     // covariance kernel for signed distance function estimation. Larger gamma
     // means that covariance decreases faster as points get farther apart.
     double gamma_;
+
+    // Noise variance to add to covariance matrices. Assume isotropic noise.
+    double noise_variance_;
 
     // Initialization and naming.
     bool initialized_;

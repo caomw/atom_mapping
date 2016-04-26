@@ -66,7 +66,8 @@ namespace atom {
   }
 
   // Getters.
-  double AtomMap::GetSignedDistance(double x, double y, double z) const {
+  void AtomMap::GetSignedDistance(double x, double y, double z,
+                                  double& distance, double& variance) const {
     std::vector<Atom::Ptr> neighbors;
     if (!map_.GetKNearestNeighbors(x, y, z, num_neighbors_, neighbors)) {
       ROS_WARN("%s: Error in extracting nearest neighbors.", name_.c_str());
@@ -75,10 +76,62 @@ namespace atom {
 
     // Generate covariance matrix for the training data.
     const size_t kNumNeighbors = neighbors.size();
-    Eigen::Matrix
+    Eigen::Matrix<double, kNumNeighbors, kNumNeighbors> K11;
+    for (size_t ii = 0; ii < kNumNeighbors; ii++) {
+      pcl::PointXYZ p1;
+      p1.x = neighbors[ii].GetPosition()(0);
+      p1.y = neighbors[ii].GetPosition()(1);
+      p1.z = neighbors[ii].GetPosition()(2);
+
+      for (size_t jj = 0; jj < ii; jj++) {
+        pcl::PointXYZ p2;
+        p2.x = neighbors[jj].GetPosition()(0);
+        p2.y = neighbors[jj].GetPosition()(1);
+        p2.z = neighbors[jj].GetPosition()(2);
+
+        double cov = CovarianceKernel(p1, p2);
+        K11(ii, jj) = cov;
+        K11(jj, ii) = cov;
+      }
+
+      K11(ii, ii) = 1.0 + noise_variance_;
+    }
+
+    // Generate query cross covariance and training distance column vectors.
+    Eigen::Vector<double, kNumNeighbors> K12, training_dists;
+    pcl::PointXYZ q;
+    q.x = x; q.y = y; q.z = z;
+    for (size_t ii = 0; ii < kNumNeighbors; ii++) {
+      pcl::PointXYZ p;
+      p.x = neighbors[ii]->GetPosition()(0);
+      p.y = neighbors[ii]->GetPosition()(1);
+      p.z = neighbors[ii]->GetPosition()(2);
+
+      K12(ii) = CovarianceKernel(p, q);
+      training_dists(ii) = neighbors[ii]->GetSignedDistance();
+    }
+
+    // Gaussian conditioning.
+    distance = K12.transpose() * K11.llt().solve(training_dists);
+    variance = 1.0 - K12.transpose() * K11.llt().solve(K12);
   }
 
-  double AtomMap::GetProbability(double x, double y, double z) const;
+  // Find probability of occupancy. Return -1 if error or if this point does
+  // not lie within an Atom.
+  double AtomMap::GetProbability(double x, double y, double z) const {
+    Atom::Ptr neighbor;
+    if (!map_.GetNearestNeighbor(double x, double y, double z, neighbor)) {
+      ROS_WARN("%s: Error in extracting nearest neighbor.", name_.c_str());
+      return -1.0;
+    }
+
+    if (!neighbor->Contains(x, y, z)) {
+      ROS_WARN("%s: Nearest nighbor is too far away.", name_.c_str());
+      return -1.0;
+    }
+
+    return neighbor->GetProbability();
+  }
 
   // Updates.
   void AtomMap::Update(const pcl::PointXYZ& point,
@@ -92,6 +145,7 @@ namespace atom {
     if (!pu::Get("atom/gamma", gamma_)) return false;
     if (!pu::Get("atom/radius", radius_)) return false;
     if (!pu::Get("atom/thickness", max_surface_thickness_)) return false;
+    if (!pu::Get("atom/noise", noise_variance_)) return false;
 
     return true;
   }
@@ -101,7 +155,10 @@ namespace atom {
   void AtomMap::SampleRay(const pcl::PointXYZ& point,
                           const pcl::PointXYZ& robot) {}
 
-  // Apply the covariance kernel function.
+  // Apply the covariance kernel function. This is just the simplest option, but
+  // there are many other valid kernels to consider. For example one easy change
+  // would be to scale covariance by the 'variance' estimate of signed distance
+  // at each Atom.
   double AtomMap::CovarianceKernel(const pcl::PointXYZ& p1,
                                    const pcl::PointXYZ& p2) {
     double dx = p1.x - p2.x;
