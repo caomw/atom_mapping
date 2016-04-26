@@ -44,86 +44,112 @@ namespace gu = geometry_utils;
 
 namespace atom {
 
-Atom::Atom() : log_odds_(ToLogOdds(0.5)), radius_(0.0) {}
-Atom::~Atom() {}
+  Atom::~Atom() {}
+  Atom::Atom()
+    : log_odds_(ToLogOdds(0.5)), radius_(0.0), sdf_mean_(1.0),
+      sdf_variance_(std::numeric_limits<double>::infinity()) {}
 
-double Atom::GetProbability() const {
-  return ToProbability(log_odds_);
-}
-
-double Atom::GetLogOdds() const {
-  return log_odds_;
-}
-
-double Atom::GetRadius() const {
-  return radius_;
-}
-
-gu::Vec3 Atom::GetPosition() const {
-  return position_;
-}
-
-void Atom::SetProbability(double p) {
-  log_odds_ = ToLogOdds(p);
-}
-
-void Atom::SetLogOdds(double l) {
-  log_odds_ = l;
-}
-
-void Atom::SetRadius(double r) {
-  radius_ = r;
-}
-
-void Atom::SetPosition(const gu::Vec3& p) {
-  position_ = p;
-}
-
-void Atom::UpdateProbability(double probability_update) {
-#ifdef ENABLE_DEBUG_MESSAGES
-  if (probability_update < 0.0 || probability_update > 1.0) {
-    VLOG(1) << "Probability update is not a probability in [0, 1]: "
-            << probability_update << ".";
+  double Atom::GetProbability() const {
+    return ToProbability(log_odds_);
   }
-#endif
-  log_odds_ += ToLogOdds(probability_update);
-}
 
-void Atom::UpdateLogOdds(double log_odds_update) {
-#ifdef ENABLE_DEBUG_MESSAGES
-  if (log_odds_update < 0.0) {
-    VLOG(1) << "Log-odds update is less than zero: " << log_odds_update << ".";
+  double Atom::GetLogOdds() const {
+    return log_odds_;
   }
-#endif
-  log_odds_ += log_odds_update;
-}
 
-void Atom::AddNeighbor(Atom* neighbor) {
-  CHECK_NOTNULL(neighbor);
-  neighbors_.push_back(std::shared_ptr<Atom>(neighbor));
-}
-
-const std::vector< std::shared_ptr<Atom> >& Atom::GetNeighbors() const {
-  return neighbors_;
-}
-
-double ToProbability(double log_odds) {
-#ifdef ENABLE_DEBUG_MESSAGES
-  if (log_odds < 0.0) {
-    VLOG(1) << "Input log-odds value is less than zero: " << log_odds << ".";
+  double GetSignedDistance() const {
+    return sdf_mean_;
   }
-#endif
-  return 1.0 - (1.0 / (1.0 + exp(log_odds)));
-}
 
-double ToLogOdds(double probability) {
-#ifdef ENABLE_DEBUG_MESSAGES
-  if (probability < 0.0 || probability > 1.0) {
-    VLOG(1) << "Input Probability value is not in [0, 1]: " << probability
-            << ".";
+  double GetSignedDistanceVariance() const {
+    return sdf_variance_;
   }
+
+  double Atom::GetRadius() const {
+    return radius_;
+  }
+
+  gu::Vec3 Atom::GetPosition() const {
+    return position_;
+  }
+
+  void Atom::SetProbability(double p) {
+    log_odds_ = ToLogOdds(p);
+  }
+
+  void Atom::SetLogOdds(double l) {
+    log_odds_ = l;
+  }
+
+  void Atom::SetSignedDistance(double d) {
+    sdf_mean_ = d;
+    sdf_variance_ = ToVariance(d);
+  }
+
+  void Atom::SetRadius(double r) {
+    radius_ = r;
+  }
+
+  void Atom::SetPosition(const gu::Vec3& p) {
+    position_ = p;
+  }
+
+  void Atom::UpdateProbability(double probability_update) {
+#ifdef ENABLE_DEBUG_MESSAGES
+    if (probability_update < 0.0 || probability_update > 1.0) {
+      VLOG(1) << "Probability update is not a probability in [0, 1]: "
+              << probability_update << ".";
+    }
 #endif
-  return log(probability / (1.0 - probability));
-}
+    log_odds_ += ToLogOdds(probability_update);
+  }
+
+  void Atom::UpdateLogOdds(double log_odds_update) {
+#ifdef ENABLE_DEBUG_MESSAGES
+    if (log_odds_update < 0.0) {
+      VLOG(1) << "Log-odds update is less than zero: " << log_odds_update << ".";
+    }
+#endif
+    log_odds_ += log_odds_update;
+  }
+
+  void Atom::UpdateSignedDistance(double sdf_update) {
+    double sdf_variance_update = ToVariance(sdf_update);
+    double k = sdf_variance_ / (sdf_variance_ + sdf_variance_update);
+    sdf_mean_ += k * (sdf_update - sdf_mean_);
+    sdf_variance_ *= 1.0 - k;
+  }
+
+  void Atom::AddNeighbor(Atom* neighbor) {
+    CHECK_NOTNULL(neighbor);
+    neighbors_.push_back(Atom::Ptr(neighbor));
+  }
+
+  const std::vector< Atom::Ptr >& Atom::GetNeighbors() const {
+    return neighbors_;
+  }
+
+  double ToProbability(double log_odds) {
+#ifdef ENABLE_DEBUG_MESSAGES
+    if (log_odds < 0.0) {
+      VLOG(1) << "Input log-odds value is less than zero: " << log_odds << ".";
+    }
+#endif
+    return 1.0 - (1.0 / (1.0 + exp(log_odds)));
+  }
+
+  double ToLogOdds(double probability) {
+#ifdef ENABLE_DEBUG_MESSAGES
+    if (probability < 0.0 || probability > 1.0) {
+      VLOG(1) << "Input Probability value is not in [0, 1]: " << probability
+              << ".";
+    }
+#endif
+    return log(probability / (1.0 - probability));
+  }
+
+  double ToVariance(double sdf_update) {
+    return sdf_update * sdf_update; // This is arbitrary.
+  }
 
 } //\namespace atom

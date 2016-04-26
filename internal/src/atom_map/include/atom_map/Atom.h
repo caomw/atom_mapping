@@ -59,15 +59,20 @@ class Atom {
   Atom();
   ~Atom();
 
+  typedef std::shared_ptr<Atom> Ptr;
+
   // Getters.
   double GetProbability() const;
   double GetLogOdds() const;
+  double GetSignedDistance() const;
+  double GetSignedDistanceVariance() const;
   double GetRadius() const;
   geometry_utils::Vec3 GetPosition() const;
 
   // Setters.
   void SetProbability(double p);
   void SetLogOdds(double l);
+  void SetSignedDistance(double d);
   void SetRadius(double r);
   void SetPosition(const geometry_utils::Vec3& p);
 
@@ -75,16 +80,28 @@ class Atom {
   void UpdateProbability(double probability_update);
   void UpdateLogOdds(double log_odds_update);
 
+  // Update the signed distance function for this atom. Variance is implicitly
+  // the reciprocal of absolute distance, i.e. we trust measurements that say
+  // the atom is closer to a surface more than those that say it is far away.
+  void UpdateSignedDistance(double sdf_update);
+
   // Add a neighboring atom to this one.
   void AddNeighbor(Atom* neighbor);
-  const std::vector< std::shared_ptr<Atom> >& GetNeighbors() const;
-
+  const std::vector<Ptr>& GetNeighbors() const;
 
  private:
   // Log-odds probability that this chunk of space is occupied. We use log-odds
   // to avoid numerical instability when multiplying, e.g., 1e-4 to itself
   // multiple times.
   double log_odds_;
+
+  // Signed distance estimate. By convention, this will be a positive number for
+  // atoms that are in free space, and negative for those that are within obstacles.
+  double sdf_mean_;
+
+  // Uncertainty of the signed distance estimate. Do a simple maximum likelihood
+  // update with each new measurement.
+  double sdf_variance_;
 
   // Position in 3D space.
   geometry_utils::Vec3 position_;
@@ -106,6 +123,11 @@ double ToProbability(double log_odds);
 // Conversion from a log-odds probability in [0, infty) to a probability in [0,
 // 1].
 double ToLogOdds(double probability);
+
+// An arbitrary map from signed distance values to variances. The general idea is
+// that smaller values (by magnitude) are more reliable because there is a smaller
+// chance that there exists a nearer surface.
+double ToVariance(double sdf_update);
 
 } //\namespace atom
 
