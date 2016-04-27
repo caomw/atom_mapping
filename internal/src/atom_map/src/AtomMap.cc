@@ -169,18 +169,18 @@ namespace atom {
       // from its nearest neighbor.
       else if (neighbor->GetDistanceTo(samples[ii]) > 2.0 * radius_) {
         double sdf = signed_distances[ii];
-        Atom atom;
-        atom.SetRadius(radius_);
-        atom.SetPosition(gu::Vec3(samples[ii].x, samples[ii].y, samples[ii].z));
+        Atom::Ptr atom;
+        atom->SetRadius(radius_);
+        atom->SetPosition(gu::Vec3(samples[ii].x, samples[ii].y, samples[ii].z));
 
         // Set probability of occupancy.
         if (sdf > 0.0)
-          atom.SetProbability(probability_miss);
+          atom->SetProbability(probability_miss);
         else
-          atom.SetProbability(probability_hit);
+          atom->SetProbability(probability_hit);
 
         // Set signed distance.
-        atom.SetSignedDistance(sdf);
+        atom->SetSignedDistance(sdf);
 
         // Insert into kdtree. Insertion here automatically updates neighbors
         // in the implicit graph structure of the kdtree.

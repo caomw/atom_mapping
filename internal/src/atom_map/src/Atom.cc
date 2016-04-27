@@ -49,6 +49,11 @@ namespace atom {
     : log_odds_(ToLogOdds(0.5)), radius_(0.0), sdf_mean_(1.0),
       sdf_variance_(std::numeric_limits<double>::infinity()) {}
 
+  Atom::Ptr Atom::Create() {
+    Atom::Ptr atom(new Atom());
+    return atom;
+  }
+
   double Atom::GetProbability() const {
     return ToProbability(log_odds_);
   }
@@ -141,12 +146,12 @@ namespace atom {
 
   double Atom::GetDistanceTo(pcl::PointXYZ& p);
 
-  void Atom::AddNeighbor(Atom* neighbor) {
-    CHECK_NOTNULL(neighbor);
-    neighbors_.push_back(Atom::Ptr(neighbor));
+  void Atom::AddNeighbor(Atom::Ptr neighbor) {
+    CHECK_NOTNULL(neighbor.get());
+    neighbors_.push_back(neighbor);
   }
 
-  const std::vector< Atom::Ptr >& Atom::GetNeighbors() const {
+  const std::vector<Atom::Ptr>& Atom::GetNeighbors() const {
     return neighbors_;
   }
 

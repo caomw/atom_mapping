@@ -57,10 +57,12 @@
 namespace atom {
 class Atom {
  public:
-  Atom();
   ~Atom();
 
   typedef std::shared_ptr<Atom> Ptr;
+
+  // Factory method.
+  static Ptr Create();
 
   // Getters.
   double GetProbability() const;
@@ -95,7 +97,7 @@ class Atom {
   double GetDistanceTo(pcl::PointXYZ& p);
 
   // Add a neighboring atom to this one.
-  void AddNeighbor(Atom* neighbor);
+  void AddNeighbor(Atom::Ptr neighbor);
   const std::vector<Ptr>& GetNeighbors() const;
 
  private:
@@ -121,7 +123,10 @@ class Atom {
 
   // Pointers to neighboring atoms. This list is incrementally updated when new
   // atoms are added to the map, and begins empty.
-  std::vector< std::shared_ptr<Atom> > neighbors_;
+  std::vector<Ptr> neighbors_;
+
+  // Private constructor.
+  Atom();
 }; //\class Atom
 
 
