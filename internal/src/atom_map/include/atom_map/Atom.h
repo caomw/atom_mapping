@@ -62,7 +62,7 @@ class Atom {
   typedef std::shared_ptr<Atom> Ptr;
 
   // Factory method.
-  static Ptr Create();
+  static Ptr Create(double r);
 
   // Getters.
   double GetProbability() const;
@@ -76,7 +76,6 @@ class Atom {
   void SetProbability(double p);
   void SetLogOdds(double l);
   void SetSignedDistance(double d);
-  void SetRadius(double r);
   void SetPosition(const geometry_utils::Vec3& p);
 
   // Update the probability value stored in this atom.
@@ -89,12 +88,12 @@ class Atom {
   void UpdateSignedDistance(double sdf_update);
 
   // Check if this Atom contains a point.
-  bool Contains(double x, double y, double z);
-  bool Contains(pcl::PointXYZ& p);
+  bool Contains(double x, double y, double z) const;
+  bool Contains(const pcl::PointXYZ& p) const;
 
   // Check distance to a point.
-  double GetDistanceTo(double x, double y, double z);
-  double GetDistanceTo(pcl::PointXYZ& p);
+  double GetDistanceTo(double x, double y, double z) const;
+  double GetDistanceTo(const pcl::PointXYZ& p) const;
 
   // Add a neighboring atom to this one.
   void AddNeighbor(Atom::Ptr neighbor);
@@ -119,14 +118,14 @@ class Atom {
 
   // Atomic radius. Other atoms cannot be inserted into the map within this
   // radius.
-  double radius_;
+  const double radius_;
 
   // Pointers to neighboring atoms. This list is incrementally updated when new
   // atoms are added to the map, and begins empty.
   std::vector<Ptr> neighbors_;
 
   // Private constructor.
-  Atom();
+  Atom(double r);
 }; //\class Atom
 
 

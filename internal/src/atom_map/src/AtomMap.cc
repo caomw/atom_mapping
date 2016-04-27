@@ -67,7 +67,11 @@ namespace atom {
 
   // Getters.
   void AtomMap::GetSignedDistance(double x, double y, double z,
-                                  double& distance, double& variance) const {
+                                  double* distance, double* variance) const {
+    CHECK_NOTNULL(distance);
+    CHECK_NOTNULL(variance);
+
+    // Find nearest neighbors.
     std::vector<Atom::Ptr> neighbors;
     if (!map_.GetKNearestNeighbors(x, y, z, num_neighbors_, neighbors)) {
       ROS_WARN("%s: Error in extracting nearest neighbors.", name_.c_str());
@@ -112,8 +116,8 @@ namespace atom {
     }
 
     // Gaussian conditioning.
-    distance = K12.transpose() * K11.llt().solve(training_dists);
-    variance = 1.0 - K12.transpose() * K11.llt().solve(K12);
+    *distance = K12.transpose() * K11.llt().solve(training_dists);
+    *variance = 1.0 - K12.transpose() * K11.llt().solve(K12);
   }
 
   // Find probability of occupancy. Return -1 if error or if this point does
@@ -145,32 +149,17 @@ namespace atom {
     // For each sample, update occupancy and signed distance function
     // in existing Atoms, or add new Atoms to the map.
     for (size_t ii = 0; ii < samples.size(); ii++) {
-      Atom::Ptr neighbor;
-      if (!map_.NearestNeighbor(samples[ii], neighbor)) {
-        ROS_WARN("%s: Error in extracting nearest neighbor.", name_.c_str());
+      std::vector<Atom::Ptr> neighbors;
+      if (!map_.RadiusSearch(samples[ii], 2.0 * radius_, &neighbors)) {
+        ROS_WARN("%s: Error in extracting nearest neighbors.", name_.c_str());
         continue;
-      }
-
-      // Handle case where sample lies inside an existing Atom.
-      if (neighbor->Contains(samples[ii])) {
-        double sdf = signed_distances[ii];
-
-        // Update probability of occupancy.
-        if (sdf > 0.0)
-          neighbor->UpdateProbability(probability_miss);
-        else
-          neighbor->UpdateProbability(probability_hit);
-
-        // Update signed distance.
-        neighbor->UpdateSignedDistance(sdf);
       }
 
       // Handle case where sample lies more than twice the atomic radius
       // from its nearest neighbor.
-      else if (neighbor->GetDistanceTo(samples[ii]) > 2.0 * radius_) {
-        double sdf = signed_distances[ii];
-        Atom::Ptr atom;
-        atom->SetRadius(radius_);
+      else if (neighbors.size() == 0) {
+        const double sdf = signed_distances[ii];
+        Atom::Ptr atom = Atom::Create(radius_);
         atom->SetPosition(gu::Vec3(samples[ii].x, samples[ii].y, samples[ii].z));
 
         // Set probability of occupancy.
@@ -184,7 +173,26 @@ namespace atom {
 
         // Insert into kdtree. Insertion here automatically updates neighbors
         // in the implicit graph structure of the kdtree.
-        map_.Insert(&atom);
+        map_.Insert(atom);
+      }
+
+      // Handle case where sample lies inside an existing Atom.
+      else {
+        for (size_t jj = 0; jj < neighbors.size(); jj++) {
+          if (neighbors[jj]->Contains(samples[ii])) {
+            const double sdf = signed_distances[ii];
+
+            // Update probability of occupancy.
+            if (sdf > 0.0)
+              neighbors[jj]->UpdateProbability(probability_miss);
+            else
+              neighbor[jj]->UpdateProbability(probability_hit);
+
+            // Update signed distance.
+            neighbors[jj]->UpdateSignedDistance(sdf);
+            break;
+          }
+        }
       }
     }
   }
@@ -229,9 +237,9 @@ namespace atom {
     dx /= range; dy /= range; dz /= range;
 
     // Start at the surface and walk toward the robot.
-    size_t num_samples_front = static_cast<size_t>(range / (2.0 * radius_));
+    const size_t num_samples_front = static_cast<size_t>(range / (2.0 * radius_));
     for (size_t ii = 0; ii < num_samples_front; ii++) {
-      double backoff = static_cast<double>(2 * ii + 1) * radius_;
+      const double backoff = static_cast<double>(2 * ii + 1) * radius_;
 
       pcl::PointXYZ p;
       p.x = point.x + backoff * dx;
@@ -243,10 +251,10 @@ namespace atom {
     }
 
     // Start at the surface and walk away from the robot.
-    size_t num_samples_back =
+    const size_t num_samples_back =
       static_cast<size_t>(max_surface_thickness_ / (2.0 * radius_));
     for (size_t ii = 0; ii < num_samples_back; ii++) {
-      double backoff = static_cast<double>(2 * ii + 1) * radius_;
+      const double backoff = static_cast<double>(2 * ii + 1) * radius_;
 
       pcl::PointXYZ p;
       p.x = point.x - backoff * dx;
@@ -264,9 +272,9 @@ namespace atom {
   // at each Atom.
   double AtomMap::CovarianceKernel(const pcl::PointXYZ& p1,
                                    const pcl::PointXYZ& p2) {
-    double dx = p1.x - p2.x;
-    double dy = p1.y - p2.y;
-    double dz = p1.z - p2.z;
+    const double dx = p1.x - p2.x;
+    const double dy = p1.y - p2.y;
+    const double dz = p1.z - p2.z;
     return std::exp(-gamma_ * (dx*dx + dy*dy + dz*dz));
   }
 }

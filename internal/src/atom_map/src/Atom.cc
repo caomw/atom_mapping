@@ -45,12 +45,12 @@ namespace gu = geometry_utils;
 namespace atom {
 
   Atom::~Atom() {}
-  Atom::Atom()
-    : log_odds_(ToLogOdds(0.5)), radius_(0.0), sdf_mean_(1.0),
+  Atom::Atom(double r)
+    : log_odds_(ToLogOdds(0.5)), radius_(r), sdf_mean_(0.0),
       sdf_variance_(std::numeric_limits<double>::infinity()) {}
 
-  Atom::Ptr Atom::Create() {
-    Atom::Ptr atom(new Atom());
+  Atom::Ptr Atom::Create(double r) {
+    Atom::Ptr atom(new Atom(r));
     return atom;
   }
 
@@ -119,32 +119,33 @@ namespace atom {
   }
 
   void Atom::UpdateSignedDistance(double sdf_update) {
-    double sdf_variance_update = ToVariance(sdf_update);
-    double k = sdf_variance_ / (sdf_variance_ + sdf_variance_update);
+    const double sdf_variance_update = ToVariance(sdf_update);
+    const double k = sdf_variance_ / (sdf_variance_ + sdf_variance_update);
     sdf_mean_ += k * (sdf_update - sdf_mean_);
     sdf_variance_ *= 1.0 - k;
   }
 
-  bool Atom::Contains(double x, double y, double z) {
-    if (GetDistanceTo(x, y, z) <= radius_)
-      return true;
-    return false;
+  bool Atom::Contains(double x, double y, double z) const {
+    return GetDistanceTo(x, y, z) <= radius_;
   }
 
-  bool Atom::Contains(pcl::PointXYZ& p) {
-    if (GetDistanceTo(p) <= radius_)
-      return true;
-    return false;
+  bool Atom::Contains(const pcl::PointXYZ& p) const {
+    return GetDistanceTo(p) <= radius_;
   }
 
-  double Atom::GetDistanceTo(double x, double y, double z) {
-    double dx = p.x - position_(0);
-    double dy = p.y - position_(1);
-    double dz = p.z - position_(2);
+  double Atom::GetDistanceTo(double x, double y, double z) const {
+    const double dx = x - position_(0);
+    const double dy = y - position_(1);
+    const double dz = z - position_(2);
     return std::sqrt(dx*dx + dy*dy + dz*dz);
   }
 
-  double Atom::GetDistanceTo(pcl::PointXYZ& p);
+  double Atom::GetDistanceTo(const pcl::PointXYZ& p) const {
+    const double dx = p.x - position_(0);
+    const double dy = p.y - position_(1);
+    const double dz = p.z - position_(2);
+    return std::sqrt(dx*dx + dy*dy + dz*dz);
+  }
 
   void Atom::AddNeighbor(Atom::Ptr neighbor) {
     CHECK_NOTNULL(neighbor.get());
