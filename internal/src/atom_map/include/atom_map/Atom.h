@@ -47,6 +47,7 @@
 
 #include <geometry_utils/Vector3.h>
 
+#include <pcl/point_types.h>
 #include <memory>
 #include <vector>
 
@@ -87,6 +88,11 @@ class Atom {
 
   // Check if this Atom contains a point.
   bool Contains(double x, double y, double z);
+  bool Contains(pcl::PointXYZ& p);
+
+  // Check distance to a point.
+  double GetDistanceTo(double x, double y, double z);
+  double GetDistanceTo(pcl::PointXYZ& p);
 
   // Add a neighboring atom to this one.
   void AddNeighbor(Atom* neighbor);

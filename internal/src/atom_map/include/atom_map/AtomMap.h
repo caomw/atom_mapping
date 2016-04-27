@@ -70,6 +70,10 @@ namespace atom {
     // Atomic radius.
     double radius_;
 
+    // Probability of hits and misses for occupancy updates.
+    double probability_hit_;
+    double probability_miss_;
+
     // Maximum distance to trace a ray inside of an object. This should be small,
     // in order to ensure we don't accidentally trace all the way through. However,
     // it is definitely necessary in order to ensure proper surface detection.
@@ -95,8 +99,10 @@ namespace atom {
     bool RegisterCallbacks(const ros::NodeHandle& n);
 
     // Sample a ray. Given a robot position and a measured point, discretize the
-    // ray from sensor to observation and insert/update atoms along the way.
-    void SampleRay(const pcl::PointXYZ& point, const pcl::PointXYZ& robot);
+    // ray from sensor to observation and return vectors of points and distances.
+    void SampleRay(const pcl::PointXYZ& point, const pcl::PointXYZ& robot,
+                   std::vector<pcl::PointXYZ>& samples,
+                   std::vector<double>& signed_distances);
 
     // Apply the covariance kernel function.
     double CovarianceKernel(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2);

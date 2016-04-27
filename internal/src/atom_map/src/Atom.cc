@@ -121,14 +121,25 @@ namespace atom {
   }
 
   bool Atom::Contains(double x, double y, double z) {
-    double dx = x - position_(0);
-    double dy = y - position_(1);
-    double dz = z - position_(2);
-
-    if (dx*dx + dy*dy + dz*dz <= radius_)
+    if (GetDistanceTo(x, y, z) <= radius_)
       return true;
     return false;
   }
+
+  bool Atom::Contains(pcl::PointXYZ& p) {
+    if (GetDistanceTo(p) <= radius_)
+      return true;
+    return false;
+  }
+
+  double Atom::GetDistanceTo(double x, double y, double z) {
+    double dx = p.x - position_(0);
+    double dy = p.y - position_(1);
+    double dz = p.z - position_(2);
+    return std::sqrt(dx*dx + dy*dy + dz*dz);
+  }
+
+  double Atom::GetDistanceTo(pcl::PointXYZ& p);
 
   void Atom::AddNeighbor(Atom* neighbor) {
     CHECK_NOTNULL(neighbor);

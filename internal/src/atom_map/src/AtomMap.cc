@@ -133,11 +133,69 @@ namespace atom {
     return neighbor->GetProbability();
   }
 
-  // Updates.
+  // Update the map for this observation.
   void AtomMap::Update(const pcl::PointXYZ& point,
-                       const pcl::PointXYZ& robot);
+                       const pcl::PointXYZ& robot) {
+    std::vector<pcl::PointXYZ> samples;
+    std::vector<double> signed_distances;
+
+    // Sample the ray.
+    SampleRay(point, robot, samples, signed_distances);
+
+    // For each sample, update occupancy and signed distance function
+    // in existing Atoms, or add new Atoms to the map.
+    for (size_t ii = 0; ii < samples.size(); ii++) {
+      Atom::Ptr neighbor;
+      if (!map_.NearestNeighbor(samples[ii], neighbor)) {
+        ROS_WARN("%s: Error in extracting nearest neighbor.", name_.c_str());
+        continue;
+      }
+
+      // Handle case where sample lies inside an existing Atom.
+      if (neighbor->Contains(samples[ii])) {
+        double sdf = signed_distances[ii];
+
+        // Update probability of occupancy.
+        if (sdf > 0.0)
+          neighbor->UpdateProbability(probability_miss);
+        else
+          neighbor->UpdateProbability(probability_hit);
+
+        // Update signed distance.
+        neighbor->UpdateSignedDistance(sdf);
+      }
+
+      // Handle case where sample lies more than twice the atomic radius
+      // from its nearest neighbor.
+      else if (neighbor->GetDistanceTo(samples[ii]) > 2.0 * radius_) {
+        double sdf = signed_distances[ii];
+        Atom atom;
+        atom.SetRadius(radius_);
+        atom.SetPosition(gu::Vec3(samples[ii].x, samples[ii].y, samples[ii].z));
+
+        // Set probability of occupancy.
+        if (sdf > 0.0)
+          atom.SetProbability(probability_miss);
+        else
+          atom.SetProbability(probability_hit);
+
+        // Set signed distance.
+        atom.SetSignedDistance(sdf);
+
+        // Insert into kdtree. Insertion here automatically updates neighbors
+        // in the implicit graph structure of the kdtree.
+        map_.Insert(&atom);
+      }
+    }
+  }
+
+  // Update the map given a set of observations.
   void AtomMap::Update(const PointCloud::ConstPtr& cloud,
-                       const pcl::PointXYZ& robot);
+                       const pcl::PointXYZ& robot) {
+    for (size_t ii = 0; ii < cloud->points.size(); ii++) {
+      Update(cloud->points[ii], robot);
+    }
+  }
 
   // Load parameters and register callbacks.
   bool AtomMap::RegisterCallbacks(const ros::NodeHandle& n) { return true; }
@@ -146,14 +204,59 @@ namespace atom {
     if (!pu::Get("atom/radius", radius_)) return false;
     if (!pu::Get("atom/thickness", max_surface_thickness_)) return false;
     if (!pu::Get("atom/noise", noise_variance_)) return false;
+    if (!pu::Get("atom/probability_hit", probability_hit_)) return false;
+    if (!pu::Get("atom/probability_miss", probability_miss_)) return false;
 
     return true;
   }
 
   // Sample a ray. Given a robot position and a measured point, discretize the
   // ray from sensor to observation and insert/update atoms along the way.
+  // In particular, discretize such that the atoms closest to the surface are
+  // tangent to it.
   void AtomMap::SampleRay(const pcl::PointXYZ& point,
-                          const pcl::PointXYZ& robot) {}
+                          const pcl::PointXYZ& robot,
+                          std::vector<pcl::PointXYZ>& samples,
+                          std::vector<double>& signed_distances) {
+    samples.clear();
+    signed_distances.clear();
+
+    // Compute the range to the observed point and the unit direction.
+    double dx = robot.x - point.x;
+    double dy = robot.y - point.y;
+    double dz = robot.z - point.z;
+    double range = std::sqrt(dx*dx + dy*dy + dz*dz);
+    dx /= range; dy /= range; dz /= range;
+
+    // Start at the surface and walk toward the robot.
+    size_t num_samples_front = static_cast<size_t>(range / (2.0 * radius_));
+    for (size_t ii = 0; ii < num_samples_front; ii++) {
+      double backoff = static_cast<double>(2 * ii + 1) * radius_;
+
+      pcl::PointXYZ p;
+      p.x = point.x + backoff * dx;
+      p.y = point.y + backoff * dy;
+      p.z = point.z + backoff * dz;
+
+      samples.push_back(p);
+      signed_distances.push_back(backoff);
+    }
+
+    // Start at the surface and walk away from the robot.
+    size_t num_samples_back =
+      static_cast<size_t>(max_surface_thickness_ / (2.0 * radius_));
+    for (size_t ii = 0; ii < num_samples_back; ii++) {
+      double backoff = static_cast<double>(2 * ii + 1) * radius_;
+
+      pcl::PointXYZ p;
+      p.x = point.x - backoff * dx;
+      p.y = point.y - backoff * dy;
+      p.z = point.z - backoff * dz;
+
+      samples.push_back(p);
+      signed_distances.push_back(-backoff);
+    }
+  }
 
   // Apply the covariance kernel function. This is just the simplest option, but
   // there are many other valid kernels to consider. For example one easy change
