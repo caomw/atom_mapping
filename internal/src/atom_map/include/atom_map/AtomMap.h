@@ -56,7 +56,7 @@ namespace atom {
 
     // Getters.
     void GetSignedDistance(double x, double y, double z,
-                           double& distance, double& variance) const;
+                           double* distance, double* variance) const;
     double GetProbability(double x, double y, double z) const;
 
     // Updates.
@@ -101,8 +101,8 @@ namespace atom {
     // Sample a ray. Given a robot position and a measured point, discretize the
     // ray from sensor to observation and return vectors of points and distances.
     void SampleRay(const pcl::PointXYZ& point, const pcl::PointXYZ& robot,
-                   std::vector<pcl::PointXYZ>& samples,
-                   std::vector<double>& signed_distances);
+                   std::vector<pcl::PointXYZ>* samples,
+                   std::vector<double>* signed_distances);
 
     // Apply the covariance kernel function.
     double CovarianceKernel(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2);

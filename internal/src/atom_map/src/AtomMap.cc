@@ -75,12 +75,13 @@ namespace atom {
     std::vector<Atom::Ptr> neighbors;
     if (!map_.GetKNearestNeighbors(x, y, z, num_neighbors_, neighbors)) {
       ROS_WARN("%s: Error in extracting nearest neighbors.", name_.c_str());
-      return std::numeric_limits<double>::infinity();
+      *distance = std::numeric_limits<double>::infinity();
+      *variance = std::numeric_limits<double>::infinity();
     }
 
     // Generate covariance matrix for the training data.
     const size_t kNumNeighbors = neighbors.size();
-    Eigen::Matrix<double, kNumNeighbors, kNumNeighbors> K11;
+    Eigen::MatrixXd K11(kNumNeighbors, kNumNeighbors) K11;
     for (size_t ii = 0; ii < kNumNeighbors; ii++) {
       pcl::PointXYZ p1;
       p1.x = neighbors[ii].GetPosition()(0);
@@ -102,9 +103,9 @@ namespace atom {
     }
 
     // Generate query cross covariance and training distance column vectors.
-    Eigen::Vector<double, kNumNeighbors> K12, training_dists;
-    pcl::PointXYZ q;
-    q.x = x; q.y = y; q.z = z;
+    Eigen::VectorXd K12(kNumNeighbors);
+    Eigen::VectorXd training_dists(kNumNeighbors);
+    pcl::PointXYZ q(x, y, z);
     for (size_t ii = 0; ii < kNumNeighbors; ii++) {
       pcl::PointXYZ p;
       p.x = neighbors[ii]->GetPosition()(0);
@@ -115,9 +116,13 @@ namespace atom {
       training_dists(ii) = neighbors[ii]->GetSignedDistance();
     }
 
-    // Gaussian conditioning.
-    *distance = K12.transpose() * K11.llt().solve(training_dists);
-    *variance = 1.0 - K12.transpose() * K11.llt().solve(K12);
+    // Gaussian conditioning. Use LDLT (stable Cholesky) for speed and because
+    // we cannot guarantee that the covariance matrix of the training data
+    // K11 is strictly positive definite (it may be semidefinite or nearly
+    // semidefinite, in which case regular Cholesky is unstable).
+    Eigen::LDLT<Eigen::MatrixXd> cholesky(K11);
+    *distance = K12.transpose() * cholesky.solve(training_dists);
+    *variance = 1.0 - K12.transpose() * cholesky.solve(K12);
   }
 
   // Find probability of occupancy. Return -1 if error or if this point does
@@ -144,7 +149,7 @@ namespace atom {
     std::vector<double> signed_distances;
 
     // Sample the ray.
-    SampleRay(point, robot, samples, signed_distances);
+    SampleRay(point, robot, &samples, &signed_distances);
 
     // For each sample, update occupancy and signed distance function
     // in existing Atoms, or add new Atoms to the map.
@@ -224,10 +229,13 @@ namespace atom {
   // tangent to it.
   void AtomMap::SampleRay(const pcl::PointXYZ& point,
                           const pcl::PointXYZ& robot,
-                          std::vector<pcl::PointXYZ>& samples,
-                          std::vector<double>& signed_distances) {
-    samples.clear();
-    signed_distances.clear();
+                          std::vector<pcl::PointXYZ>* samples,
+                          std::vector<double>* signed_distances) {
+    CHECK_NOTNULL(samples);
+    CHECK_NOTNULL(signed_distances);
+
+    samples->clear();
+    signed_distances->clear();
 
     // Compute the range to the observed point and the unit direction.
     double dx = robot.x - point.x;
@@ -246,8 +254,8 @@ namespace atom {
       p.y = point.y + backoff * dy;
       p.z = point.z + backoff * dz;
 
-      samples.push_back(p);
-      signed_distances.push_back(backoff);
+      samples->push_back(p);
+      signed_distances->push_back(backoff);
     }
 
     // Start at the surface and walk away from the robot.
@@ -261,8 +269,8 @@ namespace atom {
       p.y = point.y - backoff * dy;
       p.z = point.z - backoff * dz;
 
-      samples.push_back(p);
-      signed_distances.push_back(-backoff);
+      samples->push_back(p);
+      signed_distances->push_back(-backoff);
     }
   }
 
