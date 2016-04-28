@@ -129,6 +129,10 @@ namespace atom {
     return GetDistanceTo(x, y, z) <= radius_;
   }
 
+  bool Atom::Contains(Atom::Ptr atom) const {
+    return GetDistanceTo(atom) <= radius_;
+  }
+
   bool Atom::Contains(const pcl::PointXYZ& p) const {
     return GetDistanceTo(p) <= radius_;
   }
@@ -137,6 +141,16 @@ namespace atom {
     const double dx = x - position_(0);
     const double dy = y - position_(1);
     const double dz = z - position_(2);
+    return std::sqrt(dx*dx + dy*dy + dz*dz);
+  }
+
+  double Atom::GetDistanceTo(Atom::Ptr atom) const {
+    CHECK_NOTNULL(atom.get());
+    gu::Vec3 p = atom->GetPosition();
+
+    const double dx = p(0) - position_(0);
+    const double dy = p(1) - position_(1);
+    const double dz = p(2) - position_(2);
     return std::sqrt(dx*dx + dy*dy + dz*dz);
   }
 
@@ -150,6 +164,10 @@ namespace atom {
   void Atom::AddNeighbor(Atom::Ptr neighbor) {
     CHECK_NOTNULL(neighbor.get());
     neighbors_.push_back(neighbor);
+  }
+
+  void Atom::ClearNeighbors() {
+    neighbors_.clear();
   }
 
   const std::vector<Atom::Ptr>& Atom::GetNeighbors() const {

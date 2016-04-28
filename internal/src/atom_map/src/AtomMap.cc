@@ -73,7 +73,7 @@ namespace atom {
 
     // Find nearest neighbors.
     std::vector<Atom::Ptr> neighbors;
-    if (!map_.GetKNearestNeighbors(x, y, z, num_neighbors_, neighbors)) {
+    if (!map_.GetKNearestNeighbors(x, y, z, num_neighbors_, &neighbors)) {
       ROS_WARN("%s: Error in extracting nearest neighbors.", name_.c_str());
       *distance = std::numeric_limits<double>::infinity();
       *variance = std::numeric_limits<double>::infinity();
@@ -128,18 +128,19 @@ namespace atom {
   // Find probability of occupancy. Return -1 if error or if this point does
   // not lie within an Atom.
   double AtomMap::GetProbability(double x, double y, double z) const {
-    Atom::Ptr neighbor;
-    if (!map_.GetNearestNeighbor(double x, double y, double z, neighbor)) {
-      ROS_WARN("%s: Error in extracting nearest neighbor.", name_.c_str());
+    std::vector<Atom::Ptr> neighbors;
+    if (!map_.RadiusSearch(double x, double y, double z, radius_, &neighbors)) {
+      ROS_WARN("%s: Error in radius search.", name_.c_str());
       return -1.0;
     }
 
-    if (!neighbor->Contains(x, y, z)) {
+    if (neighbors.size() == 0) {
       ROS_WARN("%s: Nearest nighbor is too far away.", name_.c_str());
       return -1.0;
     }
 
-    return neighbor->GetProbability();
+    // There can only be one neighbor.
+    return neighbors[1]->GetProbability();
   }
 
   // Update the map for this observation.
@@ -178,7 +179,8 @@ namespace atom {
 
         // Insert into kdtree. Insertion here automatically updates neighbors
         // in the implicit graph structure of the kdtree.
-        map_.Insert(atom);
+        if (!map_.Insert(atom))
+          ROS_WARN("%s: Error inserting a new Atom.", name_.c_str());
       }
 
       // Handle case where sample lies inside an existing Atom.

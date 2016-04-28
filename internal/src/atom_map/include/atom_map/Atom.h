@@ -90,13 +90,16 @@ class Atom {
   // Check if this Atom contains a point.
   bool Contains(double x, double y, double z) const;
   bool Contains(const pcl::PointXYZ& p) const;
+  bool Contains(Atom::Ptr atom) const;
 
-  // Check distance to a point.
+  // Check distance to a point. 
   double GetDistanceTo(double x, double y, double z) const;
   double GetDistanceTo(const pcl::PointXYZ& p) const;
+  double GetDistanceTo(Atom::Ptr atom) const;
 
   // Add a neighboring atom to this one.
   void AddNeighbor(Atom::Ptr neighbor);
+  void ClearNeighbors();
   const std::vector<Ptr>& GetNeighbors() const;
 
  private:
