@@ -62,11 +62,11 @@ namespace atom {
     return log_odds_;
   }
 
-  double GetSignedDistance() const {
+  double Atom::GetSignedDistance() const {
     return sdf_mean_;
   }
 
-  double GetSignedDistanceVariance() const {
+  double Atom::GetSignedDistanceVariance() const {
     return sdf_variance_;
   }
 
@@ -89,10 +89,6 @@ namespace atom {
   void Atom::SetSignedDistance(double d) {
     sdf_mean_ = d;
     sdf_variance_ = ToVariance(d);
-  }
-
-  void Atom::SetRadius(double r) {
-    radius_ = r;
   }
 
   void Atom::SetPosition(const gu::Vec3& p) {
@@ -129,7 +125,7 @@ namespace atom {
     return GetDistanceTo(x, y, z) <= radius_;
   }
 
-  bool Atom::Contains(Atom::Ptr atom) const {
+  bool Atom::Contains(const Atom::Ptr& atom) const {
     return GetDistanceTo(atom) <= radius_;
   }
 
@@ -144,7 +140,7 @@ namespace atom {
     return std::sqrt(dx*dx + dy*dy + dz*dz);
   }
 
-  double Atom::GetDistanceTo(Atom::Ptr atom) const {
+  double Atom::GetDistanceTo(const Atom::Ptr& atom) const {
     CHECK_NOTNULL(atom.get());
     gu::Vec3 p = atom->GetPosition();
 

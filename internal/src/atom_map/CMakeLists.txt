@@ -11,6 +11,7 @@ endif(NOT PCL_FOUND)
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   geometry_utils
+  parameter_utils
   kdtree
 )
 
@@ -20,6 +21,7 @@ catkin_package(
   CATKIN_DEPENDS
     roscpp
     geometry_utils
+    parameter_utils
     kdtree
   DEPENDS
     PCL

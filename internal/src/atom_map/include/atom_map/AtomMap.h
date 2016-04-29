@@ -35,7 +35,12 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
+#ifndef ATOM_MAPPING_ATOM_KDTREE_H
+#define ATOM_MAPPING_ATOM_KDTREE_H
+
 #include <atom_map/Atom.h>
+#include <atom_map/AtomKdtree.h>
+#include <parameter_utils/ParameterUtils.h>
 
 #include <ros/ros.h>
 #include <pcl/point_types.h>
@@ -56,8 +61,8 @@ namespace atom {
 
     // Getters.
     void GetSignedDistance(double x, double y, double z,
-                           double* distance, double* variance) const;
-    double GetProbability(double x, double y, double z) const;
+                           double* distance, double* variance);
+    double GetProbability(double x, double y, double z);
 
     // Updates.
     void Update(const pcl::PointXYZ& point, const pcl::PointXYZ& robot);
@@ -106,5 +111,7 @@ namespace atom {
 
     // Apply the covariance kernel function.
     double CovarianceKernel(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2);
-  }
+  };
 }
+
+#endif

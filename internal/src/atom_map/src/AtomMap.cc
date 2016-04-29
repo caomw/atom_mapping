@@ -67,7 +67,7 @@ namespace atom {
 
   // Getters.
   void AtomMap::GetSignedDistance(double x, double y, double z,
-                                  double* distance, double* variance) const {
+                                  double* distance, double* variance) {
     CHECK_NOTNULL(distance);
     CHECK_NOTNULL(variance);
 
@@ -81,18 +81,18 @@ namespace atom {
 
     // Generate covariance matrix for the training data.
     const size_t kNumNeighbors = neighbors.size();
-    Eigen::MatrixXd K11(kNumNeighbors, kNumNeighbors) K11;
+    Eigen::MatrixXd K11(kNumNeighbors, kNumNeighbors);
     for (size_t ii = 0; ii < kNumNeighbors; ii++) {
       pcl::PointXYZ p1;
-      p1.x = neighbors[ii].GetPosition()(0);
-      p1.y = neighbors[ii].GetPosition()(1);
-      p1.z = neighbors[ii].GetPosition()(2);
+      p1.x = neighbors[ii]->GetPosition()(0);
+      p1.y = neighbors[ii]->GetPosition()(1);
+      p1.z = neighbors[ii]->GetPosition()(2);
 
       for (size_t jj = 0; jj < ii; jj++) {
         pcl::PointXYZ p2;
-        p2.x = neighbors[jj].GetPosition()(0);
-        p2.y = neighbors[jj].GetPosition()(1);
-        p2.z = neighbors[jj].GetPosition()(2);
+        p2.x = neighbors[jj]->GetPosition()(0);
+        p2.y = neighbors[jj]->GetPosition()(1);
+        p2.z = neighbors[jj]->GetPosition()(2);
 
         double cov = CovarianceKernel(p1, p2);
         K11(ii, jj) = cov;
@@ -127,9 +127,9 @@ namespace atom {
 
   // Find probability of occupancy. Return -1 if error or if this point does
   // not lie within an Atom.
-  double AtomMap::GetProbability(double x, double y, double z) const {
+  double AtomMap::GetProbability(double x, double y, double z) {
     std::vector<Atom::Ptr> neighbors;
-    if (!map_.RadiusSearch(double x, double y, double z, radius_, &neighbors)) {
+    if (!map_.RadiusSearch(x, y, z, radius_, &neighbors)) {
       ROS_WARN("%s: Error in radius search.", name_.c_str());
       return -1.0;
     }
@@ -170,9 +170,9 @@ namespace atom {
 
         // Set probability of occupancy.
         if (sdf > 0.0)
-          atom->SetProbability(probability_miss);
+          atom->SetProbability(probability_miss_);
         else
-          atom->SetProbability(probability_hit);
+          atom->SetProbability(probability_hit_);
 
         // Set signed distance.
         atom->SetSignedDistance(sdf);
@@ -191,9 +191,9 @@ namespace atom {
 
             // Update probability of occupancy.
             if (sdf > 0.0)
-              neighbors[jj]->UpdateProbability(probability_miss);
+              neighbors[jj]->UpdateProbability(probability_miss_);
             else
-              neighbor[jj]->UpdateProbability(probability_hit);
+              neighbors[jj]->UpdateProbability(probability_hit_);
 
             // Update signed distance.
             neighbors[jj]->UpdateSignedDistance(sdf);

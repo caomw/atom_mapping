@@ -38,29 +38,29 @@
 #include <atom_map/AtomKdtree.h>
 
 namespace atom {
-  ~AtomKdtree() { kd_free(tree); }
-  AtomKdtree() {
+  AtomKdtree::~AtomKdtree() { kd_free(tree); }
+  AtomKdtree::AtomKdtree() {
     tree = kd_create(3); // 3D data.
     CHECK_NOTNULL(tree);
   };
 
   // Nearest neighbor queries.
-  bool GetKNearestNeighbors(double x, double y, double z, double k,
-                            std::vector<Atom::Ptr>* neighbors) {
+  bool AtomKdtree::GetKNearestNeighbors(double x, double y, double z, double k,
+                                        std::vector<Atom::Ptr>* neighbors) {
     // TODO!
     return true;
   }
 
   // Nearest neighbor queries.
-  bool GetKNearestNeighbors(const pcl::PointXYZ& p, double k,
-                            std::vector<Atom::Ptr>* neighbors) {
+  bool AtomKdtree::GetKNearestNeighbors(const pcl::PointXYZ& p, double k,
+                                        std::vector<Atom::Ptr>* neighbors) {
     return GetKNearestNeighbors(p.x, p.y, p.z, k, neighbors);
   }
 
   // Radius searching.
-  bool RadiusSearch(double x, double y, double z, double r,
-                    std::vector<Atom::Ptr>* neighbors) {
-    CHECK_NOTNULL(neighbors.get());
+  bool AtomKdtree::RadiusSearch(double x, double y, double z, double r,
+                                std::vector<Atom::Ptr>* neighbors) {
+    CHECK_NOTNULL(neighbors);
     neighbors->clear();
 
     // Run radius search.
@@ -81,13 +81,13 @@ namespace atom {
   }
 
   // Radius searching.
-  bool RadiusSearch(const pcl::PointXYZ& p, double r,
-                    std::vector<Atom::Ptr>* neighbors) {
+  bool AtomKdtree::RadiusSearch(const pcl::PointXYZ& p, double r,
+                                std::vector<Atom::Ptr>* neighbors) {
     return RadiusSearch(p.x, p.y, p.z, r, neighbors);
   }
 
   // Insert a new Atom.
-  bool Insert(Atom::Ptr atom) {
+  bool AtomKdtree::Insert(Atom::Ptr atom) {
     CHECK_NOTNULL(atom.get());
 
     // Find all neighbors and add them to this Atom's neighbors list.
@@ -104,11 +104,12 @@ namespace atom {
   }
 
   // Find all neighbors for an Atom and set that Atom's neighbors_ field.
-  bool SetNeighbors(Atom::Ptr atom) {
+  bool AtomKdtree::SetNeighbors(Atom::Ptr atom) {
     CHECK_NOTNULL(atom.get());
 
     // Find all neighbors within a radius of one atomic diameter.
     std::vector<Atom::Ptr> neighbors;
+    gu::Vec3 pos = atom->GetPosition();
     if (!RadiusSearch(pos(0), pos(1), pos(2), atom->GetRadius(), &neighbors))
       return false;
 
@@ -128,7 +129,7 @@ namespace atom {
   }
 
   // Update neighbors' lists of neighboring Atoms to include a new Atom.
-  void UpdateNeighbors(Atom::Ptr atom) {
+  void AtomKdtree::UpdateNeighbors(Atom::Ptr atom) {
     CHECK_NOTNULL(atom.get());
 
     // Add this atom to each neighbor.

@@ -45,14 +45,14 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+#ifndef ATOM_MAPPING_ATOM_H
+#define ATOM_MAPPING_ATOM_H
+
 #include <geometry_utils/Vector3.h>
 
 #include <pcl/point_types.h>
 #include <memory>
 #include <vector>
-
-#ifndef ATOM_H
-#define ATOM_H
 
 namespace atom {
 class Atom {
@@ -90,12 +90,12 @@ class Atom {
   // Check if this Atom contains a point.
   bool Contains(double x, double y, double z) const;
   bool Contains(const pcl::PointXYZ& p) const;
-  bool Contains(Atom::Ptr atom) const;
+  bool Contains(const Atom::Ptr& atom) const;
 
-  // Check distance to a point. 
+  // Check distance to a point.
   double GetDistanceTo(double x, double y, double z) const;
   double GetDistanceTo(const pcl::PointXYZ& p) const;
-  double GetDistanceTo(Atom::Ptr atom) const;
+  double GetDistanceTo(const Atom::Ptr& atom) const;
 
   // Add a neighboring atom to this one.
   void AddNeighbor(Atom::Ptr neighbor);

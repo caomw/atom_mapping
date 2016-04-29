@@ -35,6 +35,9 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
+#ifndef ATOM_MAPPING_ATOM_MAP_H
+#define ATOM_MAPPING_ATOM_MAP_H
+
 #include <atom_map/Atom.h>
 
 #include <kdtree/kdtree.h>
@@ -45,8 +48,10 @@
 typedef struct kdtree Kdtree;
 typedef struct kdres Kdsearch;
 
+namespace gu = geometry_utils;
+
 namespace atom {
-  class  {
+  class AtomKdtree {
   public:
     AtomKdtree();
     ~AtomKdtree();
@@ -70,9 +75,11 @@ namespace atom {
     Kdtree* tree;
 
     // Find all neighbors for an Atom and set that Atom's neighbors_ field.
-    void SetNeighbors(Atom::Ptr atom);
+    bool SetNeighbors(Atom::Ptr atom);
 
     // Update neighbors' lists of neighboring Atoms to include a new Atom.
     void UpdateNeighbors(Atom::Ptr atom);
-  }
+  };
 }
+
+#endif
