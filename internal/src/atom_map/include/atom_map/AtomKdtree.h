@@ -40,7 +40,7 @@
 
 #include <atom_map/Atom.h>
 
-#include <kdtree/kdtree.h>
+#include <flann/flann.h>
 #include <pcl/point_types.h>
 #include <glog/logging.h>
 #include <math.h>
@@ -57,9 +57,9 @@ namespace atom {
     ~AtomKdtree();
 
     // Nearest neighbor queries.
-    bool GetKNearestNeighbors(double x, double y, double z, double k,
+    bool GetKNearestNeighbors(double x, double y, double z, size_t k,
                               std::vector<Atom::Ptr>* neighbors);
-    bool GetKNearestNeighbors(const pcl::PointXYZ& p, double k,
+    bool GetKNearestNeighbors(const pcl::PointXYZ& p, size_t k,
                               std::vector<Atom::Ptr>* neighbors);
     bool RadiusSearch(double x, double y, double z, double r,
                       std::vector<Atom::Ptr>* neighbors);
@@ -70,9 +70,10 @@ namespace atom {
     bool Insert(Atom::Ptr atom);
 
   private:
-    // A kdtree to hold all the Atoms. Leaves of this kdtree are void pointers
-    // that are actually pointers to shared pointers to Atoms.
-    Kdtree* tree;
+    // A Flann kdtree to hold all the Atoms. Searches in this tree return
+    // indices, which are then mapped to Atom::Ptr types in an array.
+    std::shared_ptr< flann::Index< flann::L2<double> > > index_;
+    std::vector<Atom::Ptr> registry_;
 
     // Find all neighbors for an Atom and set that Atom's neighbors_ field.
     bool SetNeighbors(Atom::Ptr atom);

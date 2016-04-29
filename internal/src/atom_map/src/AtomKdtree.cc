@@ -38,21 +38,54 @@
 #include <atom_map/AtomKdtree.h>
 
 namespace atom {
-  AtomKdtree::~AtomKdtree() { kd_free(tree); }
-  AtomKdtree::AtomKdtree() {
-    tree = kd_create(3); // 3D data.
-    CHECK_NOTNULL(tree);
-  };
+  AtomKdtree::AtomKdtree() {};
+  AtomKdtree::~AtomKdtree() {
+    // Free memory from points in the kd tree.
+    if (index_ != nullptr) {
+      for (size_t ii = 0; ii < index_->size(); ++ii) {
+        double* point = index_->getPoint(ii);
+        delete[] point;
+      }
+    }
+  }
 
   // Nearest neighbor queries.
-  bool AtomKdtree::GetKNearestNeighbors(double x, double y, double z, double k,
+  bool AtomKdtree::GetKNearestNeighbors(double x, double y, double z, size_t k,
                                         std::vector<Atom::Ptr>* neighbors) {
-    // TODO!
+    CHECK_NOTNULL(neighbors);
+    neighbors->clear();
+
+    if (index_ == nullptr) {
+      VLOG(1) << "Index has not been built. Points must be added before "
+              <<  "querying the kd tree";
+      return false;
+    }
+
+    // Convert the input point to the FLANN format.
+    const int kNumColumns = 3;
+    flann::Matrix<double> flann_query(new double[kNumColumns], 1, kNumColumns);
+    flann_query[0][0] = x;
+    flann_query[0][1] = y;
+    flann_query[0][2] = z;
+
+    // Search the kd tree for the nearest neighbor to the query.
+    std::vector< std::vector<int> > query_match_indices;
+    std::vector< std::vector<double> > query_distances;
+
+    int num_neighbors_found =
+      index_->knnSearch(flann_query, query_match_indices,
+                           query_distances, static_cast<int>(k),
+                           flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
+
+    // Assign output.
+    for (size_t ii = 0; ii < num_neighbors_found; ii++)
+      neighbors->push_back(registry_[ query_match_indices[0][ii] ]);
+
     return true;
   }
 
   // Nearest neighbor queries.
-  bool AtomKdtree::GetKNearestNeighbors(const pcl::PointXYZ& p, double k,
+  bool AtomKdtree::GetKNearestNeighbors(const pcl::PointXYZ& p, size_t k,
                                         std::vector<Atom::Ptr>* neighbors) {
     return GetKNearestNeighbors(p.x, p.y, p.z, k, neighbors);
   }
@@ -63,20 +96,32 @@ namespace atom {
     CHECK_NOTNULL(neighbors);
     neighbors->clear();
 
-    // Run radius search.
-    Kdsearch* result = kd_nearest_range3(tree, x, y, z, r);
-    if (!result)
+    if (index_ == nullptr) {
+      VLOG(1) << "Index has not been built. Points must be added before "
+              <<  "querying the kd tree";
       return false;
-
-    // Extract Atoms and add them to neighbors.
-    while (!kd_res_end(result)) {
-      Atom::Ptr atom = *(Atom::Ptr*) kd_res_item_data(result);
-      neighbors->push_back(atom);
-
-      kd_res_next(result);
     }
 
-    kd_res_free(result);
+    // Convert the input point to the FLANN format.
+    const int kNumColumns = 3;
+    flann::Matrix<double> flann_query(new double[kNumColumns], 1, kNumColumns);
+    flann_query[0][0] = x;
+    flann_query[0][1] = y;
+    flann_query[0][2] = z;
+
+    // Search the kd tree for the nearest neighbor to the query.
+    std::vector< std::vector<int> > query_match_indices;
+    std::vector< std::vector<double> > query_distances;
+
+    int num_neighbors_found =
+      index_->radiusSearch(flann_query, query_match_indices,
+                           query_distances, static_cast<float>(r),
+                           flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
+
+    // Assign output.
+    for (size_t ii = 0; ii < num_neighbors_found; ii++)
+      neighbors->push_back(registry_[ query_match_indices[0][ii] ]);
+
     return true;
   }
 
@@ -97,9 +142,31 @@ namespace atom {
     // Update those neighbors' lists to include this Atom.
     UpdateNeighbors(atom);
 
-    // Insert.
+    // Copy the input point into FLANN's Matrix type.
+    const int kNumColumns = 3;
+    flann::Matrix<double> flann_point(new double[kNumColumns], 1, kNumColumns);
     gu::Vec3 pos = atom->GetPosition();
-    kd_insert3(tree, pos(0), pos(1), pos(2), (void *) &atom);
+    flann_point[0][0] = pos(0);
+    flann_point[0][1] = pos(1);
+    flann_point[0][2] = pos(2);
+
+    // If this is the first point in the index, create the index and exit.
+    if (index_ == nullptr) {
+      // Single kd-tree. No approximation.
+      const int kNumRandomizedKDTrees = 1;
+      index_.reset(new flann::Index< flann::L2<double> >(
+                   flann_point, flann::KDTreeIndexParams(kNumRandomizedKDTrees)));
+      index_->buildIndex();
+    }
+
+    // If the index is already created, add the data point to the index. Rebuild
+    // every time the index doubles in size to occasionally rebalance the kd tree.
+    const int kRebuildThreshold = 2;
+    index_->addPoints(flann_point, kRebuildThreshold);
+
+    // Add point to registry.
+    registry_.push_back(atom);
+
     return true;
   }
 
