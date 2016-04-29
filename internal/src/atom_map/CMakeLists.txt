@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   geometry_utils
   parameter_utils
-  kdtree
+  pcl_ros
 )
 
 catkin_package(
@@ -22,9 +22,10 @@ catkin_package(
     roscpp
     geometry_utils
     parameter_utils
-    kdtree
+    pcl_ros
   DEPENDS
     PCL
+    FLANN
 )
 
 option(ENABLE_DEBUG_MESSAGES "Turn on to enable bound checking and debug messages" OFF)
@@ -38,12 +39,14 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
   ${PCL_INCLUDE_DIRS}
+  ${FLANN_INCLUDE_DIRS}
   ${GLOG_INCLUDE_DIRS}
 )
 
 link_directories(
   ${catkin_LIBRARY_DIRS}
   ${PCL_LIBRARY_DIRS}
+  ${FLANN_LIBRARY_DIRS}
   ${GLOG_LIBRARY_DIRS}
 )
 
@@ -52,6 +55,7 @@ add_library(${PROJECT_NAME} ${${PROJECT_NAME}_srcs})
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
+  ${FLANN_LIBRARIES}
   glog
 )
 
