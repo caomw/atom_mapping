@@ -41,20 +41,22 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+#include <gtest/gtest.h>
+
 #include <atom_map/Atom.h>
 #include <atom_map/AtomKdtree.h>
 #include <geometry_utils/Vector3.h>
 
-#include <gtest/gtest.h>
 #include <math.h>
 #include <random>
+
 
 using namespace atom;
 namespace gu = geometry_utils;
 
 // Test that we can create an Atom and set values appropriately.
 TEST(Atom, TestCreateAtom) {
-  Atom::Ptr atom = Atom::Create(0.01 /* radius */);
+  Atom::Ptr atom = Atom::Create(0.01);
   ASSERT_TRUE(atom.get());
 
   // Set params.
@@ -76,7 +78,7 @@ TEST(Atom, TestCreateAtom) {
 
 // Test that we can update probability/log odds.
 TEST(Atom, TestUpdateProbability) {
-  Atom::Ptr atom = Atom::Create(0.01 /* radius */);
+  Atom::Ptr atom = Atom::Create(0.01);
   ASSERT_TRUE(atom.get());
 
   // Set params.
@@ -99,7 +101,7 @@ TEST(Atom, TestUpdateProbability) {
 
 // Test that we can update signed distance.
 TEST(Atom, TestUpdateSignedDistance) {
-  Atom::Ptr atom = Atom::Create(0.01 /* radius */);
+  Atom::Ptr atom = Atom::Create(0.01);
   ASSERT_TRUE(atom.get());
 
   // Set params.
