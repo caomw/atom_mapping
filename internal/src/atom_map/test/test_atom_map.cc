@@ -47,6 +47,7 @@
 
 #include <gtest/gtest.h>
 #include <math.h>
+#include <random>
 
 using namespace atom;
 namespace gu = geometry_utils;
@@ -96,6 +97,7 @@ TEST(Atom, TestUpdateProbability) {
   EXPECT_NEAR(atom->GetProbability(), kProbabilityUpdate, 1e-4);
 }
 
+
 // Test that we can update signed distance.
 TEST(Atom, TestUpdateSignedDistance) {
   Atom::Ptr atom = Atom::Create(0.01 /* radius */);
@@ -119,6 +121,17 @@ TEST(Atom, TestUpdateSignedDistance) {
   EXPECT_NEAR(atom->GetSignedDistance(), kSignedDistanceUpdate, 1e-4);
 }
 
+/*
+// Test that we can create an AtomKdtree and insert lots of points.
+TEST(AtomKdtree, TestAtomKdtreeInsertion) {
+  AtomKdtree tree;
+
+  // Set params for random point generation.
+  const kLowerBound = 0.0;
+  const kUpperBound = 1.0;
+  const 
+}
+*/
 
 int main(int argc, char** argv) {
   testing::InitGoogleTest(&argc, argv);

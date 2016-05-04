@@ -61,5 +61,11 @@ target_link_libraries(${PROJECT_NAME}
 
 if(CATKIN_ENABLE_TESTING)
   catkin_add_gtest(test_${PROJECT_NAME} test/test_atom_map.cc)
-  target_link_libraries(test_${PROJECT_NAME} ${PROJECT_NAME} ${GTEST_LIBRARIES})
+  target_link_libraries(
+    test_${PROJECT_NAME}
+    ${PROJECT_NAME}
+    ${PCL_LIBRARIES}
+    ${FLANN_LIBRARIES}
+    ${GTEST_LIBRARIES}
+  )
 endif()
