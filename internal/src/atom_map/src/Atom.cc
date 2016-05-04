@@ -47,7 +47,8 @@ namespace atom {
   Atom::~Atom() {}
   Atom::Atom(double r)
     : log_odds_(ToLogOdds(0.5)), radius_(r), sdf_mean_(0.0),
-      sdf_variance_(std::numeric_limits<double>::infinity()) {}
+      sdf_variance_(std::numeric_limits<double>::infinity()),
+      position_(0.0, 0.0, 0.0) {}
 
   Atom::Ptr Atom::Create(double r) {
     Atom::Ptr atom(new Atom(r));

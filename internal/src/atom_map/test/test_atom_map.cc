@@ -97,7 +97,6 @@ TEST(Atom, TestUpdateProbability) {
   EXPECT_NEAR(atom->GetProbability(), kProbabilityUpdate, 1e-4);
 }
 
-
 // Test that we can update signed distance.
 TEST(Atom, TestUpdateSignedDistance) {
   Atom::Ptr atom = Atom::Create(0.01 /* radius */);
@@ -121,17 +120,48 @@ TEST(Atom, TestUpdateSignedDistance) {
   EXPECT_NEAR(atom->GetSignedDistance(), kSignedDistanceUpdate, 1e-4);
 }
 
-/*
 // Test that we can create an AtomKdtree and insert lots of points.
 TEST(AtomKdtree, TestAtomKdtreeInsertion) {
   AtomKdtree tree;
 
   // Set params for random point generation.
-  const kLowerBound = 0.0;
-  const kUpperBound = 1.0;
-  const 
+  const double kRadius = 0.1;
+  const size_t kNumPoints = 100;
+  const double kLowerBound = 0.0;
+  const double kUpperBound = 1.0;
+  std::uniform_real_distribution<double> unif(kLowerBound, kUpperBound);
+  std::default_random_engine rng;
+
+  // Generate a bunch of random points and add to the tree.
+  std::vector<Atom::Ptr> atoms;
+  for (size_t ii = 0; ii < kNumPoints; ii++) {
+    Atom::Ptr atom = Atom::Create(kRadius);
+    gu::Vec3 pos(unif(rng), unif(rng), unif(rng));
+    atom->SetPosition(pos);
+
+    // Insert.
+    tree.Insert(atom);
+    atoms.push_back(atom);
+  }
+
+  // Check nearest neighbors.
+  for (size_t ii = 0; ii < atoms.size(); ii++) {
+    Atom::Ptr atom = atoms[ii];
+
+    // Nearest neighbor search.
+    std::vector<Atom::Ptr> neighbors;
+    const size_t kNearestNeighbors = 1;
+    ASSERT_TRUE(tree.GetKNearestNeighbors(atom->GetPosition()(0),
+                                          atom->GetPosition()(1),
+                                          atom->GetPosition()(2),
+                                          kNearestNeighbors, &neighbors));
+
+    // Check that the nearest neighbor matches.
+    EXPECT_EQ(neighbors[0]->GetPosition()(0), atom->GetPosition()(0));
+    EXPECT_EQ(neighbors[0]->GetPosition()(1), atom->GetPosition()(1));
+    EXPECT_EQ(neighbors[0]->GetPosition()(2), atom->GetPosition()(2));
+  }
 }
-*/
 
 int main(int argc, char** argv) {
   testing::InitGoogleTest(&argc, argv);
