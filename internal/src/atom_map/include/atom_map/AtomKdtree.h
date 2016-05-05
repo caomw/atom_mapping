@@ -69,6 +69,9 @@ namespace atom {
     // Insert a new Atom.
     bool Insert(Atom::Ptr atom);
 
+    // Return a list of all atoms in the map.
+    std::vector<Atom::Ptr>& GetAtoms();
+
   private:
     // A Flann kdtree to hold all the Atoms. Searches in this tree return
     // indices, which are then mapped to Atom::Ptr types in an array.

@@ -204,4 +204,10 @@ namespace atom {
     for (size_t ii = 0; ii < neighbors.size(); ii++)
       neighbors[ii]->AddNeighbor(atom);
   }
-}
+
+  // Return a list of all atoms in the map.
+  std::vector<Atom::Ptr>& AtomKdtree::GetAtoms() {
+    return registry_;
+  }
+  
+} // namespace atom

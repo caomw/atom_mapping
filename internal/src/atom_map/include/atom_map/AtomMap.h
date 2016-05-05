@@ -43,6 +43,7 @@
 #include <parameter_utils/ParameterUtils.h>
 
 #include <ros/ros.h>
+#include <std_msgs/ColorRGBA.h>
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 #include <glog/logging.h>
@@ -95,6 +96,11 @@ namespace atom {
     // Noise variance to add to covariance matrices. Assume isotropic noise.
     double noise_variance_;
 
+    // Publishers.
+    std::string fixed_frame_id_;
+    std::string visualization_topic_;
+    ros::Publisher atom_publisher_;
+
     // Initialization and naming.
     bool initialized_;
     std::string name_;
@@ -111,6 +117,12 @@ namespace atom {
 
     // Apply the covariance kernel function.
     double CovarianceKernel(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2);
+
+    // Publishing.
+    void Publish() const;
+
+    // Convert a probability of occupancy to a ROS color.
+    std_msgs::ColorRGBA ProbabilityToRosColor(double probability) const;
   };
 }
 

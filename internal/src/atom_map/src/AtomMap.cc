@@ -37,9 +37,11 @@
 
 #include <atom_map/AtomMap.h>
 
+#include <visualization_msgs/Marker.h>
 #include <Eigen/Dense>
 
 namespace gu = geometry_utils;
+namespace gr = gu::ros;
 namespace pu = parameter_utils;
 
 namespace atom {
@@ -213,7 +215,13 @@ namespace atom {
   }
 
   // Load parameters and register callbacks.
-  bool AtomMap::RegisterCallbacks(const ros::NodeHandle& n) { return true; }
+  bool AtomMap::RegisterCallbacks(const ros::NodeHandle& n) {
+    ros::NodeHandle node(n);
+    atom_publisher_ =
+      node.advertise<visualization_msgs::MarkerArray>(visualization_topic_.c_str(), 0);
+    return true;
+  }
+
   bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
     if (!pu::Get("atom/gamma", gamma_)) return false;
     if (!pu::Get("atom/radius", radius_)) return false;
@@ -221,6 +229,8 @@ namespace atom {
     if (!pu::Get("atom/noise", noise_variance_)) return false;
     if (!pu::Get("atom/probability_hit", probability_hit_)) return false;
     if (!pu::Get("atom/probability_miss", probability_miss_)) return false;
+    if (!pu::Get("atom/visualization_topic", visualization_topic_)) return false;
+    if (!pu::Get("atom/fixed_frame_id", fixed_frame_id_)) return false;
 
     return true;
   }
@@ -287,4 +297,46 @@ namespace atom {
     const double dz = p1.z - p2.z;
     return std::exp(-gamma_ * (dx*dx + dy*dy + dz*dz));
   }
-}
+
+  // Publish all atoms.
+  void AtomMap::Publish() const {
+    std::vector<Atom::Ptr> atoms = map_.GetAtoms();
+
+    // Initialize marker.
+    visualization_msgs::Marker m;
+    m.header.frame_id = fixed_frame_id_;
+    m.ns = fixed_frame_id_;
+    m.id = 0;
+    m.action = visualization_msgs::Marker::ADD;
+    m.type = visualization_msgs::Marker::POINT;
+    m.color.r = 0.0;
+    m.color.g = 0.4;
+    m.color.b = 0.8;
+    m.color.a = 0.75;
+    m.scale.x = 0.1;
+    m.scale.y = 0.1;
+    m.scale.z = 0.1;
+    m.pose = gr::ToRosPose(gu::Transform3::Identity());
+
+    // Loop over all atoms and add to marker.
+    for (size_t ii = 0; ii < atoms.size(); ii++) {
+      gu::Vec3 p = atoms[ii]->GetPosition();
+      m.points.push_back(gr::ToRosPoint(p));
+      m.colors.push_back(ProbabilityToRosColor(atoms[ii]->GetProbability()));
+    }
+
+    atom_publisher_.publish(m);
+  }
+
+  // Convert a probability of occupancy to a ROS color.
+  std_msgs::ColorRGBA ProbabilityToRosColor(double probability) const {
+    std_msgs::ColorRGBA c;
+    c.r = probability;
+    c.g = 0.0;
+    c.b = 1.0 - probability;
+    c.a = 0.75;
+
+    return c;
+  }
+
+} // namespace atom
