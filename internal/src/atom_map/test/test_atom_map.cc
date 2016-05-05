@@ -49,7 +49,7 @@
 
 #include <math.h>
 #include <random>
-
+#include <iostream>
 
 using namespace atom;
 namespace gu = geometry_utils;
@@ -89,14 +89,14 @@ TEST(Atom, TestUpdateProbability) {
   atom->SetSignedDistance(kSignedDistance);
   atom->SetPosition(kPosition);
 
-  // Update probability a bunch of times with the same value and make sure
-  // that the resulting probability is approximately the new value.
+  // Update probability a bunch of times with the same small value and
+  // make sure that the resulting probability is approximately zero.
   const size_t kNumUpdates = 30;
   const double kProbabilityUpdate = 0.1;
   for (size_t ii = 0; ii < kNumUpdates; ii++)
     atom->UpdateProbability(kProbabilityUpdate);
 
-  EXPECT_NEAR(atom->GetProbability(), kProbabilityUpdate, 1e-4);
+  EXPECT_NEAR(atom->GetProbability(), 0, 1e-4);
 }
 
 // Test that we can update signed distance.
@@ -114,12 +114,12 @@ TEST(Atom, TestUpdateSignedDistance) {
 
   // Update signed distance a bunch of times with the same value and make sure
   // that the resulting signed distance is approximately the new value.
-  const size_t kNumUpdates = 30;
+  const size_t kNumUpdates = 100;
   const double kSignedDistanceUpdate = 0.3;
   for (size_t ii = 0; ii < kNumUpdates; ii++)
     atom->UpdateSignedDistance(kSignedDistanceUpdate);
 
-  EXPECT_NEAR(atom->GetSignedDistance(), kSignedDistanceUpdate, 1e-4);
+  EXPECT_NEAR(atom->GetSignedDistance(), kSignedDistanceUpdate, 1e-3);
 }
 
 // Test that we can create an AtomKdtree and insert lots of points.
@@ -128,7 +128,7 @@ TEST(AtomKdtree, TestAtomKdtreeInsertion) {
 
   // Set params for random point generation.
   const double kRadius = 0.1;
-  const size_t kNumPoints = 100;
+  const size_t kNumPoints = 2;
   const double kLowerBound = 0.0;
   const double kUpperBound = 1.0;
   std::uniform_real_distribution<double> unif(kLowerBound, kUpperBound);
@@ -142,7 +142,7 @@ TEST(AtomKdtree, TestAtomKdtreeInsertion) {
     atom->SetPosition(pos);
 
     // Insert.
-    tree.Insert(atom);
+    ASSERT_TRUE(tree.Insert(atom));
     atoms.push_back(atom);
   }
 
@@ -158,11 +158,15 @@ TEST(AtomKdtree, TestAtomKdtreeInsertion) {
                                           atom->GetPosition()(2),
                                           kNearestNeighbors, &neighbors));
 
+    ASSERT_EQ(neighbors.size(), 1);
+
     // Check that the nearest neighbor matches.
     EXPECT_EQ(neighbors[0]->GetPosition()(0), atom->GetPosition()(0));
     EXPECT_EQ(neighbors[0]->GetPosition()(1), atom->GetPosition()(1));
     EXPECT_EQ(neighbors[0]->GetPosition()(2), atom->GetPosition()(2));
   }
+
+
 }
 
 int main(int argc, char** argv) {

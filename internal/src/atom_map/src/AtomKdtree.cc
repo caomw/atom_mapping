@@ -36,9 +36,10 @@
  */
 
 #include <atom_map/AtomKdtree.h>
+#include <iostream>
 
 namespace atom {
-  AtomKdtree::AtomKdtree() {};
+  AtomKdtree::AtomKdtree() {}
   AtomKdtree::~AtomKdtree() {
     // Free memory from points in the kd tree.
     if (index_ != nullptr) {
@@ -74,8 +75,8 @@ namespace atom {
 
     int num_neighbors_found =
       index_->knnSearch(flann_query, query_match_indices,
-                           query_distances, static_cast<int>(k),
-                           flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
+                        query_distances, static_cast<int>(k),
+                        flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
 
     // Assign output.
     for (size_t ii = 0; ii < num_neighbors_found; ii++)
@@ -135,13 +136,6 @@ namespace atom {
   bool AtomKdtree::Insert(Atom::Ptr atom) {
     CHECK_NOTNULL(atom.get());
 
-    // Find all neighbors and add them to this Atom's neighbors list.
-    if (!SetNeighbors(atom))
-      return false;
-
-    // Update those neighbors' lists to include this Atom.
-    UpdateNeighbors(atom);
-
     // Copy the input point into FLANN's Matrix type.
     const int kNumColumns = 3;
     flann::Matrix<double> flann_point(new double[kNumColumns], 1, kNumColumns);
@@ -157,12 +151,19 @@ namespace atom {
       index_.reset(new flann::Index< flann::L2<double> >(
                    flann_point, flann::KDTreeIndexParams(kNumRandomizedKDTrees)));
       index_->buildIndex();
-    }
+    } else {
+      // Find all neighbors and add them to this Atom's neighbors list.
+      if (!SetNeighbors(atom))
+        return false;
 
-    // If the index is already created, add the data point to the index. Rebuild
-    // every time the index doubles in size to occasionally rebalance the kd tree.
-    const int kRebuildThreshold = 2;
-    index_->addPoints(flann_point, kRebuildThreshold);
+      // Update those neighbors' lists to include this Atom.
+      UpdateNeighbors(atom);
+
+      // If the index is already created, add the data point to the index. Rebuild
+      // every time the index doubles in size to occasionally rebalance the kd tree.
+      const int kRebuildThreshold = 2;
+      index_->addPoints(flann_point, kRebuildThreshold);
+    }
 
     // Add point to registry.
     registry_.push_back(atom);
