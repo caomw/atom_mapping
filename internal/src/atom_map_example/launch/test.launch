@@ -1,0 +1,17 @@
+<launch>
+  <param name="use_sim_time" value="true"/>
+
+  <node name="atom_map_example"
+        pkg="atom_map_example"
+        type="atom_map_example_node"
+        output="screen">
+
+        <!-- AtomMap parameters -->
+        <rosparam file="$(find atom_map)/config/parameters.yaml"/>
+
+        <!-- Input data parameters -->
+        <rosparam file="$(find atom_map_example)/config/parameters.yaml"/>
+
+  </node>
+
+</launch>

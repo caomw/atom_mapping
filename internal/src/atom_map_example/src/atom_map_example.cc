@@ -35,55 +35,63 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#ifndef ATOM_MAPPING_ATOM_MAP_H
-#define ATOM_MAPPING_ATOM_MAP_H
+#include <atom_map_example/atom_map_example.h>
+#include <parameter_utils/ParameterUtils.h>
 
-#include <atom_map/Atom.h>
-
-#include <flann/flann.h>
-#include <pcl/point_types.h>
-#include <glog/logging.h>
-#include <math.h>
-
-namespace gu = geometry_utils;
+namespace pu = parameter_utils;
 
 namespace atom {
-  class AtomKdtree {
-  public:
-    AtomKdtree();
-    ~AtomKdtree();
+  AtomMapExample::AtomMapExample() {}
+  AtomMapExample::~AtomMapExample() {}
 
-    // Nearest neighbor queries.
-    bool GetKNearestNeighbors(double x, double y, double z, size_t k,
-                              std::vector<Atom::Ptr>* neighbors);
-    bool GetKNearestNeighbors(const pcl::PointXYZ& p, size_t k,
-                              std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(double x, double y, double z, double r,
-                      std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(const pcl::PointXYZ& p, double r,
-                      std::vector<Atom::Ptr>* neighbors);
+  // Initialize.
+  bool AtomMapExample::Initialize(const ros::NodeHandle& n) {
+    name_ = ros::names::append(n.getNamespace(), "atom_map_example");
 
-    // Insert a new Atom.
-    bool Insert(Atom::Ptr atom);
+    if (!map_.Initialize(n)) {
+      ROS_ERROR("%s: Failed to initialize AtomMap.", name_.c_str());
+      return false;
+    }
 
-    // Return a list of all atoms in the map.
-    const std::vector<Atom::Ptr>& GetAtoms() const;
+    if (!LoadParameters(n)) {
+      ROS_ERROR("%s: Failed to load parameters.", name_.c_str());
+      return false;
+    }
 
-    // Return the size of this tree.
-    size_t Size() const;
+    if (!RegisterCallbacks(n)) {
+      ROS_ERROR("%s: Failed to register callbacks.", name_.c_str());
+      return false;
+    }
 
-  private:
-    // A Flann kdtree to hold all the Atoms. Searches in this tree return
-    // indices, which are then mapped to Atom::Ptr types in an array.
-    std::shared_ptr< flann::Index< flann::L2<double> > > index_;
-    std::vector<Atom::Ptr> registry_;
+    initialized_ = true;
+    return true;
+  }
 
-    // Find all neighbors for an Atom and set that Atom's neighbors_ field.
-    bool SetNeighbors(Atom::Ptr atom);
+  // Load parameters and register callbacks.
+  bool AtomMapExample::LoadParameters(const ros::NodeHandle& n) {
+    if (!pu::Get("atom_example/data_topic", data_topic_)) return false;
 
-    // Update neighbors' lists of neighboring Atoms to include a new Atom.
-    void UpdateNeighbors(Atom::Ptr atom);
-  };
-}
+    return true;
+  }
 
-#endif
+  bool AtomMapExample::RegisterCallbacks(const ros::NodeHandle& n) {
+    ros::NodeHandle node(n);
+
+    // Register listener.
+    point_cloud_subscriber_ =
+      node.subscribe<PointCloud>(data_topic_.c_str(), 10,
+                                 &AtomMapExample::AddPointCloudCallback, this);
+
+    return true;
+  }
+
+  // Callback to process point clouds.
+  void AtomMapExample::AddPointCloudCallback(const PointCloud::ConstPtr& cloud) {
+    pcl::PointXYZ p(0.0, 0.0, 0.0);
+    map_.Update(cloud, p);
+
+    // Publish.
+    map_.Publish();
+  }
+
+} // namespace atom

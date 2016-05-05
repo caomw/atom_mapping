@@ -1,0 +1,24 @@
+atom:
+  # Gamma parameter for RBF covariance kernel. Higher values reduce covariance at
+  # a given distance.
+  gamma: 0.5
+
+  # Atomic radius.
+  radius: 0.1
+
+  # Maximum distance to raycast into a surface (think of this as the surface
+  # thickness.
+  thickness: 0.15
+
+  # Noise variance for GP signed distance function regression.
+  noise: 1.0
+
+  # Probability update for hits/misses.
+  probability_hit: 0.7
+  probability_miss: 0.3
+
+  # Visualization topic name.
+  visualization_topic: atoms
+
+  # Fixed frame id.
+  fixed_frame_id: fixed

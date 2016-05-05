@@ -35,55 +35,29 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#ifndef ATOM_MAPPING_ATOM_MAP_H
-#define ATOM_MAPPING_ATOM_MAP_H
+///////////////////////////////////////////////////////////////////////////////
+//
+// This defines the AtomMap node, which is a wrapper around the AtomMapExample
+// test class for AtomMap.
+//
+///////////////////////////////////////////////////////////////////////////////
 
-#include <atom_map/Atom.h>
+#include <ros/ros.h>
+#include <atom_map_example/atom_map_example.h>
 
-#include <flann/flann.h>
-#include <pcl/point_types.h>
-#include <glog/logging.h>
-#include <math.h>
+int main(int argc, char** argv) {
+  // Generate a new node.
+  ros::init(argc, argv, "atom_map_example");
+  ros::NodeHandle n("~");
 
-namespace gu = geometry_utils;
+  // Initialize a new UAVLocalization.
+  atom::AtomMapExample atom_map_example;
+  if (!atom_map_example.Initialize(n)) {
+    ROS_ERROR("%s: Failed to initialize AtomMapExample.",
+              ros::this_node::getName().c_str());
+    return EXIT_FAILURE;
+  }
 
-namespace atom {
-  class AtomKdtree {
-  public:
-    AtomKdtree();
-    ~AtomKdtree();
-
-    // Nearest neighbor queries.
-    bool GetKNearestNeighbors(double x, double y, double z, size_t k,
-                              std::vector<Atom::Ptr>* neighbors);
-    bool GetKNearestNeighbors(const pcl::PointXYZ& p, size_t k,
-                              std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(double x, double y, double z, double r,
-                      std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(const pcl::PointXYZ& p, double r,
-                      std::vector<Atom::Ptr>* neighbors);
-
-    // Insert a new Atom.
-    bool Insert(Atom::Ptr atom);
-
-    // Return a list of all atoms in the map.
-    const std::vector<Atom::Ptr>& GetAtoms() const;
-
-    // Return the size of this tree.
-    size_t Size() const;
-
-  private:
-    // A Flann kdtree to hold all the Atoms. Searches in this tree return
-    // indices, which are then mapped to Atom::Ptr types in an array.
-    std::shared_ptr< flann::Index< flann::L2<double> > > index_;
-    std::vector<Atom::Ptr> registry_;
-
-    // Find all neighbors for an Atom and set that Atom's neighbors_ field.
-    bool SetNeighbors(Atom::Ptr atom);
-
-    // Update neighbors' lists of neighboring Atoms to include a new Atom.
-    void UpdateNeighbors(Atom::Ptr atom);
-  };
+  ros::spin();
+  return EXIT_SUCCESS;
 }
-
-#endif

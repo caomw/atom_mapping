@@ -35,55 +35,46 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#ifndef ATOM_MAPPING_ATOM_MAP_H
-#define ATOM_MAPPING_ATOM_MAP_H
+#ifndef ATOM_MAPPING_ATOM_MAP_EXAMPLE_H
+#define ATOM_MAPPING_ATOM_MAP_EXAMPLE_H
 
-#include <atom_map/Atom.h>
+#include <atom_map/AtomMap.h>
 
-#include <flann/flann.h>
 #include <pcl/point_types.h>
-#include <glog/logging.h>
-#include <math.h>
+#include <pcl_ros/point_cloud.h>
 
-namespace gu = geometry_utils;
+typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
 namespace atom {
-  class AtomKdtree {
+  class AtomMapExample {
   public:
-    AtomKdtree();
-    ~AtomKdtree();
+    AtomMapExample();
+    ~AtomMapExample();
 
-    // Nearest neighbor queries.
-    bool GetKNearestNeighbors(double x, double y, double z, size_t k,
-                              std::vector<Atom::Ptr>* neighbors);
-    bool GetKNearestNeighbors(const pcl::PointXYZ& p, size_t k,
-                              std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(double x, double y, double z, double r,
-                      std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(const pcl::PointXYZ& p, double r,
-                      std::vector<Atom::Ptr>* neighbors);
-
-    // Insert a new Atom.
-    bool Insert(Atom::Ptr atom);
-
-    // Return a list of all atoms in the map.
-    const std::vector<Atom::Ptr>& GetAtoms() const;
-
-    // Return the size of this tree.
-    size_t Size() const;
+    // Initialize.
+    bool Initialize(const ros::NodeHandle& n);
 
   private:
-    // A Flann kdtree to hold all the Atoms. Searches in this tree return
-    // indices, which are then mapped to Atom::Ptr types in an array.
-    std::shared_ptr< flann::Index< flann::L2<double> > > index_;
-    std::vector<Atom::Ptr> registry_;
+    AtomMap map_;
 
-    // Find all neighbors for an Atom and set that Atom's neighbors_ field.
-    bool SetNeighbors(Atom::Ptr atom);
+    // Listener.
+    ros::Subscriber point_cloud_subscriber_;
 
-    // Update neighbors' lists of neighboring Atoms to include a new Atom.
-    void UpdateNeighbors(Atom::Ptr atom);
-  };
-}
+    // Topic to listen to.
+    std::string data_topic_;
+
+    // Name and initialization.
+    bool initialized_;
+    std::string name_;
+
+    // Load parameters and register callbacks.
+    bool LoadParameters(const ros::NodeHandle& n);
+    bool RegisterCallbacks(const ros::NodeHandle& n);
+
+    // Callback to process point clouds.
+    void AddPointCloudCallback(const PointCloud::ConstPtr& cloud);
+
+  }; // class AtomMapExample
+} // namespace atom
 
 #endif

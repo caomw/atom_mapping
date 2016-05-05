@@ -41,6 +41,7 @@
 #include <atom_map/Atom.h>
 #include <atom_map/AtomKdtree.h>
 #include <parameter_utils/ParameterUtils.h>
+#include <geometry_utils/GeometryUtilsROS.h>
 
 #include <ros/ros.h>
 #include <std_msgs/ColorRGBA.h>
@@ -68,6 +69,9 @@ namespace atom {
     // Updates.
     void Update(const pcl::PointXYZ& point, const pcl::PointXYZ& robot);
     void Update(const PointCloud::ConstPtr& cloud, const pcl::PointXYZ& robot);
+
+    // Publishing.
+    void Publish() const;
 
   private:
     // A kdtree to hold all the Atoms.
@@ -117,9 +121,6 @@ namespace atom {
 
     // Apply the covariance kernel function.
     double CovarianceKernel(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2);
-
-    // Publishing.
-    void Publish() const;
 
     // Convert a probability of occupancy to a ROS color.
     std_msgs::ColorRGBA ProbabilityToRosColor(double probability) const;

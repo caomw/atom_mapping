@@ -1,0 +1,3 @@
+atom_example:
+  # Topic with transformed point clouds.
+  data_topic: /blam/blam_slam/base_frame_point_cloud

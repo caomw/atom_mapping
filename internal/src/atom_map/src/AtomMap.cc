@@ -39,6 +39,7 @@
 
 #include <visualization_msgs/Marker.h>
 #include <Eigen/Dense>
+#include <iostream>
 
 namespace gu = geometry_utils;
 namespace gr = gu::ros;
@@ -132,17 +133,17 @@ namespace atom {
   double AtomMap::GetProbability(double x, double y, double z) {
     std::vector<Atom::Ptr> neighbors;
     if (!map_.RadiusSearch(x, y, z, radius_, &neighbors)) {
-      ROS_WARN("%s: Error in radius search.", name_.c_str());
+      ROS_WARN("%s: Error in radius search during GetProbability().", name_.c_str());
       return -1.0;
     }
 
     if (neighbors.size() == 0) {
-      ROS_WARN("%s: Nearest nighbor is too far away.", name_.c_str());
+      ROS_WARN("%s: Nearest neighbor is too far away.", name_.c_str());
       return -1.0;
     }
 
     // There can only be one neighbor.
-    return neighbors[1]->GetProbability();
+    return neighbors[0]->GetProbability();
   }
 
   // Update the map for this observation.
@@ -157,16 +158,37 @@ namespace atom {
     // For each sample, update occupancy and signed distance function
     // in existing Atoms, or add new Atoms to the map.
     for (size_t ii = 0; ii < samples.size(); ii++) {
+      const double sdf = signed_distances[ii];
+
+      // If the AtomKdtree is empty, just insert this atom.
+      if (map_.Size() == 0) {
+        Atom::Ptr atom = Atom::Create(radius_);
+
+        // Set probability of occupancy.
+        if (sdf > 0.0)
+          atom->SetProbability(probability_miss_);
+        else
+          atom->SetProbability(probability_hit_);
+
+        // Set signed distance.
+        atom->SetSignedDistance(sdf);
+
+        // Insert.
+        if (!map_.Insert(atom))
+          ROS_WARN("%s: Error inserting a new Atom.", name_.c_str());
+
+        continue;
+      }
+
       std::vector<Atom::Ptr> neighbors;
       if (!map_.RadiusSearch(samples[ii], 2.0 * radius_, &neighbors)) {
-        ROS_WARN("%s: Error in extracting nearest neighbors.", name_.c_str());
+        ROS_WARN("%s: Error in radius search during Update().", name_.c_str());
         continue;
       }
 
       // Handle case where sample lies more than twice the atomic radius
       // from its nearest neighbor.
       else if (neighbors.size() == 0) {
-        const double sdf = signed_distances[ii];
         Atom::Ptr atom = Atom::Create(radius_);
         atom->SetPosition(gu::Vec3(samples[ii].x, samples[ii].y, samples[ii].z));
 
@@ -189,8 +211,6 @@ namespace atom {
       else {
         for (size_t jj = 0; jj < neighbors.size(); jj++) {
           if (neighbors[jj]->Contains(samples[ii])) {
-            const double sdf = signed_distances[ii];
-
             // Update probability of occupancy.
             if (sdf > 0.0)
               neighbors[jj]->UpdateProbability(probability_miss_);
@@ -218,7 +238,7 @@ namespace atom {
   bool AtomMap::RegisterCallbacks(const ros::NodeHandle& n) {
     ros::NodeHandle node(n);
     atom_publisher_ =
-      node.advertise<visualization_msgs::MarkerArray>(visualization_topic_.c_str(), 0);
+      node.advertise<visualization_msgs::Marker>(visualization_topic_.c_str(), 0);
     return true;
   }
 
@@ -300,7 +320,7 @@ namespace atom {
 
   // Publish all atoms.
   void AtomMap::Publish() const {
-    std::vector<Atom::Ptr> atoms = map_.GetAtoms();
+    const std::vector<Atom::Ptr> atoms = map_.GetAtoms();
 
     // Initialize marker.
     visualization_msgs::Marker m;
@@ -308,7 +328,7 @@ namespace atom {
     m.ns = fixed_frame_id_;
     m.id = 0;
     m.action = visualization_msgs::Marker::ADD;
-    m.type = visualization_msgs::Marker::POINT;
+    m.type = visualization_msgs::Marker::POINTS;
     m.color.r = 0.0;
     m.color.g = 0.4;
     m.color.b = 0.8;
@@ -329,7 +349,7 @@ namespace atom {
   }
 
   // Convert a probability of occupancy to a ROS color.
-  std_msgs::ColorRGBA ProbabilityToRosColor(double probability) const {
+  std_msgs::ColorRGBA AtomMap::ProbabilityToRosColor(double probability) const {
     std_msgs::ColorRGBA c;
     c.r = probability;
     c.g = 0.0;

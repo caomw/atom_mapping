@@ -207,8 +207,13 @@ namespace atom {
   }
 
   // Return a list of all atoms in the map.
-  std::vector<Atom::Ptr>& AtomKdtree::GetAtoms() {
+  const std::vector<Atom::Ptr>& AtomKdtree::GetAtoms() const {
     return registry_;
   }
-  
+
+  // Return the size of this tree.
+  size_t AtomKdtree::Size() const {
+    return registry_.size();
+  }
+
 } // namespace atom

@@ -127,8 +127,8 @@ TEST(AtomKdtree, TestAtomKdtreeInsertion) {
   AtomKdtree tree;
 
   // Set params for random point generation.
-  const double kRadius = 0.1;
-  const size_t kNumPoints = 2;
+  const double kRadius = 0.0001;
+  const size_t kNumPoints = 500;
   const double kLowerBound = 0.0;
   const double kUpperBound = 1.0;
   std::uniform_real_distribution<double> unif(kLowerBound, kUpperBound);
@@ -165,8 +165,52 @@ TEST(AtomKdtree, TestAtomKdtreeInsertion) {
     EXPECT_EQ(neighbors[0]->GetPosition()(1), atom->GetPosition()(1));
     EXPECT_EQ(neighbors[0]->GetPosition()(2), atom->GetPosition()(2));
   }
+}
 
+// Test radius search as above.
+TEST(AtomKdtree, TestAtomKdtreeRadiusSearch) {
+  AtomKdtree tree;
 
+  // Set params for random point generation.
+  const double kRadius = 0.0001;
+  const size_t kNumPoints = 500;
+  const double kLowerBound = -1.0;
+  const double kUpperBound = 1.0;
+  std::uniform_real_distribution<double> unif(kLowerBound, kUpperBound);
+  std::default_random_engine rng;
+
+  // Generate a bunch of random points and add to the tree if they are inside the
+  // unit sphere.
+  std::vector<Atom::Ptr> atoms;
+  for (size_t ii = 0; ii < kNumPoints; ii++) {
+    Atom::Ptr atom = Atom::Create(kRadius);
+    gu::Vec3 pos(unif(rng), unif(rng), unif(rng));
+    atom->SetPosition(pos);
+
+    // Insert.
+    ASSERT_TRUE(tree.Insert(atom));
+    atoms.push_back(atom);
+  }
+
+  // Check nearest neighbors with a radius search on a tiny radius.
+  for (size_t ii = 0; ii < atoms.size(); ii++) {
+    Atom::Ptr atom = atoms[ii];
+
+    // Nearest neighbor search.
+    std::vector<Atom::Ptr> neighbors;
+    const double kSearchRadius = 1e-4;
+    ASSERT_TRUE(tree.RadiusSearch(atom->GetPosition()(0),
+                                  atom->GetPosition()(1),
+                                  atom->GetPosition()(2),
+                                  kSearchRadius, &neighbors));
+
+    ASSERT_EQ(neighbors.size(), 1);
+
+    // Check that the nearest neighbor matches.
+    EXPECT_EQ(neighbors[0]->GetPosition()(0), atom->GetPosition()(0));
+    EXPECT_EQ(neighbors[0]->GetPosition()(1), atom->GetPosition()(1));
+    EXPECT_EQ(neighbors[0]->GetPosition()(2), atom->GetPosition()(2));
+  }
 }
 
 int main(int argc, char** argv) {
