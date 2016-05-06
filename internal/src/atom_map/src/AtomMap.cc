@@ -163,6 +163,7 @@ namespace atom {
       // If the AtomKdtree is empty, just insert this atom.
       if (map_.Size() == 0) {
         Atom::Ptr atom = Atom::Create(radius_);
+        atom->SetPosition(gu::Vec3(samples[ii].x, samples[ii].y, samples[ii].z));
 
         // Set probability of occupancy.
         if (sdf > 0.0)
@@ -181,7 +182,7 @@ namespace atom {
       }
 
       std::vector<Atom::Ptr> neighbors;
-      if (!map_.RadiusSearch(samples[ii], 2.0 * radius_, &neighbors)) {
+      if (!map_.RadiusSearch(samples[ii], 2.0 * radius_ - 1e-6, &neighbors)) {
         ROS_WARN("%s: Error in radius search during Update().", name_.c_str());
         continue;
       }
@@ -208,6 +209,7 @@ namespace atom {
       }
 
       // Handle case where sample lies inside an existing Atom.
+      // TODO: Handle partial overlaps.
       else {
         for (size_t jj = 0; jj < neighbors.size(); jj++) {
           if (neighbors[jj]->Contains(samples[ii])) {
@@ -274,6 +276,12 @@ namespace atom {
     double dy = robot.y - point.y;
     double dz = robot.z - point.z;
     double range = std::sqrt(dx*dx + dy*dy + dz*dz);
+
+    // Handle non-returns, i.e. range == 0.
+    if (range < 1e-6) {
+      return;
+    }
+
     dx /= range; dy /= range; dz /= range;
 
     // Start at the surface and walk toward the robot.
@@ -320,27 +328,33 @@ namespace atom {
 
   // Publish all atoms.
   void AtomMap::Publish() const {
-    const std::vector<Atom::Ptr> atoms = map_.GetAtoms();
+    if (atom_publisher_.getNumSubscribers() <= 0)
+      return;
 
     // Initialize marker.
     visualization_msgs::Marker m;
     m.header.frame_id = fixed_frame_id_;
+    // m.header.stamp = ros::Time();
     m.ns = fixed_frame_id_;
     m.id = 0;
     m.action = visualization_msgs::Marker::ADD;
-    m.type = visualization_msgs::Marker::POINTS;
+    m.type = visualization_msgs::Marker::SPHERE_LIST;
     m.color.r = 0.0;
     m.color.g = 0.4;
     m.color.b = 0.8;
-    m.color.a = 0.75;
-    m.scale.x = 0.1;
-    m.scale.y = 0.1;
-    m.scale.z = 0.1;
+    m.color.a = 0.2;
+    m.scale.x = 2.0 * radius_;
+    m.scale.y = 2.0 * radius_;
+    m.scale.z = 2.0 * radius_;
     m.pose = gr::ToRosPose(gu::Transform3::Identity());
 
     // Loop over all atoms and add to marker.
+    const std::vector<Atom::Ptr> atoms = map_.GetAtoms();
+    ROS_INFO("%s: Publishing %lu atoms.", name_.c_str(), atoms.size());
+
     for (size_t ii = 0; ii < atoms.size(); ii++) {
       gu::Vec3 p = atoms[ii]->GetPosition();
+
       m.points.push_back(gr::ToRosPoint(p));
       m.colors.push_back(ProbabilityToRosColor(atoms[ii]->GetProbability()));
     }
@@ -350,11 +364,21 @@ namespace atom {
 
   // Convert a probability of occupancy to a ROS color.
   std_msgs::ColorRGBA AtomMap::ProbabilityToRosColor(double probability) const {
+    if (probability < 0.0) {
+      ROS_ERROR("%s: Probability is out of bounds.", name_.c_str());
+      probability = 0.0;
+    }
+
+    if (probability > 1.0) {
+      ROS_ERROR("%s: Probability is out of bounds.", name_.c_str());
+      probability = 1.0;
+    }
+
     std_msgs::ColorRGBA c;
     c.r = probability;
     c.g = 0.0;
     c.b = 1.0 - probability;
-    c.a = 0.75;
+    c.a = 0.2;
 
     return c;
   }
