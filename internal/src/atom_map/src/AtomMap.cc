@@ -275,7 +275,7 @@ namespace atom {
     double dx = robot.x - point.x;
     double dy = robot.y - point.y;
     double dz = robot.z - point.z;
-    double range = std::sqrt(dx*dx + dy*dy + dz*dz);
+    const double range = std::sqrt(dx*dx + dy*dy + dz*dz);
 
     // Handle non-returns, i.e. range == 0.
     if (range < 1e-6) {
@@ -286,8 +286,9 @@ namespace atom {
 
     // Start at the surface and walk toward the robot.
     const size_t num_samples_front = static_cast<size_t>(range / (2.0 * radius_));
+    const double step_size_front = 0.5 * range / static_cast<double>(num_samples_front);
     for (size_t ii = 0; ii < num_samples_front; ii++) {
-      const double backoff = static_cast<double>(2 * ii + 1) * radius_;
+      const double backoff = static_cast<double>(2 * ii + 1) * step_size_front;
 
       pcl::PointXYZ p;
       p.x = point.x + backoff * dx;
@@ -301,8 +302,9 @@ namespace atom {
     // Start at the surface and walk away from the robot.
     const size_t num_samples_back =
       static_cast<size_t>(max_surface_thickness_ / (2.0 * radius_));
+    const double step_size_back = 0.5 * max_surface_thickness_ / static_cast<double>(num_samples_back);
     for (size_t ii = 0; ii < num_samples_back; ii++) {
-      const double backoff = static_cast<double>(2 * ii + 1) * radius_;
+      const double backoff = static_cast<double>(2 * ii + 1) * step_size_back;
 
       pcl::PointXYZ p;
       p.x = point.x - backoff * dx;
