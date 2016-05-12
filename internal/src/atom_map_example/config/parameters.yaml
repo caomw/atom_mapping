@@ -6,3 +6,7 @@ atom_example:
   # Name of robot and world frames.
   robot_frame: base
   world_frame: world
+
+  # Voxel grid filter leaf size. This should probably be roughly on the order of
+  # an atomic radius in order to avoid drastic oversampling.
+  filter_leaf_size: 0.5

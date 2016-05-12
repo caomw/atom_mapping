@@ -44,6 +44,7 @@
 
 #include <pcl/point_types.h>
 #include <pcl/common/transforms.h>
+#include <pcl/filters/voxel_grid.h>
 #include <pcl_ros/point_cloud.h>
 #include <tf2_ros/transform_listener.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -69,6 +70,10 @@ namespace atom {
 
     // Point cloud subscriber.
     ros::Subscriber point_cloud_subscriber_;
+
+    // Voxel grid filter leaf size. This should be on the order of the atomic
+    // radius, in order to avoid oversampling.
+    double filter_leaf_size_;
 
     // Transform listener.
     tf2_ros::Buffer tf_buffer_;

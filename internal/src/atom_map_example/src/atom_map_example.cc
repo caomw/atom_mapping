@@ -69,6 +69,7 @@ namespace atom {
     if (!pu::Get("atom_example/data_topic", data_topic_)) return false;
     if (!pu::Get("atom_example/robot_frame", tf_robot_frame_)) return false;
     if (!pu::Get("atom_example/world_frame", tf_world_frame_)) return false;
+    if (!pu::Get("atom_example/filter_leaf_size", filter_leaf_size_)) return false;
 
     return true;
   }
@@ -98,6 +99,13 @@ namespace atom {
       return;
     }
 
+    // Voxel grid filter.
+    PointCloud::Ptr filtered_cloud(new PointCloud);
+    pcl::VoxelGrid<pcl::PointXYZ> grid_filter;
+    grid_filter.setInputCloud(cloud);
+    grid_filter.setLeafSize(filter_leaf_size_, filter_leaf_size_, filter_leaf_size_);
+    grid_filter.filter(*filtered_cloud);
+
     // Transform point cloud into world frame.
     const gu::Transform3 pose = gr::FromROS(tf.transform);
     const Eigen::Matrix3d rotation = pose.rotation.Eigen();
@@ -108,14 +116,14 @@ namespace atom {
     Rt.block(0, 3, 3, 1) = translation;
 
     PointCloud::Ptr transformed_cloud(new PointCloud);
-    pcl::transformPointCloud(*cloud, *transformed_cloud, Rt);
+    pcl::transformPointCloud(*filtered_cloud, *transformed_cloud, Rt);
 
     // Run map update.
     pcl::PointXYZ p(translation(0), translation(1), translation(2));
     map_.Update(transformed_cloud, p);
 
     // Publish.
-    map_.Publish();
+    map_.PublishFull();
   }
 
 } // namespace atom

@@ -206,7 +206,7 @@ namespace atom {
       neighbors[ii]->AddNeighbor(atom);
   }
 
-  // Return a list of all atoms in the map.
+  // Return a list of all Atoms in the map.
   const std::vector<Atom::Ptr>& AtomKdtree::GetAtoms() const {
     return registry_;
   }

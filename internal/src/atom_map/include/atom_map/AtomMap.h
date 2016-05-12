@@ -71,11 +71,15 @@ namespace atom {
     void Update(const PointCloud::ConstPtr& cloud, const pcl::PointXYZ& robot);
 
     // Publishing.
-    void Publish() const;
+    void PublishFull() const;
+    void PublishIncremental() const;
 
   private:
     // A kdtree to hold all the Atoms.
     AtomKdtree map_;
+
+    // A list of the most recently updated Atoms.
+    std::vector<Atom::Ptr> last_updated_atoms_;
 
     // Atomic radius.
     double radius_;
@@ -102,8 +106,10 @@ namespace atom {
 
     // Publishers.
     std::string fixed_frame_id_;
-    std::string visualization_topic_;
-    ros::Publisher atom_publisher_;
+    std::string full_map_topic_;
+    std::string incremental_map_topic_;
+    ros::Publisher full_publisher_;
+    ros::Publisher incremental_publisher_;
 
     // Initialization and naming.
     bool initialized_;

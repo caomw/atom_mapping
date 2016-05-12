@@ -17,8 +17,9 @@ atom:
   probability_hit: 0.7
   probability_miss: 0.3
 
-  # Visualization topic name.
-  visualization_topic: atoms
+  # Visualization topic names.
+  full_map_topic: full
+  incremental_map_topic: incremental
 
   # Fixed frame id.
   fixed_frame_id: world

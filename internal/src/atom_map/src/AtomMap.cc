@@ -178,6 +178,9 @@ namespace atom {
         if (!map_.Insert(atom))
           ROS_WARN("%s: Error inserting a new Atom.", name_.c_str());
 
+        // Add this atom to the list of most recently updated Atoms.
+        last_updated_atoms_.push_back(atom);
+
         continue;
       }
 
@@ -206,6 +209,9 @@ namespace atom {
         // in the implicit graph structure of the kdtree.
         if (!map_.Insert(atom))
           ROS_WARN("%s: Error inserting a new Atom.", name_.c_str());
+
+        // Add this atom to the list of most recently updated Atoms.
+        last_updated_atoms_.push_back(atom);
       }
 
       // Handle case where sample lies inside an existing Atom.
@@ -221,6 +227,10 @@ namespace atom {
 
             // Update signed distance.
             neighbors[jj]->UpdateSignedDistance(sdf);
+
+            // Add this neighbor to the list of most recently updated Atoms.
+            last_updated_atoms_.push_back(neighbors[jj]);
+
             break;
           }
         }
@@ -231,6 +241,10 @@ namespace atom {
   // Update the map given a set of observations.
   void AtomMap::Update(const PointCloud::ConstPtr& cloud,
                        const pcl::PointXYZ& robot) {
+    // Clear the list of most recently updated Atoms.
+    last_updated_atoms_.clear();
+
+    // Update each point individually.
     for (size_t ii = 0; ii < cloud->points.size(); ii++) {
       Update(cloud->points[ii], robot);
     }
@@ -239,8 +253,13 @@ namespace atom {
   // Load parameters and register callbacks.
   bool AtomMap::RegisterCallbacks(const ros::NodeHandle& n) {
     ros::NodeHandle node(n);
-    atom_publisher_ =
-      node.advertise<visualization_msgs::Marker>(visualization_topic_.c_str(), 0);
+
+    // Publishers.
+    full_publisher_ =
+      node.advertise<visualization_msgs::Marker>(full_map_topic_.c_str(), 0);
+    incremental_publisher_ =
+      node.advertise<visualization_msgs::Marker>(incremental_map_topic_.c_str(), 0);
+
     return true;
   }
 
@@ -251,7 +270,8 @@ namespace atom {
     if (!pu::Get("atom/noise", noise_variance_)) return false;
     if (!pu::Get("atom/probability_hit", probability_hit_)) return false;
     if (!pu::Get("atom/probability_miss", probability_miss_)) return false;
-    if (!pu::Get("atom/visualization_topic", visualization_topic_)) return false;
+    if (!pu::Get("atom/full_map_topic", full_map_topic_)) return false;
+    if (!pu::Get("atom/incremental_map_topic", incremental_map_topic_)) return false;
     if (!pu::Get("atom/fixed_frame_id", fixed_frame_id_)) return false;
 
     return true;
@@ -286,7 +306,8 @@ namespace atom {
 
     // Start at the surface and walk toward the robot.
     const size_t num_samples_front = static_cast<size_t>(range / (2.0 * radius_));
-    const double step_size_front = 0.5 * range / static_cast<double>(num_samples_front);
+    const double step_size_front =
+      0.5 * range / static_cast<double>(num_samples_front);
     for (size_t ii = 0; ii < num_samples_front; ii++) {
       const double backoff = static_cast<double>(2 * ii + 1) * step_size_front;
 
@@ -302,7 +323,8 @@ namespace atom {
     // Start at the surface and walk away from the robot.
     const size_t num_samples_back =
       static_cast<size_t>(max_surface_thickness_ / (2.0 * radius_));
-    const double step_size_back = 0.5 * max_surface_thickness_ / static_cast<double>(num_samples_back);
+    const double step_size_back =
+      0.5 * max_surface_thickness_ / static_cast<double>(num_samples_back);
     for (size_t ii = 0; ii < num_samples_back; ii++) {
       const double backoff = static_cast<double>(2 * ii + 1) * step_size_back;
 
@@ -329,8 +351,8 @@ namespace atom {
   }
 
   // Publish all atoms.
-  void AtomMap::Publish() const {
-    if (atom_publisher_.getNumSubscribers() <= 0)
+  void AtomMap::PublishFull() const {
+    if (full_publisher_.getNumSubscribers() <= 0)
       return;
 
     // Initialize marker.
@@ -361,7 +383,44 @@ namespace atom {
       m.colors.push_back(ProbabilityToRosColor(atoms[ii]->GetProbability()));
     }
 
-    atom_publisher_.publish(m);
+    full_publisher_.publish(m);
+  }
+
+  // Publish only the most recently added atoms.
+  void AtomMap::PublishIncremental() const {
+    if (incremental_publisher_.getNumSubscribers() <= 0)
+      return;
+
+    // Initialize marker.
+    visualization_msgs::Marker m;
+    m.header.frame_id = fixed_frame_id_;
+    // m.header.stamp = ros::Time();
+    m.ns = fixed_frame_id_;
+    m.id = 0;
+    m.action = visualization_msgs::Marker::ADD;
+    m.type = visualization_msgs::Marker::SPHERE_LIST;
+    m.color.r = 0.0;
+    m.color.g = 0.4;
+    m.color.b = 0.8;
+    m.color.a = 0.2;
+    m.scale.x = 2.0 * radius_;
+    m.scale.y = 2.0 * radius_;
+    m.scale.z = 2.0 * radius_;
+    m.pose = gr::ToRosPose(gu::Transform3::Identity());
+
+    // Loop over all atoms and add to marker.
+    ROS_INFO("%s: Publishing %lu atoms.",
+             name_.c_str(), last_updated_atoms_.size());
+
+    for (size_t ii = 0; ii < last_updated_atoms_.size(); ii++) {
+      gu::Vec3 p = last_updated_atoms_[ii]->GetPosition();
+
+      m.points.push_back(gr::ToRosPoint(p));
+      m.colors.push_back(ProbabilityToRosColor(
+                            last_updated_atoms_[ii]->GetProbability()));
+    }
+
+    incremental_publisher_.publish(m);
   }
 
   // Convert a probability of occupancy to a ROS color.

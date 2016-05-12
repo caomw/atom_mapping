@@ -66,7 +66,7 @@ namespace atom {
     // Insert a new Atom.
     bool Insert(Atom::Ptr atom);
 
-    // Return a list of all atoms in the map.
+    // Return a list of all Atoms in the map.
     const std::vector<Atom::Ptr>& GetAtoms() const;
 
     // Return the size of this tree.
