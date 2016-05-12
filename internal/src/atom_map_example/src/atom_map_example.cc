@@ -36,12 +36,9 @@
  */
 
 #include <atom_map_example/atom_map_example.h>
-#include <parameter_utils/ParameterUtils.h>
-
-namespace pu = parameter_utils;
 
 namespace atom {
-  AtomMapExample::AtomMapExample() {}
+  AtomMapExample::AtomMapExample() : tf_listener_(tf_buffer_), initialized_(false) {}
   AtomMapExample::~AtomMapExample() {}
 
   // Initialize.
@@ -70,6 +67,8 @@ namespace atom {
   // Load parameters and register callbacks.
   bool AtomMapExample::LoadParameters(const ros::NodeHandle& n) {
     if (!pu::Get("atom_example/data_topic", data_topic_)) return false;
+    if (!pu::Get("atom_example/robot_frame", tf_robot_frame_)) return false;
+    if (!pu::Get("atom_example/world_frame", tf_world_frame_)) return false;
 
     return true;
   }
@@ -77,7 +76,7 @@ namespace atom {
   bool AtomMapExample::RegisterCallbacks(const ros::NodeHandle& n) {
     ros::NodeHandle node(n);
 
-    // Register listener.
+    // Register point cloud subscriber callback.
     point_cloud_subscriber_ =
       node.subscribe<PointCloud>(data_topic_.c_str(), 10,
                                  &AtomMapExample::AddPointCloudCallback, this);
@@ -87,8 +86,33 @@ namespace atom {
 
   // Callback to process point clouds.
   void AtomMapExample::AddPointCloudCallback(const PointCloud::ConstPtr& cloud) {
-    pcl::PointXYZ p(0.0, 0.0, 0.0);
-    map_.Update(cloud, p);
+    // Get transform.
+    geometry_msgs::TransformStamped tf;
+    try {
+      tf = tf_buffer_.lookupTransform(tf_world_frame_.c_str(),
+                                      tf_robot_frame_.c_str(), ros::Time(0));
+    } catch(tf2::TransformException &ex) {
+      ROS_WARN("%s: %s", name_.c_str(), ex.what());
+      ROS_WARN("%s: Did not insert this scan.", name_.c_str());
+      ros::Duration(0.1).sleep();
+      return;
+    }
+
+    // Transform point cloud into world frame.
+    const gu::Transform3 pose = gr::FromROS(tf.transform);
+    const Eigen::Matrix3d rotation = pose.rotation.Eigen();
+    const Eigen::Vector3d translation = pose.translation.Eigen();
+
+    Eigen::Matrix4d Rt = Eigen::Matrix4d::Identity();
+    Rt.block(0, 0, 3, 3) = rotation;
+    Rt.block(0, 3, 3, 1) = translation;
+
+    PointCloud::Ptr transformed_cloud(new PointCloud);
+    pcl::transformPointCloud(*cloud, *transformed_cloud, Rt);
+
+    // Run map update.
+    pcl::PointXYZ p(translation(0), translation(1), translation(2));
+    map_.Update(transformed_cloud, p);
 
     // Publish.
     map_.Publish();

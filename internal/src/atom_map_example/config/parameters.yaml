@@ -1,4 +1,8 @@
 atom_example:
   # Topic with transformed point clouds.
-  #data_topic: /blam/blam_slam/base_frame_point_cloud
-  data_topic: /velodyne_points
+  data_topic: /blam/blam_slam/base_frame_point_cloud
+  #data_topic: /velodyne_points
+
+  # Name of robot and world frames.
+  robot_frame: base
+  world_frame: world

@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_utils
   parameter_utils
   pcl_ros
+  tf2_ros
   atom_map
 )
 
@@ -24,6 +25,7 @@ catkin_package(
     geometry_utils
     parameter_utils
     pcl_ros
+    tf2_ros
     atom_map
   DEPENDS
     PCL

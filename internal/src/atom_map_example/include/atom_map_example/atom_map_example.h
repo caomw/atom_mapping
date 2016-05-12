@@ -39,11 +39,21 @@
 #define ATOM_MAPPING_ATOM_MAP_EXAMPLE_H
 
 #include <atom_map/AtomMap.h>
+#include <parameter_utils/ParameterUtils.h>
+#include <geometry_utils/GeometryUtilsROS.h>
 
 #include <pcl/point_types.h>
+#include <pcl/common/transforms.h>
 #include <pcl_ros/point_cloud.h>
+#include <tf2_ros/transform_listener.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <Eigen/Core>
 
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
+
+namespace pu = parameter_utils;
+namespace gu = geometry_utils;
+namespace gr = gu::ros;
 
 namespace atom {
   class AtomMapExample {
@@ -57,11 +67,17 @@ namespace atom {
   private:
     AtomMap map_;
 
-    // Listener.
+    // Point cloud subscriber.
     ros::Subscriber point_cloud_subscriber_;
+
+    // Transform listener.
+    tf2_ros::Buffer tf_buffer_;
+    tf2_ros::TransformListener tf_listener_;
 
     // Topic to listen to.
     std::string data_topic_;
+    std::string tf_robot_frame_;
+    std::string tf_world_frame_;
 
     // Name and initialization.
     bool initialized_;
