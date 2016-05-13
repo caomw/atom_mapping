@@ -96,27 +96,41 @@ namespace atom {
     position_ = p;
   }
 
-  void Atom::UpdateProbability(double probability_update) {
+  void Atom::UpdateProbability(double probability_update, double weight) {
 #ifdef ENABLE_DEBUG_MESSAGES
     if (probability_update < 0.0 || probability_update > 1.0) {
       VLOG(1) << "Probability update is not a probability in [0, 1]: "
               << probability_update << ".";
     }
+    if (weight < 0.0 || weight > 1.0) {
+      VLOG(1) << "Weight is not a number between [0, 1]: "
+              << weight << ".";
+    }
 #endif
-    log_odds_ += ToLogOdds(probability_update);
+    log_odds_ += weight * ToLogOdds(probability_update);
   }
 
-  void Atom::UpdateLogOdds(double log_odds_update) {
+  void Atom::UpdateLogOdds(double log_odds_update, double weight) {
 #ifdef ENABLE_DEBUG_MESSAGES
     if (log_odds_update < 0.0) {
       VLOG(1) << "Log-odds update is less than zero: " << log_odds_update << ".";
     }
+    if (weight < 0.0 || weight > 1.0) {
+      VLOG(1) << "Weight is not a number between [0, 1]: "
+              << weight << ".";
+    }
 #endif
-    log_odds_ += log_odds_update;
+    log_odds_ += weight * log_odds_update;
   }
 
-  void Atom::UpdateSignedDistance(double sdf_update) {
-    const double sdf_variance_update = ToVariance(sdf_update);
+  void Atom::UpdateSignedDistance(double sdf_update, double weight) {
+#ifdef ENABLE_DEBUG_MESSAGES
+    if (weight < 0.0 || weight > 1.0) {
+      VLOG(1) << "Weight is not a number between [0, 1]: "
+              << weight << ".";
+    }
+#endif
+    const double sdf_variance_update = ToVariance(sdf_update) / (0.5 + weight);
     const double k = sdf_variance_ / (sdf_variance_ + sdf_variance_update);
     sdf_mean_ += k * (sdf_update - sdf_mean_);
     sdf_variance_ *= 1.0 - k;
@@ -156,6 +170,16 @@ namespace atom {
     const double dy = p.y - position_(1);
     const double dz = p.z - position_(2);
     return std::sqrt(dx*dx + dy*dy + dz*dz);
+  }
+
+  double Atom::ComputeOverlapFraction(const Atom::Ptr& atom) const {
+    const double total_volume = 4.0 / 3.0; // The pi r^3 will cancel.
+    const double distance = GetDistanceTo(atom);
+
+    const double overlap_volume =
+      4.0 * ((-1.0/3.0) * (pow(distance / (2.0 * radius_), 3) - 1.0) +
+             (distance / 4.0) * (pow(distance / (2.0 * radius_), 2) - 1.0));
+    return overlap_volume / total_volume;
   }
 
   void Atom::AddNeighbor(Atom::Ptr neighbor) {

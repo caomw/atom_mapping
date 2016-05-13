@@ -159,12 +159,13 @@ namespace atom {
     // in existing Atoms, or add new Atoms to the map.
     for (size_t ii = 0; ii < samples.size(); ii++) {
       const double sdf = signed_distances[ii];
+      pcl::PointXYZ sample = samples[ii];
+
+      Atom::Ptr atom = Atom::Create(radius_);
+      atom->SetPosition(gu::Vec3(sample.x, sample.y, sample.z));
 
       // If the AtomKdtree is empty, just insert this atom.
       if (map_.Size() == 0) {
-        Atom::Ptr atom = Atom::Create(radius_);
-        atom->SetPosition(gu::Vec3(samples[ii].x, samples[ii].y, samples[ii].z));
-
         // Set probability of occupancy.
         if (sdf > 0.0)
           atom->SetProbability(probability_miss_);
@@ -185,7 +186,7 @@ namespace atom {
       }
 
       std::vector<Atom::Ptr> neighbors;
-      if (!map_.RadiusSearch(samples[ii], 2.0 * radius_ - 1e-6, &neighbors)) {
+      if (!map_.RadiusSearch(sample, 2.0 * radius_ - 1e-6, &neighbors)) {
         ROS_WARN("%s: Error in radius search during Update().", name_.c_str());
         continue;
       }
@@ -193,9 +194,6 @@ namespace atom {
       // Handle case where sample lies more than twice the atomic radius
       // from its nearest neighbor.
       else if (neighbors.size() == 0) {
-        Atom::Ptr atom = Atom::Create(radius_);
-        atom->SetPosition(gu::Vec3(samples[ii].x, samples[ii].y, samples[ii].z));
-
         // Set probability of occupancy.
         if (sdf > 0.0)
           atom->SetProbability(probability_miss_);
@@ -215,24 +213,23 @@ namespace atom {
       }
 
       // Handle case where sample lies inside an existing Atom.
-      // TODO: Handle partial overlaps.
       else {
         for (size_t jj = 0; jj < neighbors.size(); jj++) {
-          if (neighbors[jj]->Contains(samples[ii])) {
-            // Update probability of occupancy.
-            if (sdf > 0.0)
-              neighbors[jj]->UpdateProbability(probability_miss_);
-            else
-              neighbors[jj]->UpdateProbability(probability_hit_);
+          Atom::Ptr neighbor = neighbors[jj];
 
-            // Update signed distance.
-            neighbors[jj]->UpdateSignedDistance(sdf);
+          // Update probability of occupancy. Weight by the fraction
+          // of overlap between the two atoms.
+          const double weight = atom->ComputeOverlapFraction(neighbor);
+          if (sdf > 0.0)
+            neighbor->UpdateProbability(probability_miss_, weight);
+          else
+            neighbor->UpdateProbability(probability_hit_, weight);
 
-            // Add this neighbor to the list of most recently updated Atoms.
-            last_updated_atoms_.push_back(neighbors[jj]);
+          // Update signed distance.
+          neighbor->UpdateSignedDistance(sdf, weight);
 
-            break;
-          }
+          // Add this neighbor to the list of most recently updated Atoms.
+          last_updated_atoms_.push_back(neighbor);
         }
       }
     }
@@ -377,10 +374,14 @@ namespace atom {
     ROS_INFO("%s: Publishing %lu atoms.", name_.c_str(), atoms.size());
 
     for (size_t ii = 0; ii < atoms.size(); ii++) {
-      gu::Vec3 p = atoms[ii]->GetPosition();
+      const double probability_occupied = atoms[ii]->GetProbability();
 
-      m.points.push_back(gr::ToRosPoint(p));
-      m.colors.push_back(ProbabilityToRosColor(atoms[ii]->GetProbability()));
+      // Only show if probably occupied.
+      if (probability_occupied > 0.5) {
+        gu::Vec3 p = atoms[ii]->GetPosition();
+        m.points.push_back(gr::ToRosPoint(p));
+        m.colors.push_back(ProbabilityToRosColor(probability_occupied));
+      }
     }
 
     full_publisher_.publish(m);
@@ -413,11 +414,14 @@ namespace atom {
              name_.c_str(), last_updated_atoms_.size());
 
     for (size_t ii = 0; ii < last_updated_atoms_.size(); ii++) {
-      gu::Vec3 p = last_updated_atoms_[ii]->GetPosition();
+      const double probability_occupied = last_updated_atoms_[ii]->GetProbability();
 
-      m.points.push_back(gr::ToRosPoint(p));
-      m.colors.push_back(ProbabilityToRosColor(
-                            last_updated_atoms_[ii]->GetProbability()));
+      // Only show if probably occupied.
+      if (probability_occupied > 0.5) {
+        gu::Vec3 p = last_updated_atoms_[ii]->GetPosition();
+        m.points.push_back(gr::ToRosPoint(p));
+        m.colors.push_back(ProbabilityToRosColor(probability_occupied));
+      }
     }
 
     incremental_publisher_.publish(m);

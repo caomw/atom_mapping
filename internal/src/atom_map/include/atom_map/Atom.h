@@ -78,14 +78,19 @@ class Atom {
   void SetSignedDistance(double d);
   void SetPosition(const geometry_utils::Vec3& p);
 
-  // Update the probability value stored in this atom.
-  void UpdateProbability(double probability_update);
-  void UpdateLogOdds(double log_odds_update);
+  // Update the probability value stored in this atom. The weight parameter
+  // is the fraction of overlap between two atoms. Currently, we use this
+  // as a linear scaling between 0.5 (0) and the update probability (log-odds).
+  void UpdateProbability(double probability_update, double weight = 1.0);
+  void UpdateLogOdds(double log_odds_update, double weight = 1.0);
 
   // Update the signed distance function for this atom. Variance is implicitly
   // the reciprocal of absolute distance, i.e. we trust measurements that say
   // the atom is closer to a surface more than those that say it is far away.
-  void UpdateSignedDistance(double sdf_update);
+  // As above, weight is the overlap fraction between this atom and the one
+  // which caused this update. Currently, we scale covariance by 1/(0.5 + weight).
+  // This scaling, however, is completely arbitrary.
+  void UpdateSignedDistance(double sdf_update, double weight = 1.0);
 
   // Check if this Atom contains a point.
   bool Contains(double x, double y, double z) const;
@@ -96,6 +101,10 @@ class Atom {
   double GetDistanceTo(double x, double y, double z) const;
   double GetDistanceTo(const pcl::PointXYZ& p) const;
   double GetDistanceTo(const Atom::Ptr& atom) const;
+
+  // Compute the overlap fraction of two Atoms. Note that we assume both Atoms
+  // have the same radius for simplicity.
+  double ComputeOverlapFraction(const Atom::Ptr& atom) const;
 
   // Add a neighboring atom to this one.
   void AddNeighbor(Atom::Ptr neighbor);
