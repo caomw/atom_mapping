@@ -46,9 +46,9 @@
 #include <pcl/common/transforms.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl_ros/point_cloud.h>
-#include <tf2_ros/transform_listener.h>
-#include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <Eigen/Core>
+#include <queue>
 
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
@@ -68,21 +68,19 @@ namespace atom {
   private:
     AtomMap map_;
 
-    // Point cloud subscriber.
+    // Subscribers and queues.
     ros::Subscriber point_cloud_subscriber_;
+    ros::Subscriber pose_subscriber_;
+    std::queue<const PointCloud::ConstPtr> point_cloud_queue_;
+    std::queue<const Eigen::Matrix4d> pose_queue_;
 
     // Voxel grid filter leaf size. This should be on the order of the atomic
     // radius, in order to avoid oversampling.
     double filter_leaf_size_;
 
-    // Transform listener.
-    tf2_ros::Buffer tf_buffer_;
-    tf2_ros::TransformListener tf_listener_;
-
-    // Topic to listen to.
+    // Topics to listen to.
     std::string data_topic_;
-    std::string tf_robot_frame_;
-    std::string tf_world_frame_;
+    std::string pose_topic_;
 
     // Name and initialization.
     bool initialized_;
@@ -92,9 +90,13 @@ namespace atom {
     bool LoadParameters(const ros::NodeHandle& n);
     bool RegisterCallbacks(const ros::NodeHandle& n);
 
-    // Callback to process point clouds.
-    void AddPointCloudCallback(const PointCloud::ConstPtr& cloud);
+    // Process a point cloud, pose pair.
+    void ProcessPointCloud(const PointCloud::ConstPtr& cloud,
+                           const Eigen::Matrix4d& pose);
 
+    // Callbacks.
+    void AddPointCloudCallback(const PointCloud::ConstPtr& cloud);
+    void AddPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& pose);
   }; // class AtomMapExample
 } // namespace atom
 

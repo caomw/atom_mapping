@@ -71,15 +71,12 @@ namespace atom {
     void Update(const PointCloud::ConstPtr& cloud, const pcl::PointXYZ& robot);
 
     // Publishing.
-    void PublishFull() const;
-    void PublishIncremental() const;
+    void PublishFullOccupancy() const;
+    void PublishFullSignedDistance() const;
 
   private:
     // A kdtree to hold all the Atoms.
     AtomKdtree map_;
-
-    // A list of the most recently updated Atoms.
-    std::vector<Atom::Ptr> last_updated_atoms_;
 
     // Atomic radius.
     double radius_;
@@ -104,12 +101,15 @@ namespace atom {
     // Noise variance to add to covariance matrices. Assume isotropic noise.
     double noise_variance_;
 
-    // Publishers.
+    // Visualization parameters and publishers.
     std::string fixed_frame_id_;
-    std::string full_map_topic_;
-    std::string incremental_map_topic_;
-    ros::Publisher full_publisher_;
-    ros::Publisher incremental_publisher_;
+    std::string full_occupancy_topic_;
+    std::string full_sdf_topic_;
+    bool only_show_occupied_;
+    double occupied_threshold_; // Above this is considered occupied.
+    double sdf_threshold_;      // Smaller than this is considered occupied.
+    ros::Publisher full_occupancy_publisher_;
+    ros::Publisher full_sdf_publisher_;
 
     // Initialization and naming.
     bool initialized_;
@@ -130,6 +130,9 @@ namespace atom {
 
     // Convert a probability of occupancy to a ROS color.
     std_msgs::ColorRGBA ProbabilityToRosColor(double probability) const;
+
+    // Convert a signed distnace value to a ROS color.
+    std_msgs::ColorRGBA SignedDistanceToRosColor(double sdf) const;
   };
 }
 

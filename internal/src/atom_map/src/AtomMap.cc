@@ -179,9 +179,6 @@ namespace atom {
         if (!map_.Insert(atom))
           ROS_WARN("%s: Error inserting a new Atom.", name_.c_str());
 
-        // Add this atom to the list of most recently updated Atoms.
-        last_updated_atoms_.push_back(atom);
-
         continue;
       }
 
@@ -207,9 +204,6 @@ namespace atom {
         // in the implicit graph structure of the kdtree.
         if (!map_.Insert(atom))
           ROS_WARN("%s: Error inserting a new Atom.", name_.c_str());
-
-        // Add this atom to the list of most recently updated Atoms.
-        last_updated_atoms_.push_back(atom);
       }
 
       // Handle case where sample lies inside an existing Atom.
@@ -227,9 +221,6 @@ namespace atom {
 
           // Update signed distance.
           neighbor->UpdateSignedDistance(sdf, weight);
-
-          // Add this neighbor to the list of most recently updated Atoms.
-          last_updated_atoms_.push_back(neighbor);
         }
       }
     }
@@ -238,9 +229,6 @@ namespace atom {
   // Update the map given a set of observations.
   void AtomMap::Update(const PointCloud::ConstPtr& cloud,
                        const pcl::PointXYZ& robot) {
-    // Clear the list of most recently updated Atoms.
-    last_updated_atoms_.clear();
-
     // Update each point individually.
     for (size_t ii = 0; ii < cloud->points.size(); ii++) {
       Update(cloud->points[ii], robot);
@@ -252,10 +240,10 @@ namespace atom {
     ros::NodeHandle node(n);
 
     // Publishers.
-    full_publisher_ =
-      node.advertise<visualization_msgs::Marker>(full_map_topic_.c_str(), 0);
-    incremental_publisher_ =
-      node.advertise<visualization_msgs::Marker>(incremental_map_topic_.c_str(), 0);
+    full_occupancy_publisher_ =
+      node.advertise<visualization_msgs::Marker>(full_occupancy_topic_.c_str(), 0);
+    full_sdf_publisher_ =
+      node.advertise<visualization_msgs::Marker>(full_sdf_topic_.c_str(), 0);
 
     return true;
   }
@@ -267,9 +255,12 @@ namespace atom {
     if (!pu::Get("atom/noise", noise_variance_)) return false;
     if (!pu::Get("atom/probability_hit", probability_hit_)) return false;
     if (!pu::Get("atom/probability_miss", probability_miss_)) return false;
-    if (!pu::Get("atom/full_map_topic", full_map_topic_)) return false;
-    if (!pu::Get("atom/incremental_map_topic", incremental_map_topic_)) return false;
+    if (!pu::Get("atom/full_occupancy_topic", full_occupancy_topic_)) return false;
+    if (!pu::Get("atom/full_sdf_topic", full_sdf_topic_)) return false;
     if (!pu::Get("atom/fixed_frame_id", fixed_frame_id_)) return false;
+    if (!pu::Get("atom/only_show_occupied", only_show_occupied_)) return false;
+    if (!pu::Get("atom/occupied_threshold", occupied_threshold_)) return false;
+    if (!pu::Get("atom/sdf_threshold", sdf_threshold_)) return false;
 
     return true;
   }
@@ -347,9 +338,10 @@ namespace atom {
     return std::exp(-gamma_ * (dx*dx + dy*dy + dz*dz));
   }
 
-  // Publish all atoms.
-  void AtomMap::PublishFull() const {
-    if (full_publisher_.getNumSubscribers() <= 0)
+  // Publish the full AtomMap colored by occupancy probability. Optionally,
+  // only show the occupied atoms.
+  void AtomMap::PublishFullOccupancy() const {
+    if (full_occupancy_publisher_.getNumSubscribers() <= 0)
       return;
 
     // Initialize marker.
@@ -376,20 +368,20 @@ namespace atom {
     for (size_t ii = 0; ii < atoms.size(); ii++) {
       const double probability_occupied = atoms[ii]->GetProbability();
 
-      // Only show if probably occupied.
-      if (probability_occupied > 0.5) {
+      // Maybe only show if probably occupied.
+      if (!only_show_occupied_ || probability_occupied > occupied_threshold_) {
         gu::Vec3 p = atoms[ii]->GetPosition();
         m.points.push_back(gr::ToRosPoint(p));
         m.colors.push_back(ProbabilityToRosColor(probability_occupied));
       }
     }
 
-    full_publisher_.publish(m);
+    full_occupancy_publisher_.publish(m);
   }
 
-  // Publish only the most recently added atoms.
-  void AtomMap::PublishIncremental() const {
-    if (incremental_publisher_.getNumSubscribers() <= 0)
+  // Publish the full AtomMap colored by signed distance.
+  void AtomMap::PublishFullSignedDistance() const {
+    if (full_sdf_publisher_.getNumSubscribers() <= 0)
       return;
 
     // Initialize marker.
@@ -410,39 +402,55 @@ namespace atom {
     m.pose = gr::ToRosPose(gu::Transform3::Identity());
 
     // Loop over all atoms and add to marker.
-    ROS_INFO("%s: Publishing %lu atoms.",
-             name_.c_str(), last_updated_atoms_.size());
+    const std::vector<Atom::Ptr> atoms = map_.GetAtoms();
+    ROS_INFO("%s: Publishing %lu atoms.", name_.c_str(), atoms.size());
 
-    for (size_t ii = 0; ii < last_updated_atoms_.size(); ii++) {
-      const double probability_occupied = last_updated_atoms_[ii]->GetProbability();
+    for (size_t ii = 0; ii < atoms.size(); ii++) {
+      const double sdf = atoms[ii]->GetSignedDistance();
 
-      // Only show if probably occupied.
-      if (probability_occupied > 0.5) {
-        gu::Vec3 p = last_updated_atoms_[ii]->GetPosition();
+      // Maybe only show if probably occupied.
+      if (!only_show_occupied_ || std::abs(sdf) < sdf_threshold_) {
+        gu::Vec3 p = atoms[ii]->GetPosition();
         m.points.push_back(gr::ToRosPoint(p));
-        m.colors.push_back(ProbabilityToRosColor(probability_occupied));
+        m.colors.push_back(SignedDistanceToRosColor(sdf));
       }
     }
 
-    incremental_publisher_.publish(m);
+    full_sdf_publisher_.publish(m);
   }
 
-  // Convert a probability of occupancy to a ROS color.
+  // Convert a probability of occupancy to a ROS color. Red is more likely to be
+  // occupied, blue is more likely to be free.
   std_msgs::ColorRGBA AtomMap::ProbabilityToRosColor(double probability) const {
+#ifdef ENABLE_DEBUG_MESSAGES
     if (probability < 0.0) {
       ROS_ERROR("%s: Probability is out of bounds.", name_.c_str());
       probability = 0.0;
     }
-
     if (probability > 1.0) {
       ROS_ERROR("%s: Probability is out of bounds.", name_.c_str());
       probability = 1.0;
     }
-
+#endif
     std_msgs::ColorRGBA c;
     c.r = probability;
     c.g = 0.0;
     c.b = 1.0 - probability;
+    c.a = 0.2;
+
+    return c;
+  }
+
+  // Convert a signed distnace to a ROS color. Red is probably close to a surface,
+  // and blue is probably far from a surface.
+  std_msgs::ColorRGBA AtomMap::SignedDistanceToRosColor(double sdf) const {
+    const double min_dist = map_.GetMinDistance();
+    const double max_dist = map_.GetMaxDistance();
+
+    std_msgs::ColorRGBA c;
+    c.r = 1.0 - (sdf - min_dist) / (max_dist - min_dist);
+    c.g = 0.0;
+    c.b = (sdf - min_dist) / (max_dist - min_dist);
     c.a = 0.2;
 
     return c;

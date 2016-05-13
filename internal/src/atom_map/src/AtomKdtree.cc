@@ -39,7 +39,9 @@
 #include <iostream>
 
 namespace atom {
-  AtomKdtree::AtomKdtree() {}
+  AtomKdtree::AtomKdtree() :
+    max_distance_(-std::numeric_limits<double>::infinity()),
+    min_distance_(std::numeric_limits<double>::infinity()) {}
   AtomKdtree::~AtomKdtree() {
     // Free memory from points in the kd tree.
     if (index_ != nullptr) {
@@ -160,13 +162,21 @@ namespace atom {
       UpdateNeighbors(atom);
 
       // If the index is already created, add the data point to the index. Rebuild
-      // every time the index doubles in size to occasionally rebalance the kd tree.
+      // every time the index doubles in size to occasionally rebalance the kdtree.
       const int kRebuildThreshold = 2;
       index_->addPoints(flann_point, kRebuildThreshold);
     }
 
     // Add point to registry.
     registry_.push_back(atom);
+
+    // Update max and min distances.
+    const double sdf = atom->GetSignedDistance();
+    if (sdf > max_distance_) {
+      max_distance_ = sdf;
+    } else if (sdf < min_distance_) {
+      min_distance_ = sdf;
+    }
 
     return true;
   }
@@ -214,6 +224,15 @@ namespace atom {
   // Return the size of this tree.
   size_t AtomKdtree::Size() const {
     return registry_.size();
+  }
+
+  // Return the maximum and minimum distances of any Atom to the surface.
+  double AtomKdtree::GetMaxDistance() const {
+    return max_distance_;
+  }
+
+  double AtomKdtree::GetMinDistance() const {
+    return min_distance_;
   }
 
 } // namespace atom

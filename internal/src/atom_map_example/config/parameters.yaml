@@ -4,8 +4,11 @@ atom_example:
   #data_topic: /velodyne_points
 
   # Name of robot and world frames.
-  robot_frame: base
-  world_frame: world
+#  robot_frame: base
+#  world_frame: world
+
+  # Topic for pose estimate for robot in world frame.
+  pose_topic: /blam/blam_slam/localization_integrated_estimate
 
   # Voxel grid filter leaf size. This should probably be roughly on the order of
   # an atomic radius in order to avoid drastic oversampling.

@@ -18,9 +18,17 @@ atom:
   probability_miss: 0.3
 
   # Visualization topic names.
-  full_map_topic: full
-  incremental_map_topic: incremental
+  full_occupancy_topic: occupancy
+  full_sdf_topic: sdf
 
   # Fixed frame id.
   fixed_frame_id: world
 #  fixed_frame_id: velodyne
+
+  # Thresholds for visualizing occupied atoms and those near surfaces.
+  occupied_threshold: 0.5
+  sdf_threshold: 1.0
+
+  # Boolean to visualize only those atoms that are either occupied
+  # or near surfaces.
+  only_show_occupied: true

@@ -72,11 +72,19 @@ namespace atom {
     // Return the size of this tree.
     size_t Size() const;
 
+    // Return the maximum and minimum distances of any Atom to the surface.
+    double GetMaxDistance() const;
+    double GetMinDistance() const;
+
   private:
     // A Flann kdtree to hold all the Atoms. Searches in this tree return
     // indices, which are then mapped to Atom::Ptr types in an array.
     std::shared_ptr< flann::Index< flann::L2<double> > > index_;
     std::vector<Atom::Ptr> registry_;
+
+    // Keep track of maximum and minimum signed distances to the surface.
+    double max_distance_;
+    double min_distance_;
 
     // Find all neighbors for an Atom and set that Atom's neighbors_ field.
     bool SetNeighbors(Atom::Ptr atom);

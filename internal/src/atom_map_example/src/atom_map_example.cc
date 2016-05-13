@@ -38,7 +38,7 @@
 #include <atom_map_example/atom_map_example.h>
 
 namespace atom {
-  AtomMapExample::AtomMapExample() : tf_listener_(tf_buffer_), initialized_(false) {}
+  AtomMapExample::AtomMapExample() : initialized_(false) {}
   AtomMapExample::~AtomMapExample() {}
 
   // Initialize.
@@ -67,8 +67,7 @@ namespace atom {
   // Load parameters and register callbacks.
   bool AtomMapExample::LoadParameters(const ros::NodeHandle& n) {
     if (!pu::Get("atom_example/data_topic", data_topic_)) return false;
-    if (!pu::Get("atom_example/robot_frame", tf_robot_frame_)) return false;
-    if (!pu::Get("atom_example/world_frame", tf_world_frame_)) return false;
+    if (!pu::Get("atom_example/pose_topic", pose_topic_)) return false;
     if (!pu::Get("atom_example/filter_leaf_size", filter_leaf_size_)) return false;
 
     return true;
@@ -82,48 +81,74 @@ namespace atom {
       node.subscribe<PointCloud>(data_topic_.c_str(), 10,
                                  &AtomMapExample::AddPointCloudCallback, this);
 
+    // Register robot pose subscriber callback.
+    pose_subscriber_ =
+      node.subscribe<geometry_msgs::PoseStamped>(pose_topic_.c_str(), 10,
+                                                 &AtomMapExample::AddPoseCallback, this);
+
     return true;
   }
 
-  // Callback to process point clouds.
-  void AtomMapExample::AddPointCloudCallback(const PointCloud::ConstPtr& cloud) {
-    // Get transform.
-    geometry_msgs::TransformStamped tf;
-    try {
-      tf = tf_buffer_.lookupTransform(tf_world_frame_.c_str(),
-                                      tf_robot_frame_.c_str(), ros::Time(0));
-    } catch(tf2::TransformException &ex) {
-      ROS_WARN("%s: %s", name_.c_str(), ex.what());
-      ROS_WARN("%s: Did not insert this scan.", name_.c_str());
-      ros::Duration(0.1).sleep();
-      return;
-    }
-
+  // Process a point cloud, pose pair.
+  void AtomMapExample::ProcessPointCloud(const PointCloud::ConstPtr& cloud,
+                                         const Eigen::Matrix4d& pose) {
     // Voxel grid filter.
     PointCloud::Ptr filtered_cloud(new PointCloud);
     pcl::VoxelGrid<pcl::PointXYZ> grid_filter;
     grid_filter.setInputCloud(cloud);
-    grid_filter.setLeafSize(filter_leaf_size_, filter_leaf_size_, filter_leaf_size_);
+    grid_filter.setLeafSize(filter_leaf_size_,
+                            filter_leaf_size_, filter_leaf_size_);
     grid_filter.filter(*filtered_cloud);
 
     // Transform point cloud into world frame.
-    const gu::Transform3 pose = gr::FromROS(tf.transform);
-    const Eigen::Matrix3d rotation = pose.rotation.Eigen();
-    const Eigen::Vector3d translation = pose.translation.Eigen();
+    PointCloud::Ptr transformed_cloud(new PointCloud);
+    pcl::transformPointCloud(*filtered_cloud, *transformed_cloud, pose);
+
+    // Run map update.
+    pcl::PointXYZ p(pose(0, 3), pose(1, 3), pose(2, 3));
+    map_.Update(transformed_cloud, p);
+
+    // Publish.
+    map_.PublishFullOccupancy();
+    map_.PublishFullSignedDistance();
+  }
+
+
+  // Callback to process incoming pose messages.
+  void AtomMapExample::AddPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& pose) {
+    // Extract pose as a 4x4 matrix in SE(3).
+    const gu::Transform3 tf = gr::FromROS(pose->pose);
+    const Eigen::Matrix3d rotation = tf.rotation.Eigen();
+    const Eigen::Vector3d translation = tf.translation.Eigen();
 
     Eigen::Matrix4d Rt = Eigen::Matrix4d::Identity();
     Rt.block(0, 0, 3, 3) = rotation;
     Rt.block(0, 3, 3, 1) = translation;
 
-    PointCloud::Ptr transformed_cloud(new PointCloud);
-    pcl::transformPointCloud(*filtered_cloud, *transformed_cloud, Rt);
+    // Add to queue if there is no available point cloud.
+    if (point_cloud_queue_.empty())
+      pose_queue_.push(Rt);
 
-    // Run map update.
-    pcl::PointXYZ p(translation(0), translation(1), translation(2));
-    map_.Update(transformed_cloud, p);
+    // Otherwise, go ahead and process this pair.
+    else {
+      const PointCloud::ConstPtr cloud = point_cloud_queue_.front();
+      point_cloud_queue_.pop();
+      ProcessPointCloud(cloud, Rt);
+    }
+  }
 
-    // Publish.
-    map_.PublishFull();
+  // Callback to process incoming point clouds.
+  void AtomMapExample::AddPointCloudCallback(const PointCloud::ConstPtr& cloud) {
+    // Add to queue if there is no available pose.
+    if (pose_queue_.empty())
+      point_cloud_queue_.push(cloud);
+
+    // Otherwise, go ahead and process this pair.
+    else {
+      const Eigen::Matrix4d pose = pose_queue_.front();
+      ProcessPointCloud(cloud, pose);
+      pose_queue_.pop();
+    }
   }
 
 } // namespace atom
