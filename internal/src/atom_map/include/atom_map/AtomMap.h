@@ -46,6 +46,7 @@
 #include <ros/ros.h>
 #include <std_msgs/ColorRGBA.h>
 #include <pcl/point_types.h>
+#include <pcl/features/normal_3d.h>
 #include <pcl_ros/point_cloud.h>
 #include <glog/logging.h>
 #include <math.h>
@@ -66,8 +67,7 @@ namespace atom {
                            double* distance, double* variance);
     double GetProbability(double x, double y, double z);
 
-    // Updates.
-    void Update(const pcl::PointXYZ& point, const pcl::PointXYZ& robot);
+    // Update.
     void Update(const PointCloud::ConstPtr& cloud, const pcl::PointXYZ& robot);
 
     // Publishing.
@@ -80,6 +80,15 @@ namespace atom {
 
     // Atomic radius.
     double radius_;
+
+    // Radius for nearest neighbor search for surface normal extraction.
+    double surface_normal_radius_;
+
+    // Distance to backoff in front before laying down first 'free' Atom. This
+    // is done to ensure that there are no collisions between free and occupied
+    // Atoms at the surface boundary, since behind the surface we use the normal
+    // and not the scan ray.
+    double front_backoff_distance_;
 
     // Probability of hits and misses for occupancy updates.
     double probability_hit_;
@@ -119,11 +128,15 @@ namespace atom {
     bool LoadParameters(const ros::NodeHandle& n);
     bool RegisterCallbacks(const ros::NodeHandle& n);
 
-    // Sample a ray. Given a robot position and a measured point, discretize the
-    // ray from sensor to observation and return vectors of points and distances.
-    void SampleRay(const pcl::PointXYZ& point, const pcl::PointXYZ& robot,
+    // Sample a ray and do a probabilistic and signed distance update.
+    // Given a robot position and a measured point, discretize the ray from sensor
+    // to observation and return vectors of points and distances.
+    void SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
+                   const pcl::PointXYZ& robot,
                    std::vector<pcl::PointXYZ>* samples,
                    std::vector<double>* signed_distances);
+    void Update(const pcl::PointXYZ& point, const pcl::Normal& normal,
+                const pcl::PointXYZ& robot);
 
     // Apply the covariance kernel function.
     double CovarianceKernel(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2);

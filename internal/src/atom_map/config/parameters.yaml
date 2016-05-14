@@ -4,11 +4,11 @@ atom:
   gamma: 2.0
 
   # Atomic radius.
-  radius: 0.5
+  radius: 1.0
 
   # Maximum distance to raycast into a surface (think of this as the surface
   # thickness.
-  thickness: 1.2
+  thickness: 2.5
 
   # Noise variance for GP signed distance function regression.
   noise: 1.0
@@ -32,3 +32,13 @@ atom:
   # Boolean to visualize only those atoms that are either occupied
   # or near surfaces.
   only_show_occupied: true
+
+  # Radius for nearest neighbor search for surface normal estimation. This should
+  # be on the order of the voxel grid resolution if input point clouds are filtered.
+  surface_normal_radius: 3.0
+
+  # Distance to backoff in front before laying down first unoccupied Atom. This
+  # is done to ensure that there are no collisions between free and occupied
+  # Atoms at the surface boundary, since behind the surface we use the normal
+  # and not the scan ray.
+  front_backoff_distance: 0.5

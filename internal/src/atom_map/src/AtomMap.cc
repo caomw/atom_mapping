@@ -40,6 +40,7 @@
 #include <visualization_msgs/Marker.h>
 #include <Eigen/Dense>
 #include <iostream>
+#include <math.h>
 
 namespace gu = geometry_utils;
 namespace gr = gu::ros;
@@ -147,13 +148,13 @@ namespace atom {
   }
 
   // Update the map for this observation.
-  void AtomMap::Update(const pcl::PointXYZ& point,
+  void AtomMap::Update(const pcl::PointXYZ& point, const pcl::Normal& normal,
                        const pcl::PointXYZ& robot) {
     std::vector<pcl::PointXYZ> samples;
     std::vector<double> signed_distances;
 
     // Sample the ray.
-    SampleRay(point, robot, &samples, &signed_distances);
+    SampleRay(point, normal, robot, &samples, &signed_distances);
 
     // For each sample, update occupancy and signed distance function
     // in existing Atoms, or add new Atoms to the map.
@@ -229,9 +230,35 @@ namespace atom {
   // Update the map given a set of observations.
   void AtomMap::Update(const PointCloud::ConstPtr& cloud,
                        const pcl::PointXYZ& robot) {
+    // Get surface normals.
+    pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr
+      tree(new pcl::search::KdTree<pcl::PointXYZ>());
+    ne.setInputCloud(cloud);
+    ne.setSearchMethod(tree);
+    ne.setRadiusSearch(surface_normal_radius_);
+    ne.setViewPoint(robot.x, robot.y, robot.z);
+
+    pcl::PointCloud<pcl::Normal>::Ptr
+      normals(new pcl::PointCloud<pcl::Normal>);
+    ne.compute(*normals);
+
+    // Ensure that we have the same number of normals as we do input points.
+    if (normals->points.size() != cloud->points.size()) {
+      ROS_WARN("%s: Error calculating surface normals. Incorrect number of points.",
+               name_.c_str());
+      return;
+    }
+
     // Update each point individually.
     for (size_t ii = 0; ii < cloud->points.size(); ii++) {
-      Update(cloud->points[ii], robot);
+      pcl::Normal normal = normals->points[ii];
+      if (isnan(normal.normal_x) || isnan(normal.normal_y) || isnan(normal.normal_z)) {
+        ROS_WARN("%s: Normal was NAN. Skipping this point.", name_.c_str());
+        continue;
+      }
+
+      Update(cloud->points[ii], normal, robot);
     }
   }
 
@@ -261,6 +288,8 @@ namespace atom {
     if (!pu::Get("atom/only_show_occupied", only_show_occupied_)) return false;
     if (!pu::Get("atom/occupied_threshold", occupied_threshold_)) return false;
     if (!pu::Get("atom/sdf_threshold", sdf_threshold_)) return false;
+    if (!pu::Get("atom/surface_normal_radius", surface_normal_radius_)) return false;
+    if (!pu::Get("atom/front_backoff_distance", front_backoff_distance_)) return false;
 
     return true;
   }
@@ -268,8 +297,9 @@ namespace atom {
   // Sample a ray. Given a robot position and a measured point, discretize the
   // ray from sensor to observation and insert/update atoms along the way.
   // In particular, discretize such that the atoms closest to the surface are
-  // tangent to it.
-  void AtomMap::SampleRay(const pcl::PointXYZ& point,
+  // tangent to it. Behind the surface, walk along the surface normal (which by
+  // default points toward the robot's side of the surface).
+  void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
                           const pcl::PointXYZ& robot,
                           std::vector<pcl::PointXYZ>* samples,
                           std::vector<double>* signed_distances) {
@@ -293,11 +323,13 @@ namespace atom {
     dx /= range; dy /= range; dz /= range;
 
     // Start at the surface and walk toward the robot.
-    const size_t num_samples_front = static_cast<size_t>(range / (2.0 * radius_));
+    const size_t num_samples_front =
+      static_cast<size_t>((range - front_backoff_distance_) / (2.0 * radius_));
     const double step_size_front =
       0.5 * range / static_cast<double>(num_samples_front);
     for (size_t ii = 0; ii < num_samples_front; ii++) {
-      const double backoff = static_cast<double>(2 * ii + 1) * step_size_front;
+      const double backoff =
+        static_cast<double>(2 * ii + 1) * step_size_front + front_backoff_distance_;
 
       pcl::PointXYZ p;
       p.x = point.x + backoff * dx;
@@ -317,9 +349,9 @@ namespace atom {
       const double backoff = static_cast<double>(2 * ii + 1) * step_size_back;
 
       pcl::PointXYZ p;
-      p.x = point.x - backoff * dx;
-      p.y = point.y - backoff * dy;
-      p.z = point.z - backoff * dz;
+      p.x = point.x - backoff * normal.normal_x;
+      p.y = point.y - backoff * normal.normal_y;
+      p.z = point.z - backoff * normal.normal_z;
 
       samples->push_back(p);
       signed_distances->push_back(-backoff);
