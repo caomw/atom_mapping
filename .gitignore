@@ -13,12 +13,6 @@ internal/src/CMakeLists.txt
 # Bagfiles
 bagfiles/
 
-# Rviz config files.
-rviz/
-
-# Images.
-images/
-
 # Swap files
 *.swp
 *.swo
