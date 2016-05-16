@@ -35,63 +35,39 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#ifndef ATOM_MAPPING_ATOM_KDTREE_H
-#define ATOM_MAPPING_ATOM_KDTREE_H
+#ifndef ATOM_MAPPING_SAMPLED_RAY_H
+#define ATOM_MAPPING_SAMPLED_RAY_H
 
-#include <atom_map/Atom.h>
-
-#include <flann/flann.h>
 #include <pcl/point_types.h>
-#include <glog/logging.h>
-#include <math.h>
-
-namespace gu = geometry_utils;
+#include <vector>
 
 namespace atom {
-  class AtomKdtree {
-  public:
-    AtomKdtree();
-    ~AtomKdtree();
+  struct SampledRay {
+    // List of points and signed distances along the ray between the observer
+    // and the surface.
+    std::vector<pcl::PointXYZ> ray_points_;
+    std::vector<double> ray_distances_;
 
-    // Nearest neighbor queries.
-    bool GetKNearestNeighbors(double x, double y, double z, size_t k,
-                              std::vector<Atom::Ptr>* neighbors);
-    bool GetKNearestNeighbors(const pcl::PointXYZ& p, size_t k,
-                              std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(double x, double y, double z, double r,
-                      std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(const pcl::PointXYZ& p, double r,
-                      std::vector<Atom::Ptr>* neighbors);
+    // List of points and signed distances normal to the surface, on the side of
+    // and the observer.
+    std::vector<pcl::PointXYZ> normal_points_;
+    std::vector<double> normal_distances_;
 
-    // Insert a new Atom.
-    bool Insert(Atom::Ptr atom);
+    // List of points and signed distances normal to the surface and on the
+    // 'occupied' side of the surface.
+    std::vector<pcl::PointXYZ> occupied_points_;
+    std::vector<double> occupied_distances_;
 
-    // Return a list of all Atoms in the map.
-    const std::vector<Atom::Ptr>& GetAtoms() const;
-
-    // Return the size of this tree.
-    size_t Size() const;
-
-    // Return the maximum and minimum distances of any Atom to the surface.
-    double GetMaxDistance() const;
-    double GetMinDistance() const;
-
-  private:
-    // A Flann kdtree to hold all the Atoms. Searches in this tree return
-    // indices, which are then mapped to Atom::Ptr types in an array.
-    std::shared_ptr< flann::Index< flann::L2<double> > > index_;
-    std::vector<Atom::Ptr> registry_;
-
-    // Keep track of maximum and minimum signed distances to the surface.
-    double max_distance_;
-    double min_distance_;
-
-    // Find all neighbors for an Atom and set that Atom's neighbors_ field.
-    bool SetNeighbors(Atom::Ptr atom);
-
-    // Update neighbors' lists of neighboring Atoms to include a new Atom.
-    void UpdateNeighbors(Atom::Ptr atom);
-  };
-}
+    // Clear all of these lists.
+    void ClearAll() {
+      ray_points_.clear();
+      ray_distances_.clear();
+      normal_points_.clear();
+      normal_distances_.clear();
+      occupied_points_.clear();
+      occupied_distances_.clear();
+    }
+  }; // struct SampledRay
+} // namespace atom
 
 #endif

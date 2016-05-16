@@ -150,79 +150,106 @@ namespace atom {
   // Update the map for this observation.
   void AtomMap::Update(const pcl::PointXYZ& point, const pcl::Normal& normal,
                        const pcl::PointXYZ& robot) {
-    std::vector<pcl::PointXYZ> samples;
-    std::vector<double> signed_distances;
-
     // Sample the ray.
-    SampleRay(point, normal, robot, &samples, &signed_distances);
+    SampledRay samples;
+    SampleRay(point, normal, robot, &samples);
 
-    // For each sample, update occupancy and signed distance function
-    // in existing Atoms, or add new Atoms to the map.
-    for (size_t ii = 0; ii < samples.size(); ii++) {
-      const double sdf = signed_distances[ii];
-      pcl::PointXYZ sample = samples[ii];
+    // Try to insert occupied Atoms.
+    for (size_t ii = 0; ii < samples.occupied_points_.size(); ii++) {
+      MaybeInsertAtom(samples.occupied_points_[ii],
+                      samples.occupied_distances_[ii]);
+    }
 
-      Atom::Ptr atom = Atom::Create(radius_);
-      atom->SetPosition(gu::Vec3(sample.x, sample.y, sample.z));
+    // Try to insert Atoms along the ray.
+    if (update_occupancy_) {
+      for (size_t ii = 0; ii < samples.ray_points_.size(); ii++) {
+        MaybeInsertAtom(samples.ray_points_[ii],
+                        samples.ray_distances_[ii]);
+      }
+    }
 
-      // If the AtomKdtree is empty, just insert this atom.
-      if (map_.Size() == 0) {
-        // Set probability of occupancy.
+    // Try to insert Atoms along the normal.
+    if (update_signed_distance_) {
+      for (size_t ii = 0; ii < samples.normal_points_.size(); ii++) {
+        MaybeInsertAtom(samples.normal_points_[ii],
+                        samples.normal_distances_[ii]);
+      }
+    }
+  }
+
+  // Insert Atom at this position into the tree. Handle options regarding
+  // updating occupancy and signed distance.
+  void AtomMap::MaybeInsertAtom(const pcl::PointXYZ& position, double sdf) {
+    Atom::Ptr atom = Atom::Create(radius_);
+    atom->SetPosition(gu::Vec3(position.x, position.y, position.z));
+
+    // If the AtomKdtree is empty, just insert this atom.
+    if (map_.Size() == 0) {
+      // Set probability of occupancy.
+      if (update_occupancy_) {
         if (sdf > 0.0)
           atom->SetProbability(probability_miss_);
         else
           atom->SetProbability(probability_hit_);
+      }
 
-        // Set signed distance.
+      // Set signed distance.
+      if (update_signed_distance_)
         atom->SetSignedDistance(sdf);
 
-        // Insert.
-        if (!map_.Insert(atom))
-          ROS_WARN("%s: Error inserting a new Atom.", name_.c_str());
+      // Insert.
+      if (!map_.Insert(atom))
+        ROS_WARN("%s: Error inserting a new Atom.", name_.c_str());
 
-        continue;
-      }
+      return;
+    }
 
-      std::vector<Atom::Ptr> neighbors;
-      if (!map_.RadiusSearch(sample, 2.0 * radius_ - 1e-6, &neighbors)) {
-        ROS_WARN("%s: Error in radius search during Update().", name_.c_str());
-        continue;
-      }
+    std::vector<Atom::Ptr> neighbors;
+    if (!map_.RadiusSearch(position, 2.0 * radius_ - 1e-6, &neighbors)) {
+      ROS_WARN("%s: Error in radius search during Update().", name_.c_str());
+      return;
+    }
 
-      // Handle case where sample lies more than twice the atomic radius
-      // from its nearest neighbor.
-      else if (neighbors.size() == 0) {
-        // Set probability of occupancy.
+    // Handle case where sample lies more than twice the atomic radius
+    // from its nearest neighbor.
+    else if (neighbors.size() == 0) {
+      // Set probability of occupancy.
+      if (update_occupancy_) {
         if (sdf > 0.0)
           atom->SetProbability(probability_miss_);
         else
           atom->SetProbability(probability_hit_);
-
-        // Set signed distance.
-        atom->SetSignedDistance(sdf);
-
-        // Insert into kdtree. Insertion here automatically updates neighbors
-        // in the implicit graph structure of the kdtree.
-        if (!map_.Insert(atom))
-          ROS_WARN("%s: Error inserting a new Atom.", name_.c_str());
       }
 
-      // Handle case where sample lies inside an existing Atom.
-      else {
-        for (size_t jj = 0; jj < neighbors.size(); jj++) {
-          Atom::Ptr neighbor = neighbors[jj];
+      // Set signed distance.
+      if (update_signed_distance_)
+        atom->SetSignedDistance(sdf);
 
-          // Update probability of occupancy. Weight by the fraction
-          // of overlap between the two atoms.
-          const double weight = atom->ComputeOverlapFraction(neighbor);
+      // Insert into kdtree. Insertion here automatically updates neighbors
+      // in the implicit graph structure of the kdtree.
+      if (!map_.Insert(atom))
+        ROS_WARN("%s: Error inserting a new Atom.", name_.c_str());
+    }
+
+    // Handle case where sample lies inside an existing Atom.
+    else {
+      for (size_t jj = 0; jj < neighbors.size(); jj++) {
+        Atom::Ptr neighbor = neighbors[jj];
+
+        // Compute overlap fraction.
+        const double weight = atom->ComputeOverlapFraction(neighbor);
+
+        // Update occupancy.
+        if (update_occupancy_) {
           if (sdf > 0.0)
             neighbor->UpdateProbability(probability_miss_, weight);
           else
             neighbor->UpdateProbability(probability_hit_, weight);
-
-          // Update signed distance.
-          neighbor->UpdateSignedDistance(sdf, weight);
         }
+
+        // Update signed distance.
+        if (update_signed_distance_)
+          neighbor->UpdateSignedDistance(sdf, weight);
       }
     }
   }
@@ -253,11 +280,6 @@ namespace atom {
     // Update each point individually.
     for (size_t ii = 0; ii < cloud->points.size(); ii++) {
       pcl::Normal normal = normals->points[ii];
-      if (isnan(normal.normal_x) || isnan(normal.normal_y) || isnan(normal.normal_z)) {
-        ROS_WARN("%s: Normal was NAN. Skipping this point.", name_.c_str());
-        continue;
-      }
-
       Update(cloud->points[ii], normal, robot);
     }
   }
@@ -278,7 +300,6 @@ namespace atom {
   bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
     if (!pu::Get("atom/gamma", gamma_)) return false;
     if (!pu::Get("atom/radius", radius_)) return false;
-    if (!pu::Get("atom/thickness", max_surface_thickness_)) return false;
     if (!pu::Get("atom/noise", noise_variance_)) return false;
     if (!pu::Get("atom/probability_hit", probability_hit_)) return false;
     if (!pu::Get("atom/probability_miss", probability_miss_)) return false;
@@ -289,7 +310,11 @@ namespace atom {
     if (!pu::Get("atom/occupied_threshold", occupied_threshold_)) return false;
     if (!pu::Get("atom/sdf_threshold", sdf_threshold_)) return false;
     if (!pu::Get("atom/surface_normal_radius", surface_normal_radius_)) return false;
-    if (!pu::Get("atom/front_backoff_distance", front_backoff_distance_)) return false;
+    if (!pu::Get("atom/max_occupied_backoff", max_occupied_backoff_)) return false;
+    if (!pu::Get("atom/max_normal_backoff", max_normal_backoff_)) return false;
+    if (!pu::Get("atom/num_neighbors", num_neighbors_)) return false;
+    if (!pu::Get("atom/update_occupancy", update_occupancy_)) return false;
+    if (!pu::Get("atom/update_signed_distance", update_signed_distance_)) return false;
 
     return true;
   }
@@ -298,16 +323,12 @@ namespace atom {
   // ray from sensor to observation and insert/update atoms along the way.
   // In particular, discretize such that the atoms closest to the surface are
   // tangent to it. Behind the surface, walk along the surface normal (which by
-  // default points toward the robot's side of the surface).
+  // default points toward the robot's side of the surface). Also optionally
+  // walk along the surface normal but on the unoccupied side of the surface.
   void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
-                          const pcl::PointXYZ& robot,
-                          std::vector<pcl::PointXYZ>* samples,
-                          std::vector<double>* signed_distances) {
+                          const pcl::PointXYZ& robot, SampledRay* samples) {
     CHECK_NOTNULL(samples);
-    CHECK_NOTNULL(signed_distances);
-
-    samples->clear();
-    signed_distances->clear();
+    samples->ClearAll();
 
     // Compute the range to the observed point and the unit direction.
     double dx = robot.x - point.x;
@@ -322,39 +343,80 @@ namespace atom {
 
     dx /= range; dy /= range; dz /= range;
 
-    // Start at the surface and walk toward the robot.
-    const size_t num_samples_front =
-      static_cast<size_t>((range - front_backoff_distance_) / (2.0 * radius_));
-    const double step_size_front =
-      0.5 * range / static_cast<double>(num_samples_front);
-    for (size_t ii = 0; ii < num_samples_front; ii++) {
-      const double backoff =
-        static_cast<double>(2 * ii + 1) * step_size_front + front_backoff_distance_;
+    // Unpack normal vector. Not const because it will be set to dx/dy/dz if NAN.
+    double nx = normal.normal_x;
+    double ny = normal.normal_y;
+    double nz = normal.normal_z;
 
-      pcl::PointXYZ p;
-      p.x = point.x + backoff * dx;
-      p.y = point.y + backoff * dy;
-      p.z = point.z + backoff * dz;
-
-      samples->push_back(p);
-      signed_distances->push_back(backoff);
+    if (isnan(nx) || isnan(ny) || isnan(nz)) {
+#ifdef ENABLE_DEBUG_MESSAGES
+      ROS_WARN("%s: Normal was NAN. Tracing along ray instead.", name_.c_str());
+#endif
+      nx = dx; ny = dy; nz = dz;
     }
 
-    // Start at the surface and walk away from the robot.
+    // Start at the surface and walk away from the robot, ideally along the normal
+    // vector, if it is not NAN. Otherwise just trace along the ray.
     const size_t num_samples_back =
-      static_cast<size_t>(max_surface_thickness_ / (2.0 * radius_));
+      static_cast<size_t>(0.5 * max_occupied_backoff_ / radius_);
     const double step_size_back =
-      0.5 * max_surface_thickness_ / static_cast<double>(num_samples_back);
+      0.5 * max_occupied_backoff_ / static_cast<double>(num_samples_back);
     for (size_t ii = 0; ii < num_samples_back; ii++) {
       const double backoff = static_cast<double>(2 * ii + 1) * step_size_back;
 
       pcl::PointXYZ p;
-      p.x = point.x - backoff * normal.normal_x;
-      p.y = point.y - backoff * normal.normal_y;
-      p.z = point.z - backoff * normal.normal_z;
+      p.x = point.x - backoff * nx;
+      p.y = point.y - backoff * ny;
+      p.z = point.z - backoff * nz;
 
-      samples->push_back(p);
-      signed_distances->push_back(-backoff);
+      samples->occupied_points_.push_back(p);
+      samples->occupied_distances_.push_back(-backoff);
+    }
+
+    if (update_signed_distance_) {
+      // Start at the surface and walk along the surface normal (toward free space).
+      const size_t num_samples_normal =
+        static_cast<size_t>(0.5 * max_normal_backoff_ / radius_);
+      const double step_size_normal =
+        0.5 * max_normal_backoff_ / static_cast<double>(num_samples_normal);
+      for (size_t ii = 0; ii < num_samples_normal; ii++) {
+        const double backoff = static_cast<double>(2 * ii + 1) * step_size_normal;
+
+        pcl::PointXYZ p;
+        p.x = point.x + backoff * nx;
+        p.y = point.y + backoff * ny;
+        p.z = point.z + backoff * nz;
+
+        samples->normal_points_.push_back(p);
+        samples->normal_distances_.push_back(backoff);
+      }
+    }
+
+    if (update_occupancy_) {
+      // Start at the surface and walk toward the robot. Initially, backoff just
+      // enough to be tangent to the surface.
+      const double front_initial_backoff = radius_ / (dx * nx + dy * ny + dz * nz);
+
+      // If this backoff distance is greater than the range to the robot, just
+      // ignore this point.
+      if (front_initial_backoff < range) {
+        const size_t num_samples_front =
+          static_cast<size_t>(0.5 * (range - front_initial_backoff) / radius_);
+        const double step_size_front =
+          0.5 * (range - front_initial_backoff) / static_cast<double>(num_samples_front);
+        for (size_t ii = 0; ii < num_samples_front; ii++) {
+          const double backoff =
+            static_cast<double>(2 * ii + 1) * step_size_front + front_initial_backoff;
+
+          pcl::PointXYZ p;
+          p.x = point.x + backoff * dx;
+          p.y = point.y + backoff * dy;
+          p.z = point.z + backoff * dz;
+
+          samples->ray_points_.push_back(p);
+          samples->ray_distances_.push_back(backoff);
+        }
+      }
     }
   }
 

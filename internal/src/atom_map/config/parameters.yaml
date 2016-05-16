@@ -6,12 +6,22 @@ atom:
   # Atomic radius.
   radius: 1.0
 
+  # Optionally update signed distance and occupancy separately.
+  update_occupancy: true
+  update_signed_distance: false
+
   # Maximum distance to raycast into a surface (think of this as the surface
-  # thickness.
-  thickness: 2.5
+  # thickness).
+  max_occupied_backoff: 2.5
+
+  # Maximum distance to raycast into free space along the surface normal.
+  max_normal_backoff: 10.0
 
   # Noise variance for GP signed distance function regression.
   noise: 1.0
+
+  # Number of neighbors to examine for GP regression.
+  num_neighbors: 30
 
   # Probability update for hits/misses.
   probability_hit: 0.7
@@ -36,9 +46,3 @@ atom:
   # Radius for nearest neighbor search for surface normal estimation. This should
   # be on the order of the voxel grid resolution if input point clouds are filtered.
   surface_normal_radius: 3.0
-
-  # Distance to backoff in front before laying down first unoccupied Atom. This
-  # is done to ensure that there are no collisions between free and occupied
-  # Atoms at the surface boundary, since behind the surface we use the normal
-  # and not the scan ray.
-  front_backoff_distance: 0.5

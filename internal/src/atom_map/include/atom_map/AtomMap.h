@@ -35,11 +35,12 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#ifndef ATOM_MAPPING_ATOM_KDTREE_H
-#define ATOM_MAPPING_ATOM_KDTREE_H
+#ifndef ATOM_MAPPING_ATOM_MAP_H
+#define ATOM_MAPPING_ATOM_MAP_H
 
 #include <atom_map/Atom.h>
 #include <atom_map/AtomKdtree.h>
+#include <atom_map/SampledRay.h>
 #include <parameter_utils/ParameterUtils.h>
 #include <geometry_utils/GeometryUtilsROS.h>
 
@@ -81,23 +82,24 @@ namespace atom {
     // Atomic radius.
     double radius_;
 
+    // Optionally update signed distance and/or occupancy.
+    bool update_occupancy_;
+    bool update_signed_distance_;
+
     // Radius for nearest neighbor search for surface normal extraction.
     double surface_normal_radius_;
-
-    // Distance to backoff in front before laying down first 'free' Atom. This
-    // is done to ensure that there are no collisions between free and occupied
-    // Atoms at the surface boundary, since behind the surface we use the normal
-    // and not the scan ray.
-    double front_backoff_distance_;
-
-    // Probability of hits and misses for occupancy updates.
-    double probability_hit_;
-    double probability_miss_;
 
     // Maximum distance to trace a ray inside of an object. This should be small,
     // in order to ensure we don't accidentally trace all the way through. However,
     // it is definitely necessary in order to ensure proper surface detection.
-    double max_surface_thickness_;
+    double max_occupied_backoff_;
+
+    // Maximum distance to trace the surface normal inside (supposedly) free space.
+    double max_normal_backoff_;
+
+    // Probability of hits and misses for occupancy updates.
+    double probability_hit_;
+    double probability_miss_;
 
     // Number of nearest neighbors to examine for GP surface distance regression.
     int num_neighbors_;
@@ -132,11 +134,10 @@ namespace atom {
     // Given a robot position and a measured point, discretize the ray from sensor
     // to observation and return vectors of points and distances.
     void SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
-                   const pcl::PointXYZ& robot,
-                   std::vector<pcl::PointXYZ>* samples,
-                   std::vector<double>* signed_distances);
+                   const pcl::PointXYZ& robot, SampledRay* samples);
     void Update(const pcl::PointXYZ& point, const pcl::Normal& normal,
                 const pcl::PointXYZ& robot);
+    void MaybeInsertAtom(const pcl::PointXYZ& position, double sdf);
 
     // Apply the covariance kernel function.
     double CovarianceKernel(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2);
