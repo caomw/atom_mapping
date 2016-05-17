@@ -13,6 +13,9 @@ internal/src/CMakeLists.txt
 # Bagfiles
 bagfiles/
 
+# Profiling
+profiling/
+
 # Swap files
 *.swp
 *.swo
