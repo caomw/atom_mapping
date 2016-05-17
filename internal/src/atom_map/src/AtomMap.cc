@@ -320,6 +320,8 @@ namespace atom {
     if (!pu::Get("atom/num_neighbors", num_neighbors_)) return false;
     if (!pu::Get("atom/update_occupancy", update_occupancy_)) return false;
     if (!pu::Get("atom/update_signed_distance", update_signed_distance_)) return false;
+    if (!pu::Get("atom/max_samples_ray", max_samples_ray_)) return false;
+    if (!pu::Get("atom/max_samples_normal", max_samples_normal_)) return false;
 
     return true;
   }
@@ -377,8 +379,10 @@ namespace atom {
 
     if (update_signed_distance_) {
       // Start at the surface and walk along the surface normal (toward free space).
-      const size_t num_samples_normal =
+      const size_t dense_samples_normal =
         static_cast<size_t>(0.5 * max_normal_backoff_ / radius_);
+      const size_t num_samples_normal = (dense_samples_normal < max_samples_normal_) ?
+        dense_samples_normal : static_cast<size_t>(max_samples_normal_);
       const double step_size_normal =
         0.5 * max_normal_backoff_ / static_cast<double>(num_samples_normal);
       for (size_t ii = 0; ii < num_samples_normal; ii++) {
@@ -397,18 +401,20 @@ namespace atom {
     if (update_occupancy_) {
       // Start at the surface and walk toward the robot. Initially, backoff just
       // enough to be tangent to the surface.
-      const double front_initial_backoff = radius_ / (dx * nx + dy * ny + dz * nz);
+      const double ray_initial_backoff = radius_ / (dx * nx + dy * ny + dz * nz);
 
       // If this backoff distance is greater than the range to the robot, just
       // ignore this point.
-      if (front_initial_backoff < range) {
-        const size_t num_samples_front =
-          static_cast<size_t>(0.5 * (range - front_initial_backoff) / radius_);
-        const double step_size_front =
-          0.5 * (range - front_initial_backoff) / static_cast<double>(num_samples_front);
-        for (size_t ii = 0; ii < num_samples_front; ii++) {
+      if (ray_initial_backoff < range) {
+        const size_t dense_samples_ray =
+          static_cast<size_t>(0.5 * (range - ray_initial_backoff) / radius_);
+        const size_t num_samples_ray = (dense_samples_ray < max_samples_ray_) ?
+          dense_samples_ray : static_cast<size_t>(max_samples_ray_);
+        const double step_size_ray =
+          0.5 * (range - ray_initial_backoff) / static_cast<double>(num_samples_ray);
+        for (size_t ii = 0; ii < num_samples_ray; ii++) {
           const double backoff =
-            static_cast<double>(2 * ii + 1) * step_size_front + front_initial_backoff;
+            static_cast<double>(2 * ii + 1) * step_size_ray + ray_initial_backoff;
 
           pcl::PointXYZ p;
           p.x = point.x + backoff * dx;
@@ -532,7 +538,7 @@ namespace atom {
     c.r = probability;
     c.g = 0.0;
     c.b = 1.0 - probability;
-    c.a = 0.2;
+    c.a = 1.0;
 
     return c;
   }

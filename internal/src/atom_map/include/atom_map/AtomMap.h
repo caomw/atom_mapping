@@ -97,6 +97,11 @@ namespace atom {
     // Maximum distance to trace the surface normal inside (supposedly) free space.
     double max_normal_backoff_;
 
+    // Maximum number of Atoms to lay down along the ray between robot and scan point
+    // and also along the normal vector into free space.
+    int max_samples_ray_;
+    int max_samples_normal_;
+
     // Probability of hits and misses for occupancy updates.
     double probability_hit_;
     double probability_miss_;
