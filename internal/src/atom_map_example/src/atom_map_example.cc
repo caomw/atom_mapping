@@ -78,12 +78,12 @@ namespace atom {
 
     // Register point cloud subscriber callback.
     point_cloud_subscriber_ =
-      node.subscribe<PointCloud>(data_topic_.c_str(), 10,
+      node.subscribe<PointCloud>(data_topic_.c_str(), 100,
                                  &AtomMapExample::AddPointCloudCallback, this);
 
     // Register robot pose subscriber callback.
     pose_subscriber_ =
-      node.subscribe<geometry_msgs::PoseStamped>(pose_topic_.c_str(), 10,
+      node.subscribe<geometry_msgs::PoseStamped>(pose_topic_.c_str(), 100,
                                                  &AtomMapExample::AddPoseCallback, this);
 
     return true;

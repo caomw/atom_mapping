@@ -38,6 +38,7 @@
 #include <atom_map/Atom.h>
 
 #include <glog/logging.h>
+#include <iostream>
 #include <math.h>
 
 namespace gu = geometry_utils;
@@ -173,13 +174,10 @@ namespace atom {
   }
 
   double Atom::ComputeOverlapFraction(const Atom::Ptr& atom) const {
-    const double total_volume = 4.0 / 3.0; // The pi r^3 will cancel.
     const double distance = GetDistanceTo(atom);
 
-    const double overlap_volume =
-      4.0 * ((-1.0/3.0) * (pow(distance / (2.0 * radius_), 3) - 1.0) +
-             (distance / 4.0) * (pow(distance / (2.0 * radius_), 2) - 1.0));
-    return overlap_volume / total_volume;
+    return 1 - (0.25 / pow(radius_, 3)) * distance *
+      (3.0 * pow(radius_, 2) - 0.25 * pow(distance, 2));
   }
 
   void Atom::AddNeighbor(Atom::Ptr neighbor) {

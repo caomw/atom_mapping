@@ -28,7 +28,7 @@ catkin_package(
     FLANN
 )
 
-option(ENABLE_DEBUG_MESSAGES "Turn on to enable bound checking and debug messages" OFF)
+option(ENABLE_DEBUG_MESSAGES "Turn on to enable bound checking and debug messages" ON)
 if(ENABLE_DEBUG_MESSAGES)
   add_definitions(-DENABLE_DEBUG_MESSAGES=1)
 else()

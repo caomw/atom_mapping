@@ -75,9 +75,12 @@ namespace atom {
     std::vector< std::vector<int> > query_match_indices;
     std::vector< std::vector<double> > query_distances;
 
+    const int kNumSearchParams = 128;
     int num_neighbors_found =
       index_->knnSearch(flann_query, query_match_indices,
                         query_distances, static_cast<int>(k),
+                        //flann::SearchParams(flann::FLANN_CHECKS_AUTOTUNED));
+                        //flann::SearchParams(kNumSearchParams));
                         flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
 
     // Assign output.
@@ -116,11 +119,13 @@ namespace atom {
     std::vector< std::vector<int> > query_match_indices;
     std::vector< std::vector<double> > query_distances;
 
+    const int kNumSearchParams = 128;
     int num_neighbors_found =
       index_->radiusSearch(flann_query, query_match_indices,
                            query_distances, static_cast<float>(r),
+                           //flann::SearchParams(flann::FLANN_CHECKS_AUTOTUNED));
+                           //flann::SearchParams(kNumSearchParams));
                            flann::SearchParams(flann::FLANN_CHECKS_UNLIMITED));
-
     // Assign output.
     for (size_t ii = 0; ii < num_neighbors_found; ii++)
       neighbors->push_back(registry_[ query_match_indices[0][ii] ]);
@@ -148,10 +153,20 @@ namespace atom {
 
     // If this is the first point in the index, create the index and exit.
     if (index_ == nullptr) {
-      // Single kd-tree. No approximation.
+      // Single kd-tree.
       const int kNumRandomizedKDTrees = 1;
       index_.reset(new flann::Index< flann::L2<double> >(
-                   flann_point, flann::KDTreeIndexParams(kNumRandomizedKDTrees)));
+                     flann_point, flann::KDTreeIndexParams(kNumRandomizedKDTrees)));
+
+      /*
+      const float kTargetPrecision = 1.0;
+      const float kBuildWeight = 0.01;
+      const float kMemoryWeight = 0;
+      const float kSampleFraction = 0.1;
+      flann::AutotunedIndexParams params(kTargetPrecision, kBuildWeight,
+                                         kMemoryWeight, kSampleFraction);
+      index_.reset(new flann::Index< flann::L2<double> >(flann_point, params));
+      */
       index_->buildIndex();
     } else {
       // Find all neighbors and add them to this Atom's neighbors list.

@@ -205,14 +205,14 @@ namespace atom {
     }
 
     std::vector<Atom::Ptr> neighbors;
-    if (!map_.RadiusSearch(position, 2.0 * radius_ - 1e-6, &neighbors)) {
+    if (!map_.RadiusSearch(position, 2.0 * radius_ - 1e-4, &neighbors)) {
       ROS_WARN("%s: Error in radius search during Update().", name_.c_str());
       return;
     }
 
     // Handle case where sample lies more than twice the atomic radius
     // from its nearest neighbor.
-    else if (neighbors.size() == 0) {
+    if (neighbors.size() == 0) {
       // Set probability of occupancy.
       if (update_occupancy_) {
         if (sdf > 0.0)
@@ -248,8 +248,13 @@ namespace atom {
         }
 
         // Update signed distance.
-        if (update_signed_distance_)
-          neighbor->UpdateSignedDistance(sdf, weight);
+        if (update_signed_distance_) {
+          if (weight < 0.0 || weight > 1.0)
+            ROS_WARN("Weight was out of bounds (%5.4f). Distance between atoms was %5.4f.",
+                     weight, neighbor->GetDistanceTo(atom));
+          else
+            neighbor->UpdateSignedDistance(sdf, weight);
+        }
       }
     }
   }
@@ -349,9 +354,6 @@ namespace atom {
     double nz = normal.normal_z;
 
     if (isnan(nx) || isnan(ny) || isnan(nz)) {
-#ifdef ENABLE_DEBUG_MESSAGES
-      ROS_WARN("%s: Normal was NAN. Tracing along ray instead.", name_.c_str());
-#endif
       nx = dx; ny = dy; nz = dz;
     }
 
@@ -538,14 +540,16 @@ namespace atom {
   // Convert a signed distnace to a ROS color. Red is probably close to a surface,
   // and blue is probably far from a surface.
   std_msgs::ColorRGBA AtomMap::SignedDistanceToRosColor(double sdf) const {
-    const double min_dist = map_.GetMinDistance();
-    const double max_dist = map_.GetMaxDistance();
+    // const double min_dist = map_.GetMinDistance();
+    // const double max_dist = map_.GetMaxDistance();
+    const double min_dist = -sdf_threshold_;
+    const double max_dist = sdf_threshold_;
 
     std_msgs::ColorRGBA c;
     c.r = 1.0 - (sdf - min_dist) / (max_dist - min_dist);
     c.g = 0.0;
     c.b = (sdf - min_dist) / (max_dist - min_dist);
-    c.a = 0.2;
+    c.a = 1.0;
 
     return c;
   }
