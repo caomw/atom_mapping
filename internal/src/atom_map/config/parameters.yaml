@@ -6,6 +6,10 @@ atom:
   # Atomic radius.
   radius: 0.5
 
+  # Min and max range to consider valid scans.
+  min_scan_range: 0.1
+  max_scan_range: 25.0
+
   # Radius for nearest neighbor search for surface normal estimation. This should
   # be on the order of the voxel grid resolution if input point clouds are filtered.
   surface_normal_radius: 2.5

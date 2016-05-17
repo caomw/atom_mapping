@@ -82,6 +82,10 @@ namespace atom {
     // Atomic radius.
     double radius_;
 
+    // Min and max scan ranges.
+    double min_scan_range_;
+    double max_scan_range_;
+
     // Optionally update signed distance and/or occupancy.
     bool update_occupancy_;
     bool update_signed_distance_;

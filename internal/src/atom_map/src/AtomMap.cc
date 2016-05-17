@@ -305,6 +305,8 @@ namespace atom {
   bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
     if (!pu::Get("atom/gamma", gamma_)) return false;
     if (!pu::Get("atom/radius", radius_)) return false;
+    if (!pu::Get("atom/min_scan_range", min_scan_range_)) return false;
+    if (!pu::Get("atom/max_scan_range", max_scan_range_)) return false;
     if (!pu::Get("atom/noise", noise_variance_)) return false;
     if (!pu::Get("atom/probability_hit", probability_hit_)) return false;
     if (!pu::Get("atom/probability_miss", probability_miss_)) return false;
@@ -344,9 +346,12 @@ namespace atom {
     const double range = std::sqrt(dx*dx + dy*dy + dz*dz);
 
     // Handle non-returns, i.e. range == 0.
-    if (range < 1e-6) {
+    if (range < 1e-6)
       return;
-    }
+
+    // Check range in bounds.
+    if (range < min_scan_range_ || range > max_scan_range_)
+      return;
 
     dx /= range; dy /= range; dz /= range;
 
