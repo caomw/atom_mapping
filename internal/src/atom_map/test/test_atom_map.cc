@@ -167,21 +167,20 @@ TEST(AtomKdtree, TestAtomKdtreeInsertion) {
   }
 }
 
-// Test radius search as above.
+// Test radius search by making sure all points returned are actually within
+// the specified radius.
 TEST(AtomKdtree, TestAtomKdtreeRadiusSearch) {
   AtomKdtree tree;
 
   // Set params for random point generation.
-  const double kRadius = 0.0001;
-  const size_t kNumPoints = 500;
-  const double kLowerBound = -1.0;
-  const double kUpperBound = 1.0;
+  const double kRadius = 0.5;
+  const size_t kNumPoints = 100000;
+  const double kLowerBound = -10.0;
+  const double kUpperBound = 10.0;
   std::uniform_real_distribution<double> unif(kLowerBound, kUpperBound);
   std::default_random_engine rng;
 
-  // Generate a bunch of random points and add to the tree if they are inside the
-  // unit sphere.
-  std::vector<Atom::Ptr> atoms;
+  // Generate a bunch of random points and add to the tree.
   for (size_t ii = 0; ii < kNumPoints; ii++) {
     Atom::Ptr atom = Atom::Create(kRadius);
     gu::Vec3 pos(unif(rng), unif(rng), unif(rng));
@@ -189,27 +188,19 @@ TEST(AtomKdtree, TestAtomKdtreeRadiusSearch) {
 
     // Insert.
     ASSERT_TRUE(tree.Insert(atom));
-    atoms.push_back(atom);
   }
 
-  // Check nearest neighbors with a radius search on a tiny radius.
-  for (size_t ii = 0; ii < atoms.size(); ii++) {
-    Atom::Ptr atom = atoms[ii];
-
-    // Nearest neighbor search.
+  // Check nearest neighbors with a radius search.
+  const size_t kNumChecks = 1000;
+  for (size_t ii = 0; ii < kNumChecks; ii++) {
     std::vector<Atom::Ptr> neighbors;
-    const double kSearchRadius = 1e-4;
-    ASSERT_TRUE(tree.RadiusSearch(atom->GetPosition()(0),
-                                  atom->GetPosition()(1),
-                                  atom->GetPosition()(2),
+    const double kSearchRadius = kRadius;
+    const pcl::PointXYZ p(unif(rng), unif(rng), unif(rng));
+    ASSERT_TRUE(tree.RadiusSearch(p.x, p.y, p.z,
                                   kSearchRadius, &neighbors));
 
-    ASSERT_EQ(neighbors.size(), 1);
-
-    // Check that the nearest neighbor matches.
-    EXPECT_EQ(neighbors[0]->GetPosition()(0), atom->GetPosition()(0));
-    EXPECT_EQ(neighbors[0]->GetPosition()(1), atom->GetPosition()(1));
-    EXPECT_EQ(neighbors[0]->GetPosition()(2), atom->GetPosition()(2));
+    for (size_t jj = 0; jj < neighbors.size(); jj++)
+      EXPECT_TRUE(neighbors[jj]->GetDistanceTo(p) < kSearchRadius);
   }
 }
 

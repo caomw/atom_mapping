@@ -75,7 +75,7 @@ namespace atom {
     std::vector< std::vector<int> > query_match_indices;
     std::vector< std::vector<double> > query_distances;
 
-    const int kNumSearchParams = 128;
+    //    const int kNumSearchParams = 128;
     int num_neighbors_found =
       index_->knnSearch(flann_query, query_match_indices,
                         query_distances, static_cast<int>(k),
@@ -119,7 +119,7 @@ namespace atom {
     std::vector< std::vector<int> > query_match_indices;
     std::vector< std::vector<double> > query_distances;
 
-    const int kNumSearchParams = 128;
+    //    const int kNumSearchParams = 128;
     int num_neighbors_found =
       index_->radiusSearch(flann_query, query_match_indices,
                            query_distances, static_cast<float>(r),
@@ -169,13 +169,14 @@ namespace atom {
       */
       index_->buildIndex();
     } else {
+#if 0
       // Find all neighbors and add them to this Atom's neighbors list.
       if (!SetNeighbors(atom))
         return false;
 
       // Update those neighbors' lists to include this Atom.
       UpdateNeighbors(atom);
-
+#endif
       // If the index is already created, add the data point to the index. Rebuild
       // every time the index doubles in size to occasionally rebalance the kdtree.
       const int kRebuildThreshold = 2;

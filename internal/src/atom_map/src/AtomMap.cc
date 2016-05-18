@@ -292,6 +292,12 @@ void AtomMap::MaybeInsertAtom(const Atom::Ptr& atom) {
     for (size_t jj = 0; jj < neighbors.size(); jj++) {
       Atom::Ptr neighbor = neighbors[jj];
 
+      if (atom->GetDistanceTo(neighbor) > 2.0 * radius_) {
+        ROS_WARN("%s: Neighbor is too far away: %lf > %lf.", name_.c_str(),
+                 atom->GetDistanceTo(neighbor), 2.0 * radius_);
+        continue;
+      }
+
       // Compute overlap fraction.
       const double weight = atom->ComputeOverlapFraction(neighbor);
       if (weight >= 0.0 && weight <= 1.0) {

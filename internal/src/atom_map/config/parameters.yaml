@@ -4,7 +4,7 @@ atom:
   gamma: 2.0
 
   # Atomic radius.
-  radius: 0.5
+  radius: 0.4
 
   # Min and max range to consider valid scans.
   min_scan_range: 1.0
@@ -20,7 +20,7 @@ atom:
 
   # Maximum distance to raycast into a surface (think of this as the surface
   # thickness).
-  max_occupied_backoff: 2.5
+  max_occupied_backoff: 2.1
 
   # Maximum distance to raycast into free space along the surface normal.
   max_normal_backoff: 4.1
