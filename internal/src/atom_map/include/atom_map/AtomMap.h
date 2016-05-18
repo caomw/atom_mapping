@@ -40,7 +40,7 @@
 
 #include <atom_map/Atom.h>
 #include <atom_map/AtomKdtree.h>
-#include <atom_map/SampledRay.h>
+#include <atom_map/RaySamples.h>
 #include <parameter_utils/ParameterUtils.h>
 #include <geometry_utils/GeometryUtilsROS.h>
 
@@ -139,14 +139,26 @@ namespace atom {
     bool LoadParameters(const ros::NodeHandle& n);
     bool RegisterCallbacks(const ros::NodeHandle& n);
 
+    // Try to add a single atom.
+    void MaybeInsertAtom(const pcl::PointXYZ& position, double sdf);
+    void MaybeInsertAtom(const Atom::Ptr& atom);
+
+    // Copy parameters from a different AtomMap.
+    void CopyParametersFrom(const AtomMap& reference);
+
+    // Return a list of all Atoms in the map.
+    const std::vector<Atom::Ptr>& GetAtoms() const;
+
     // Sample a ray and do a probabilistic and signed distance update.
     // Given a robot position and a measured point, discretize the ray from sensor
-    // to observation and return vectors of points and distances.
+    // to observation and return vectors of points and distances. Append to the
+    // output RaySamples argument.
     void SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
-                   const pcl::PointXYZ& robot, SampledRay* samples);
+                   const pcl::PointXYZ& robot, RaySamples* samples);
+#if 0
     void Update(const pcl::PointXYZ& point, const pcl::Normal& normal,
                 const pcl::PointXYZ& robot);
-    void MaybeInsertAtom(const pcl::PointXYZ& position, double sdf);
+#endif
 
     // Apply the covariance kernel function.
     double CovarianceKernel(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2);

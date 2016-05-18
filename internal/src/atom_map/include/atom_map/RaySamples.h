@@ -35,15 +35,15 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#ifndef ATOM_MAPPING_SAMPLED_RAY_H
-#define ATOM_MAPPING_SAMPLED_RAY_H
+#ifndef ATOM_MAPPING_RAY_SAMPLES_H
+#define ATOM_MAPPING_RAY_SAMPLES_H
 
 #include <pcl/point_types.h>
 #include <vector>
 
 namespace atom {
-  struct SampledRay {
-    // List of points and signed distances along the ray between the observer
+  struct RaySamples {
+    // List of points and signed distances along rays between the observer
     // and the surface.
     std::vector<pcl::PointXYZ> ray_points_;
     std::vector<double> ray_distances_;
@@ -67,7 +67,7 @@ namespace atom {
       occupied_points_.clear();
       occupied_distances_.clear();
     }
-  }; // struct SampledRay
+  }; // struct RaySamples
 } // namespace atom
 
 #endif
