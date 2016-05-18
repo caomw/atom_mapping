@@ -174,7 +174,7 @@ TEST(AtomKdtree, TestAtomKdtreeRadiusSearch) {
 
   // Set params for random point generation.
   const double kRadius = 0.5;
-  const size_t kNumPoints = 100000;
+  const size_t kNumPoints = 1000;
   const double kLowerBound = -10.0;
   const double kUpperBound = 10.0;
   std::uniform_real_distribution<double> unif(kLowerBound, kUpperBound);

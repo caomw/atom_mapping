@@ -154,9 +154,10 @@ namespace atom {
     // If this is the first point in the index, create the index and exit.
     if (index_ == nullptr) {
       // Single kd-tree.
-      const int kNumRandomizedKDTrees = 1;
-      index_.reset(new flann::Index< flann::L2<double> >(
-                     flann_point, flann::KDTreeIndexParams(kNumRandomizedKDTrees)));
+      //      const int kNumRandomizedKDTrees = 1;
+      //      index_.reset(new flann::Index< flann::L2<double> >(
+      //                    flann_point, flann::KDTreeIndexParams(kNumRandomizedKDTrees)));
+      index_.reset(new flann::KDTreeSingleIndex< flann::L2<double> >(flann_point));
 
       /*
       const float kTargetPrecision = 1.0;
