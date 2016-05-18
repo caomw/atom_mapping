@@ -7,7 +7,7 @@ atom:
   radius: 0.5
 
   # Min and max range to consider valid scans.
-  min_scan_range: 0.1
+  min_scan_range: 1.0
   max_scan_range: 25.0
 
   # Radius for nearest neighbor search for surface normal estimation. This should
@@ -28,7 +28,7 @@ atom:
   # Maximum number of atoms to lay down along the ray toward the robot and the
   # normal vector (both into free space).
   max_samples_normal: 3
-  max_samples_ray: 20
+  max_samples_ray: 10
 
   # Noise variance for GP signed distance function regression.
   noise: 1.0
@@ -49,7 +49,7 @@ atom:
 #  fixed_frame_id: velodyne
 
   # Thresholds for visualizing occupied atoms and those near surfaces.
-  occupied_threshold: 0.5
+  occupied_threshold: 0.75
   sdf_threshold: 1.1
 
   # Boolean to visualize only those atoms that are either occupied

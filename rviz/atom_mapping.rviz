@@ -5,6 +5,7 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
+        - /TF1/Frames1
         - /3D Octree1/Autocompute Value Bounds1
         - /3D Incremental Octree1/Autocompute Value Bounds1
       Splitter Ratio: 0.5
@@ -67,17 +68,14 @@ Visualization Manager:
       Show Names: true
       Tree:
         world:
-          base:
-            {}
-          odometry:
-            {}
+          {}
       Update Interval: 0
       Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 21.6663
-        Min Value: -3.45206
+        Max Value: 19.3001
+        Min Value: -4.59981
         Value: true
       Axis: Z
       Channel Name: ring
@@ -418,9 +416,17 @@ Visualization Manager:
       Marker Topic: /atom_map_example/sdf
       Name: AtomMap SDF
       Namespaces:
-        world: true
+        {}
       Queue Size: 100
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: false
+      Marker Topic: /occupied_cells_vis_array
+      Name: Octomap
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 0; 0; 0
@@ -445,22 +451,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 134.247
+      Distance: 149.884
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 27.9499
-        Y: -4.0091
-        Z: -88.5902
+        X: 80.498
+        Y: -22.2391
+        Z: -20.3398
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 1.4348
+      Pitch: 1.2098
       Target Frame: prism/base
       Value: Orbit (rviz)
-      Yaw: 4.599
+      Yaw: 4.18797
     Saved: ~
 Window Geometry:
   Displays:
