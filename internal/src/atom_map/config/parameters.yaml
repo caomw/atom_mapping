@@ -4,23 +4,23 @@ atom:
   gamma: 2.0
 
   # Atomic radius.
-  radius: 0.4
+  radius: 0.1
 
   # Min and max range to consider valid scans.
-  min_scan_range: 1.0
+  min_scan_range: 0.1
   max_scan_range: 25.0
 
   # Radius for nearest neighbor search for surface normal estimation. This should
   # be on the order of the voxel grid resolution if input point clouds are filtered.
-  surface_normal_radius: 2.5
+  surface_normal_radius: 0.5
 
   # Optionally update signed distance and occupancy separately.
   update_occupancy: true
-  update_signed_distance: true
+  update_signed_distance: false
 
   # Maximum distance to raycast into a surface (think of this as the surface
   # thickness).
-  max_occupied_backoff: 2.1
+  max_occupied_backoff: 0.25
 
   # Maximum distance to raycast into free space along the surface normal.
   max_normal_backoff: 4.1
@@ -28,7 +28,7 @@ atom:
   # Maximum number of atoms to lay down along the ray toward the robot and the
   # normal vector (both into free space).
   max_samples_normal: 3
-  max_samples_ray: 10
+  max_samples_ray: 10000
 
   # Noise variance for GP signed distance function regression.
   noise: 1.0
@@ -54,4 +54,4 @@ atom:
 
   # Boolean to visualize only those atoms that are either occupied
   # or near surfaces.
-  only_show_occupied: true
+  only_show_occupied: false

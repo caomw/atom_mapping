@@ -79,7 +79,7 @@ namespace atom {
   private:
     // A Flann kdtree to hold all the Atoms. Searches in this tree return
     // indices, which are then mapped to Atom::Ptr types in an array.
-    std::shared_ptr< flann::KDTreeSingleIndex< flann::L2<double> > > index_;
+    std::shared_ptr< flann::KDTreeIndex< flann::L2<double> > > index_;
     std::vector<Atom::Ptr> registry_;
 
     // Keep track of maximum and minimum signed distances to the surface.
