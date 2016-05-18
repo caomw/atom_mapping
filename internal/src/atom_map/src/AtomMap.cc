@@ -72,8 +72,8 @@ bool AtomMap::Initialize(const ros::NodeHandle& n) {
 }
 
 // Getters.
-void AtomMap::GetSignedDistance(double x, double y, double z, double* distance,
-                                double* variance) {
+void AtomMap::GetSignedDistance(float x, float y, float z, float* distance,
+                                float* variance) {
   CHECK_NOTNULL(distance);
   CHECK_NOTNULL(variance);
 
@@ -81,8 +81,8 @@ void AtomMap::GetSignedDistance(double x, double y, double z, double* distance,
   std::vector<Atom::Ptr> neighbors;
   if (!map_.GetKNearestNeighbors(x, y, z, num_neighbors_, &neighbors)) {
     ROS_WARN("%s: Error in extracting nearest neighbors.", name_.c_str());
-    *distance = std::numeric_limits<double>::infinity();
-    *variance = std::numeric_limits<double>::infinity();
+    *distance = std::numeric_limits<float>::infinity();
+    *variance = std::numeric_limits<float>::infinity();
   }
 
   // Generate covariance matrix for the training data.
@@ -100,7 +100,7 @@ void AtomMap::GetSignedDistance(double x, double y, double z, double* distance,
       p2.y = neighbors[jj]->GetPosition()(1);
       p2.z = neighbors[jj]->GetPosition()(2);
 
-      double cov = CovarianceKernel(p1, p2);
+      float cov = CovarianceKernel(p1, p2);
       K11(ii, jj) = cov;
       K11(jj, ii) = cov;
     }
@@ -133,7 +133,7 @@ void AtomMap::GetSignedDistance(double x, double y, double z, double* distance,
 
 // Find probability of occupancy. Return -1 if error or if this point does
 // not lie within an Atom.
-double AtomMap::GetProbability(double x, double y, double z) {
+float AtomMap::GetProbability(float x, float y, float z) {
   std::vector<Atom::Ptr> neighbors;
   if (!map_.RadiusSearch(x, y, z, radius_, &neighbors)) {
     ROS_WARN("%s: Error in radius search during GetProbability().",
@@ -150,42 +150,11 @@ double AtomMap::GetProbability(double x, double y, double z) {
   return neighbors[0]->GetProbability();
 }
 
-#if 0
-// Update the map for this observation.
-void AtomMap::Update(const pcl::PointXYZ& point, const pcl::Normal& normal,
-                     const pcl::PointXYZ& robot) {
-  // Sample the ray.
-  RaySamples samples;
-  SampleRay(point, normal, robot, &samples);
-
-  // Try to insert occupied Atoms.
-  for (size_t ii = 0; ii < samples.occupied_points_.size(); ii++) {
-    MaybeInsertAtom(samples.occupied_points_[ii],
-                    samples.occupied_distances_[ii]);
-  }
-
-  // Try to insert Atoms along the ray.
-  if (update_occupancy_) {
-    for (size_t ii = 0; ii < samples.ray_points_.size(); ii++) {
-      MaybeInsertAtom(samples.ray_points_[ii], samples.ray_distances_[ii]);
-    }
-  }
-
-  // Try to insert Atoms along the normal.
-  if (update_signed_distance_) {
-    for (size_t ii = 0; ii < samples.normal_points_.size(); ii++) {
-      MaybeInsertAtom(samples.normal_points_[ii],
-                      samples.normal_distances_[ii]);
-    }
-  }
-}
-#endif
-
 // Insert Atom at this position into the tree. Handle options regarding
 // updating occupancy and signed distance.
-void AtomMap::MaybeInsertAtom(const pcl::PointXYZ& position, double sdf) {
-  Atom::Ptr atom = Atom::Create(radius_);
-  atom->SetPosition(gu::Vec3(position.x, position.y, position.z));
+void AtomMap::MaybeInsertAtom(const pcl::PointXYZ& position, float sdf) {
+  Atom::Ptr atom = Atom::Create();
+  atom->SetPosition(gu::Vec3f(position.x, position.y, position.z));
 
   // If the AtomKdtree is empty, just insert this atom.
   if (map_.Size() == 0) {
@@ -239,7 +208,7 @@ void AtomMap::MaybeInsertAtom(const pcl::PointXYZ& position, double sdf) {
       Atom::Ptr neighbor = neighbors[jj];
 
       // Compute overlap fraction.
-      const double weight = atom->ComputeOverlapFraction(neighbor);
+      const float weight = atom->ComputeOverlapFraction(neighbor);
       if (weight >= 0.0 && weight <= 1.0) {
         // Update occupancy.
         if (update_occupancy_) {
@@ -299,7 +268,7 @@ void AtomMap::MaybeInsertAtom(const Atom::Ptr& atom) {
       }
 
       // Compute overlap fraction.
-      const double weight = atom->ComputeOverlapFraction(neighbor);
+      const float weight = atom->ComputeOverlapFraction(neighbor);
       if (weight >= 0.0 && weight <= 1.0) {
         // Update occupancy.
         if (update_occupancy_)
@@ -466,6 +435,9 @@ bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
   if (!pu::Get("atom/max_samples_ray", max_samples_ray_)) return false;
   if (!pu::Get("atom/max_samples_normal", max_samples_normal_)) return false;
 
+  // Radius is constant across all atoms. Call static setter.
+  Atom::SetRadius(radius_);
+
   return true;
 }
 
@@ -480,10 +452,10 @@ void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
   CHECK_NOTNULL(samples);
 
   // Compute the range to the observed point and the unit direction.
-  double dx = robot.x - point.x;
-  double dy = robot.y - point.y;
-  double dz = robot.z - point.z;
-  const double range = std::sqrt(dx * dx + dy * dy + dz * dz);
+  float dx = robot.x - point.x;
+  float dy = robot.y - point.y;
+  float dz = robot.z - point.z;
+  const float range = std::sqrt(dx * dx + dy * dy + dz * dz);
 
   // Handle non-returns, i.e. range == 0.
   if (range < 1e-6) return;
@@ -496,9 +468,9 @@ void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
   dz /= range;
 
   // Unpack normal vector. Not const because it will be set to dx/dy/dz if NAN.
-  double nx = normal.normal_x;
-  double ny = normal.normal_y;
-  double nz = normal.normal_z;
+  float nx = normal.normal_x;
+  float ny = normal.normal_y;
+  float nz = normal.normal_z;
 
   if (isnan(nx) || isnan(ny) || isnan(nz)) {
     nx = dx;
@@ -510,10 +482,10 @@ void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
   // vector, if it is not NAN. Otherwise just trace along the ray.
   const size_t num_samples_back =
       static_cast<size_t>(0.5 * max_occupied_backoff_ / radius_);
-  const double step_size_back =
-      0.5 * max_occupied_backoff_ / static_cast<double>(num_samples_back);
+  const float step_size_back =
+      0.5 * max_occupied_backoff_ / static_cast<float>(num_samples_back);
   for (size_t ii = 0; ii < num_samples_back; ii++) {
-    const double backoff = static_cast<double>(2 * ii + 1) * step_size_back;
+    const float backoff = static_cast<float>(2 * ii + 1) * step_size_back;
 
     pcl::PointXYZ p;
     p.x = point.x - backoff * nx;
@@ -533,10 +505,10 @@ void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
         (dense_samples_normal < max_samples_normal_)
             ? dense_samples_normal
             : static_cast<size_t>(max_samples_normal_);
-    const double step_size_normal =
-        0.5 * max_normal_backoff_ / static_cast<double>(num_samples_normal);
+    const float step_size_normal =
+        0.5 * max_normal_backoff_ / static_cast<float>(num_samples_normal);
     for (size_t ii = 0; ii < num_samples_normal; ii++) {
-      const double backoff = static_cast<double>(2 * ii + 1) * step_size_normal;
+      const float backoff = static_cast<float>(2 * ii + 1) * step_size_normal;
 
       pcl::PointXYZ p;
       p.x = point.x + backoff * nx;
@@ -551,7 +523,7 @@ void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
   if (update_occupancy_) {
     // Start at the surface and walk toward the robot. Initially, backoff just
     // enough to be tangent to the surface.
-    const double ray_initial_backoff = radius_ / (dx * nx + dy * ny + dz * nz);
+    const float ray_initial_backoff = radius_ / (dx * nx + dy * ny + dz * nz);
 
     // If this backoff distance is greater than the range to the robot, just
     // ignore this point.
@@ -562,10 +534,10 @@ void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
           (dense_samples_ray < max_samples_ray_)
               ? dense_samples_ray
               : static_cast<size_t>(max_samples_ray_);
-      const double step_size_ray = 0.5 * (range - ray_initial_backoff) /
-                                   static_cast<double>(num_samples_ray);
+      const float step_size_ray = 0.5 * (range - ray_initial_backoff) /
+                                   static_cast<float>(num_samples_ray);
       for (size_t ii = 0; ii < num_samples_ray; ii++) {
-        const double backoff = static_cast<double>(2 * ii + 1) * step_size_ray +
+        const float backoff = static_cast<float>(2 * ii + 1) * step_size_ray +
                                ray_initial_backoff;
 
         pcl::PointXYZ p;
@@ -584,11 +556,11 @@ void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
 // there are many other valid kernels to consider. For example one easy change
 // would be to scale covariance by the 'variance' estimate of signed distance
 // at each Atom.
-double AtomMap::CovarianceKernel(const pcl::PointXYZ& p1,
+float AtomMap::CovarianceKernel(const pcl::PointXYZ& p1,
                                  const pcl::PointXYZ& p2) {
-  const double dx = p1.x - p2.x;
-  const double dy = p1.y - p2.y;
-  const double dz = p1.z - p2.z;
+  const float dx = p1.x - p2.x;
+  const float dy = p1.y - p2.y;
+  const float dz = p1.z - p2.z;
   return std::exp(-gamma_ * (dx * dx + dy * dy + dz * dz));
 }
 
@@ -619,11 +591,11 @@ void AtomMap::PublishFullOccupancy() const {
   ROS_INFO("%s: Publishing %lu atoms.", name_.c_str(), atoms.size());
 
   for (size_t ii = 0; ii < atoms.size(); ii++) {
-    const double probability_occupied = atoms[ii]->GetProbability();
+    const float probability_occupied = atoms[ii]->GetProbability();
 
     // Maybe only show if probably occupied.
     if (!only_show_occupied_ || probability_occupied > occupied_threshold_) {
-      gu::Vec3 p = atoms[ii]->GetPosition();
+      gu::Vec3f p = atoms[ii]->GetPosition();
       m.points.push_back(gr::ToRosPoint(p));
       m.colors.push_back(ProbabilityToRosColor(probability_occupied));
     }
@@ -658,11 +630,11 @@ void AtomMap::PublishFullSignedDistance() const {
   ROS_INFO("%s: Publishing %lu atoms.", name_.c_str(), atoms.size());
 
   for (size_t ii = 0; ii < atoms.size(); ii++) {
-    const double sdf = atoms[ii]->GetSignedDistance();
+    const float sdf = atoms[ii]->GetSignedDistance();
 
     // Maybe only show if probably occupied.
     if (!only_show_occupied_ || std::abs(sdf) < sdf_threshold_) {
-      gu::Vec3 p = atoms[ii]->GetPosition();
+      gu::Vec3f p = atoms[ii]->GetPosition();
       m.points.push_back(gr::ToRosPoint(p));
       m.colors.push_back(SignedDistanceToRosColor(sdf));
     }
@@ -673,7 +645,7 @@ void AtomMap::PublishFullSignedDistance() const {
 
 // Convert a probability of occupancy to a ROS color. Red is more likely to be
 // occupied, blue is more likely to be free.
-std_msgs::ColorRGBA AtomMap::ProbabilityToRosColor(double probability) const {
+std_msgs::ColorRGBA AtomMap::ProbabilityToRosColor(float probability) const {
 #ifdef ENABLE_DEBUG_MESSAGES
   if (probability < 0.0) {
     ROS_ERROR("%s: Probability is out of bounds.", name_.c_str());
@@ -695,11 +667,11 @@ std_msgs::ColorRGBA AtomMap::ProbabilityToRosColor(double probability) const {
 
 // Convert a signed distnace to a ROS color. Red is probably close to a surface,
 // and blue is probably far from a surface.
-std_msgs::ColorRGBA AtomMap::SignedDistanceToRosColor(double sdf) const {
-  // const double min_dist = map_.GetMinDistance();
-  // const double max_dist = map_.GetMaxDistance();
-  const double min_dist = -sdf_threshold_;
-  const double max_dist = sdf_threshold_;
+std_msgs::ColorRGBA AtomMap::SignedDistanceToRosColor(float sdf) const {
+  // const float min_dist = map_.GetMinDistance();
+  // const float max_dist = map_.GetMaxDistance();
+  const float min_dist = -sdf_threshold_;
+  const float max_dist = sdf_threshold_;
 
   std_msgs::ColorRGBA c;
   c.r = 1.0 - (sdf - min_dist) / (max_dist - min_dist);

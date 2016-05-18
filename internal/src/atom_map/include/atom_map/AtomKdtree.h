@@ -54,13 +54,13 @@ namespace atom {
     ~AtomKdtree();
 
     // Nearest neighbor queries.
-    bool GetKNearestNeighbors(double x, double y, double z, size_t k,
+    bool GetKNearestNeighbors(float x, float y, float z, size_t k,
                               std::vector<Atom::Ptr>* neighbors);
     bool GetKNearestNeighbors(const pcl::PointXYZ& p, size_t k,
                               std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(double x, double y, double z, double r,
+    bool RadiusSearch(float x, float y, float z, float r,
                       std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(const pcl::PointXYZ& p, double r,
+    bool RadiusSearch(const pcl::PointXYZ& p, float r,
                       std::vector<Atom::Ptr>* neighbors);
 
     // Insert a new Atom.
@@ -73,18 +73,18 @@ namespace atom {
     size_t Size() const;
 
     // Return the maximum and minimum distances of any Atom to the surface.
-    double GetMaxDistance() const;
-    double GetMinDistance() const;
+    float GetMaxDistance() const;
+    float GetMinDistance() const;
 
   private:
     // A Flann kdtree to hold all the Atoms. Searches in this tree return
     // indices, which are then mapped to Atom::Ptr types in an array.
-    std::shared_ptr< flann::KDTreeIndex< flann::L2<double> > > index_;
+    std::shared_ptr< flann::KDTreeIndex< flann::L2<float> > > index_;
     std::vector<Atom::Ptr> registry_;
 
     // Keep track of maximum and minimum signed distances to the surface.
-    double max_distance_;
-    double min_distance_;
+    float max_distance_;
+    float min_distance_;
 
     // Find all neighbors for an Atom and set that Atom's neighbors_ field.
     bool SetNeighbors(Atom::Ptr atom);

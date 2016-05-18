@@ -45,59 +45,66 @@ namespace gu = geometry_utils;
 
 namespace atom {
 
-  Atom::~Atom() {}
-  Atom::Atom(double r)
-    : log_odds_(ToLogOdds(0.5)), radius_(r), sdf_mean_(0.0),
-      sdf_variance_(std::numeric_limits<double>::infinity()),
-      position_(0.0, 0.0, 0.0) {}
+  float Atom::radius_ = 0;
 
-  Atom::Ptr Atom::Create(double r) {
-    Atom::Ptr atom(new Atom(r));
+  Atom::~Atom() {}
+  Atom::Atom()
+      : log_odds_(ToLogOdds(0.5)),
+        sdf_mean_(0.0),
+        sdf_variance_(std::numeric_limits<float>::infinity()),
+        position_(0.0, 0.0, 0.0) {}
+
+  Atom::Ptr Atom::Create() {
+    Atom::Ptr atom(new Atom());
     return atom;
   }
 
-  double Atom::GetProbability() const {
+  float Atom::GetProbability() const {
     return ToProbability(log_odds_);
   }
 
-  double Atom::GetLogOdds() const {
+  float Atom::GetLogOdds() const {
     return log_odds_;
   }
 
-  double Atom::GetSignedDistance() const {
+  float Atom::GetSignedDistance() const {
     return sdf_mean_;
   }
 
-  double Atom::GetSignedDistanceVariance() const {
+  float Atom::GetSignedDistanceVariance() const {
     return sdf_variance_;
   }
 
-  double Atom::GetRadius() const {
+  float Atom::GetRadius() const {
     return radius_;
   }
 
-  gu::Vec3 Atom::GetPosition() const {
+  gu::Vec3f Atom::GetPosition() const {
     return position_;
   }
 
-  void Atom::SetProbability(double p) {
+  void Atom::SetRadius(float r) {
+    radius_ = r;
+  }
+
+  void Atom::SetProbability(float p) {
     log_odds_ = ToLogOdds(p);
   }
 
-  void Atom::SetLogOdds(double l) {
+  void Atom::SetLogOdds(float l) {
     log_odds_ = l;
   }
 
-  void Atom::SetSignedDistance(double d) {
+  void Atom::SetSignedDistance(float d) {
     sdf_mean_ = d;
     sdf_variance_ = ToVariance(d);
   }
 
-  void Atom::SetPosition(const gu::Vec3& p) {
+  void Atom::SetPosition(const gu::Vec3f& p) {
     position_ = p;
   }
 
-  void Atom::UpdateProbability(double probability_update, double weight) {
+  void Atom::UpdateProbability(float probability_update, float weight) {
 #ifdef ENABLE_DEBUG_MESSAGES
     if (probability_update < 0.0 || probability_update > 1.0) {
       VLOG(1) << "Probability update is not a probability in [0, 1]: "
@@ -111,7 +118,7 @@ namespace atom {
     log_odds_ += weight * ToLogOdds(probability_update);
   }
 
-  void Atom::UpdateLogOdds(double log_odds_update, double weight) {
+  void Atom::UpdateLogOdds(float log_odds_update, float weight) {
 #ifdef ENABLE_DEBUG_MESSAGES
     if (log_odds_update < 0.0) {
       VLOG(1) << "Log-odds update is less than zero: " << log_odds_update << ".";
@@ -124,20 +131,20 @@ namespace atom {
     log_odds_ += weight * log_odds_update;
   }
 
-  void Atom::UpdateSignedDistance(double sdf_update, double weight) {
+  void Atom::UpdateSignedDistance(float sdf_update, float weight) {
 #ifdef ENABLE_DEBUG_MESSAGES
     if (weight < 0.0 || weight > 1.0) {
       VLOG(1) << "Weight is not a number between [0, 1]: "
               << weight << ".";
     }
 #endif
-    const double sdf_variance_update = ToVariance(sdf_update) / (0.5 + weight);
-    const double k = sdf_variance_ / (sdf_variance_ + sdf_variance_update);
+    const float sdf_variance_update = ToVariance(sdf_update) / (0.5 + weight);
+    const float k = sdf_variance_ / (sdf_variance_ + sdf_variance_update);
     sdf_mean_ += k * (sdf_update - sdf_mean_);
     sdf_variance_ *= 1.0 - k;
   }
 
-  bool Atom::Contains(double x, double y, double z) const {
+  bool Atom::Contains(float x, float y, float z) const {
     return GetDistanceTo(x, y, z) <= radius_;
   }
 
@@ -149,32 +156,32 @@ namespace atom {
     return GetDistanceTo(p) <= radius_;
   }
 
-  double Atom::GetDistanceTo(double x, double y, double z) const {
-    const double dx = x - position_(0);
-    const double dy = y - position_(1);
-    const double dz = z - position_(2);
+  float Atom::GetDistanceTo(float x, float y, float z) const {
+    const float dx = x - position_(0);
+    const float dy = y - position_(1);
+    const float dz = z - position_(2);
     return std::sqrt(dx*dx + dy*dy + dz*dz);
   }
 
-  double Atom::GetDistanceTo(const Atom::Ptr& atom) const {
+  float Atom::GetDistanceTo(const Atom::Ptr& atom) const {
     CHECK_NOTNULL(atom.get());
-    gu::Vec3 p = atom->GetPosition();
+    gu::Vec3f p = atom->GetPosition();
 
-    const double dx = p(0) - position_(0);
-    const double dy = p(1) - position_(1);
-    const double dz = p(2) - position_(2);
+    const float dx = p(0) - position_(0);
+    const float dy = p(1) - position_(1);
+    const float dz = p(2) - position_(2);
     return std::sqrt(dx*dx + dy*dy + dz*dz);
   }
 
-  double Atom::GetDistanceTo(const pcl::PointXYZ& p) const {
-    const double dx = p.x - position_(0);
-    const double dy = p.y - position_(1);
-    const double dz = p.z - position_(2);
+  float Atom::GetDistanceTo(const pcl::PointXYZ& p) const {
+    const float dx = p.x - position_(0);
+    const float dy = p.y - position_(1);
+    const float dz = p.z - position_(2);
     return std::sqrt(dx*dx + dy*dy + dz*dz);
   }
 
-  double Atom::ComputeOverlapFraction(const Atom::Ptr& atom) const {
-    const double distance = GetDistanceTo(atom);
+  float Atom::ComputeOverlapFraction(const Atom::Ptr& atom) const {
+    const float distance = GetDistanceTo(atom);
 
     return 1 - (0.25 / pow(radius_, 3)) * distance *
       (3.0 * pow(radius_, 2) - 0.25 * pow(distance, 2));
@@ -193,7 +200,7 @@ namespace atom {
     return neighbors_;
   }
 
-  double ToProbability(double log_odds) {
+  float ToProbability(float log_odds) {
 #ifdef ENABLE_DEBUG_MESSAGES
     if (log_odds < 0.0) {
       VLOG(1) << "Input log-odds value is less than zero: " << log_odds << ".";
@@ -202,7 +209,7 @@ namespace atom {
     return 1.0 - (1.0 / (1.0 + exp(log_odds)));
   }
 
-  double ToLogOdds(double probability) {
+  float ToLogOdds(float probability) {
 #ifdef ENABLE_DEBUG_MESSAGES
     if (probability < 0.0 || probability > 1.0) {
       VLOG(1) << "Input Probability value is not in [0, 1]: " << probability
@@ -212,7 +219,7 @@ namespace atom {
     return log(probability / (1.0 - probability));
   }
 
-  double ToVariance(double sdf_update) {
+  float ToVariance(float sdf_update) {
     return sdf_update * sdf_update; // This is arbitrary.
   }
 

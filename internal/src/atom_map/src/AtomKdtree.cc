@@ -40,20 +40,20 @@
 
 namespace atom {
   AtomKdtree::AtomKdtree() :
-    max_distance_(-std::numeric_limits<double>::infinity()),
-    min_distance_(std::numeric_limits<double>::infinity()) {}
+    max_distance_(-std::numeric_limits<float>::infinity()),
+    min_distance_(std::numeric_limits<float>::infinity()) {}
   AtomKdtree::~AtomKdtree() {
     // Free memory from points in the kd tree.
     if (index_ != nullptr) {
       for (size_t ii = 0; ii < index_->size(); ++ii) {
-        double* point = index_->getPoint(ii);
+        float* point = index_->getPoint(ii);
         delete[] point;
       }
     }
   }
 
   // Nearest neighbor queries.
-  bool AtomKdtree::GetKNearestNeighbors(double x, double y, double z, size_t k,
+  bool AtomKdtree::GetKNearestNeighbors(float x, float y, float z, size_t k,
                                         std::vector<Atom::Ptr>* neighbors) {
     CHECK_NOTNULL(neighbors);
     neighbors->clear();
@@ -66,14 +66,14 @@ namespace atom {
 
     // Convert the input point to the FLANN format.
     const int kNumColumns = 3;
-    flann::Matrix<double> flann_query(new double[kNumColumns], 1, kNumColumns);
+    flann::Matrix<float> flann_query(new float[kNumColumns], 1, kNumColumns);
     flann_query[0][0] = x;
     flann_query[0][1] = y;
     flann_query[0][2] = z;
 
     // Search the kd tree for the nearest neighbor to the query.
     std::vector< std::vector<int> > query_match_indices;
-    std::vector< std::vector<double> > query_distances;
+    std::vector< std::vector<float> > query_distances;
 
     const int num_neighbors_found =
       index_->knnSearch(flann_query, query_match_indices,
@@ -94,7 +94,7 @@ namespace atom {
   }
 
   // Radius searching.
-  bool AtomKdtree::RadiusSearch(double x, double y, double z, double r,
+  bool AtomKdtree::RadiusSearch(float x, float y, float z, float r,
                                 std::vector<Atom::Ptr>* neighbors) {
     CHECK_NOTNULL(neighbors);
     neighbors->clear();
@@ -107,14 +107,14 @@ namespace atom {
 
     // Convert the input point to the FLANN format.
     const int kNumColumns = 3;
-    flann::Matrix<double> flann_query(new double[kNumColumns], 1, kNumColumns);
+    flann::Matrix<float> flann_query(new float[kNumColumns], 1, kNumColumns);
     flann_query[0][0] = x;
     flann_query[0][1] = y;
     flann_query[0][2] = z;
 
     // Search the kd tree for the nearest neighbor to the query.
     std::vector< std::vector<int> > query_match_indices;
-    std::vector< std::vector<double> > query_distances;
+    std::vector< std::vector<float> > query_distances;
 
     // FLANN checks Euclidean distance squared, so we pass in r * r.
     int num_neighbors_found =
@@ -129,7 +129,7 @@ namespace atom {
   }
 
   // Radius searching.
-  bool AtomKdtree::RadiusSearch(const pcl::PointXYZ& p, double r,
+  bool AtomKdtree::RadiusSearch(const pcl::PointXYZ& p, float r,
                                 std::vector<Atom::Ptr>* neighbors) {
     return RadiusSearch(p.x, p.y, p.z, r, neighbors);
   }
@@ -140,8 +140,8 @@ namespace atom {
 
     // Copy the input point into FLANN's Matrix type.
     const int kNumColumns = 3;
-    flann::Matrix<double> flann_point(new double[kNumColumns], 1, kNumColumns);
-    gu::Vec3 pos = atom->GetPosition();
+    flann::Matrix<float> flann_point(new float[kNumColumns], 1, kNumColumns);
+    gu::Vec3f pos = atom->GetPosition();
     flann_point[0][0] = pos(0);
     flann_point[0][1] = pos(1);
     flann_point[0][2] = pos(2);
@@ -150,7 +150,7 @@ namespace atom {
     if (index_ == nullptr) {
       // Single kd-tree.
       const int kNumTrees = 1;
-      index_.reset(new flann::KDTreeIndex<flann::L2<double>>(
+      index_.reset(new flann::KDTreeIndex<flann::L2<float>>(
           flann_point, flann::KDTreeIndexParams(kNumTrees)));
 
       index_->buildIndex();
@@ -164,7 +164,7 @@ namespace atom {
       UpdateNeighbors(atom);
 #endif
       // If the index is already created, add the data point to the index. Rebuild
-      // every time the index doubles in size to occasionally rebalance the kdtree.
+      // every time the index floats in size to occasionally rebalance the kdtree.
       const int kRebuildThreshold = 2;
       index_->addPoints(flann_point, kRebuildThreshold);
     }
@@ -173,7 +173,7 @@ namespace atom {
     registry_.push_back(atom);
 
     // Update max and min distances.
-    const double sdf = atom->GetSignedDistance();
+    const float sdf = atom->GetSignedDistance();
     if (sdf > max_distance_) {
       max_distance_ = sdf;
     } else if (sdf < min_distance_) {
@@ -189,7 +189,7 @@ namespace atom {
 
     // Find all neighbors within a radius of one atomic diameter.
     std::vector<Atom::Ptr> neighbors;
-    gu::Vec3 pos = atom->GetPosition();
+    gu::Vec3f pos = atom->GetPosition();
     if (!RadiusSearch(pos(0), pos(1), pos(2), 2.0 * atom->GetRadius(), &neighbors))
       return false;
 
@@ -229,11 +229,11 @@ namespace atom {
   }
 
   // Return the maximum and minimum distances of any Atom to the surface.
-  double AtomKdtree::GetMaxDistance() const {
+  float AtomKdtree::GetMaxDistance() const {
     return max_distance_;
   }
 
-  double AtomKdtree::GetMinDistance() const {
+  float AtomKdtree::GetMinDistance() const {
     return min_distance_;
   }
 

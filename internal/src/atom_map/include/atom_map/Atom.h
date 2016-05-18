@@ -62,27 +62,28 @@ class Atom {
   typedef std::shared_ptr<Atom> Ptr;
 
   // Factory method.
-  static Ptr Create(double r);
+  static Ptr Create();
 
   // Getters.
-  double GetProbability() const;
-  double GetLogOdds() const;
-  double GetSignedDistance() const;
-  double GetSignedDistanceVariance() const;
-  double GetRadius() const;
-  geometry_utils::Vec3 GetPosition() const;
+  float GetProbability() const;
+  float GetLogOdds() const;
+  float GetSignedDistance() const;
+  float GetSignedDistanceVariance() const;
+  float GetRadius() const;
+  geometry_utils::Vec3f GetPosition() const;
 
   // Setters.
-  void SetProbability(double p);
-  void SetLogOdds(double l);
-  void SetSignedDistance(double d);
-  void SetPosition(const geometry_utils::Vec3& p);
+  static void SetRadius(float r);
+  void SetProbability(float p);
+  void SetLogOdds(float l);
+  void SetSignedDistance(float d);
+  void SetPosition(const geometry_utils::Vec3f& p);
 
   // Update the probability value stored in this atom. The weight parameter
   // is the fraction of overlap between two atoms. Currently, we use this
   // as a linear scaling between 0.5 (0) and the update probability (log-odds).
-  void UpdateProbability(double probability_update, double weight = 1.0);
-  void UpdateLogOdds(double log_odds_update, double weight = 1.0);
+  void UpdateProbability(float probability_update, float weight = 1.0);
+  void UpdateLogOdds(float log_odds_update, float weight = 1.0);
 
   // Update the signed distance function for this atom. Variance is implicitly
   // the reciprocal of absolute distance, i.e. we trust measurements that say
@@ -90,21 +91,21 @@ class Atom {
   // As above, weight is the overlap fraction between this atom and the one
   // which caused this update. Currently, we scale covariance by 1/(0.5 + weight).
   // This scaling, however, is completely arbitrary.
-  void UpdateSignedDistance(double sdf_update, double weight = 1.0);
+  void UpdateSignedDistance(float sdf_update, float weight = 1.0);
 
   // Check if this Atom contains a point.
-  bool Contains(double x, double y, double z) const;
+  bool Contains(float x, float y, float z) const;
   bool Contains(const pcl::PointXYZ& p) const;
   bool Contains(const Atom::Ptr& atom) const;
 
   // Check distance to a point.
-  double GetDistanceTo(double x, double y, double z) const;
-  double GetDistanceTo(const pcl::PointXYZ& p) const;
-  double GetDistanceTo(const Atom::Ptr& atom) const;
+  float GetDistanceTo(float x, float y, float z) const;
+  float GetDistanceTo(const pcl::PointXYZ& p) const;
+  float GetDistanceTo(const Atom::Ptr& atom) const;
 
   // Compute the overlap fraction of two Atoms. Note that we assume both Atoms
   // have the same radius for simplicity.
-  double ComputeOverlapFraction(const Atom::Ptr& atom) const;
+  float ComputeOverlapFraction(const Atom::Ptr& atom) const;
 
   // Add a neighboring atom to this one.
   void AddNeighbor(Atom::Ptr neighbor);
@@ -115,44 +116,44 @@ class Atom {
   // Log-odds probability that this chunk of space is occupied. We use log-odds
   // to avoid numerical instability when multiplying, e.g., 1e-4 to itself
   // multiple times.
-  double log_odds_;
+  float log_odds_;
 
   // Signed distance estimate. By convention, this will be a positive number for
   // atoms that are in free space, and negative for those that are within obstacles.
-  double sdf_mean_;
+  float sdf_mean_;
 
   // Uncertainty of the signed distance estimate. Do a simple maximum likelihood
   // update with each new measurement.
-  double sdf_variance_;
+  float sdf_variance_;
 
   // Position in 3D space.
-  geometry_utils::Vec3 position_;
+  geometry_utils::Vec3f position_;
 
   // Atomic radius. Other atoms cannot be inserted into the map within this
   // radius.
-  const double radius_;
+  static float radius_;
 
   // Pointers to neighboring atoms. This list is incrementally updated when new
   // atoms are added to the map, and begins empty.
   std::vector<Ptr> neighbors_;
 
   // Private constructor.
-  Atom(double r);
+  Atom();
 }; //\class Atom
 
 
 // Conversion from a probability in [0, 1] to a log-odds probability in [0,
 // infty).
-double ToProbability(double log_odds);
+float ToProbability(float log_odds);
 
 // Conversion from a log-odds probability in [0, infty) to a probability in [0,
 // 1].
-double ToLogOdds(double probability);
+float ToLogOdds(float probability);
 
 // An arbitrary map from signed distance values to variances. The general idea is
 // that smaller values (by magnitude) are more reliable because there is a smaller
 // chance that there exists a nearer surface.
-double ToVariance(double sdf_update);
+float ToVariance(float sdf_update);
 
 } //\namespace atom
 

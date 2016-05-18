@@ -9,7 +9,7 @@ Panels:
         - /3D Octree1/Autocompute Value Bounds1
         - /3D Incremental Octree1/Autocompute Value Bounds1
       Splitter Ratio: 0.5
-    Tree Height: 574
+    Tree Height: 803
   - Class: rviz/Selection
     Name: Selection
   - Class: rviz/Tool Properties
@@ -68,14 +68,17 @@ Visualization Manager:
       Show Names: true
       Tree:
         world:
-          {}
+          base:
+            {}
+          odometry:
+            {}
       Update Interval: 0
       Value: true
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 19.3001
-        Min Value: -4.59981
+        Max Value: 12.5149
+        Min Value: -2.89782
         Value: true
       Axis: Z
       Channel Name: ring
@@ -97,7 +100,6 @@ Visualization Manager:
       Size (m): 0.02
       Style: Points
       Topic: /blam/blam_slam/base_frame_point_cloud
-      Unreliable: false
       Use Fixed Frame: false
       Use rainbow: true
       Value: true
@@ -127,7 +129,6 @@ Visualization Manager:
       Size (m): 0.1
       Style: Points
       Topic: /blam/blam_slam/odometry_query_points
-      Unreliable: false
       Use Fixed Frame: true
       Use rainbow: false
       Value: false
@@ -157,7 +158,6 @@ Visualization Manager:
       Size (m): 0.1
       Style: Points
       Topic: /blam/blam_slam/octree_map_updates
-      Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
@@ -187,7 +187,6 @@ Visualization Manager:
       Size (m): 0.01
       Style: Points
       Topic: /blam/blam_slam/localization_query_points
-      Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
@@ -217,7 +216,6 @@ Visualization Manager:
       Size (m): 0.01
       Style: Points
       Topic: /blam/blam_slam/localization_reference_points
-      Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
@@ -247,7 +245,6 @@ Visualization Manager:
       Size (m): 0.01
       Style: Points
       Topic: /blam/blam_slam/localization_aligned_points
-      Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
@@ -277,7 +274,6 @@ Visualization Manager:
       Size (m): 0.1
       Style: Points
       Topic: /blam/blam_slam/octree_map
-      Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
@@ -307,7 +303,6 @@ Visualization Manager:
       Size (m): 0.01
       Style: Points
       Topic: /blam/blam_slam/octree_map_updates
-      Unreliable: false
       Use Fixed Frame: false
       Use rainbow: true
       Value: false
@@ -369,7 +364,6 @@ Visualization Manager:
       Size (m): 5
       Style: Points
       Topic: /blam/blam_slam/loop_closure_scan1
-      Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
@@ -399,34 +393,33 @@ Visualization Manager:
       Size (m): 0.01
       Style: Points
       Topic: /blam/blam_slam/loop_closure_scan2
-      Unreliable: false
       Use Fixed Frame: true
       Use rainbow: true
       Value: false
     - Class: rviz/Marker
-      Enabled: false
+      Enabled: true
       Marker Topic: /atom_map_example/occupancy
       Name: AtomMap Occupancy
       Namespaces:
-        {}
+        world: true
       Queue Size: 100
-      Value: false
+      Value: true
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /atom_map_example/sdf
       Name: AtomMap SDF
       Namespaces:
         {}
       Queue Size: 100
-      Value: true
-    - Class: rviz/MarkerArray
-      Enabled: false
-      Marker Topic: /occupied_cells_vis_array
-      Name: Octomap
-      Namespaces:
-        {}
-      Queue Size: 100
       Value: false
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /blam/occupied_cells_vis_array
+      Name: MarkerArray
+      Namespaces:
+        map: true
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 0; 0; 0
@@ -451,30 +444,30 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 149.884
+      Distance: 45.1343
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 80.498
-        Y: -22.2391
-        Z: -20.3398
+        X: 7.28892
+        Y: 8.08435
+        Z: -2.84578
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 1.2098
+      Pitch: 1.2348
       Target Frame: prism/base
       Value: Orbit (rviz)
-      Yaw: 4.18797
+      Yaw: 4.46295
     Saved: ~
 Window Geometry:
   Displays:
     collapsed: false
-  Height: 855
+  Height: 1106
   Hide Left Dock: false
   Hide Right Dock: true
-  QMainWindow State: 000000ff00000000fd0000000400000000000001fb00000311fc0200000009fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005600fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002c000002cc000000dc00fffffffb0000000800540069006d006501000002f9000000440000003500fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c0000026100000001000001100000040cfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002c0000040c000000a300fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000002d00000003efc0100000001fb0000000800540069006d00650100000000000004500000000000000000000003a40000031100000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd0000000400000000000001fb0000040cfc0200000009fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005600fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000002c000003b1000000dc00fffffffb0000000800540069006d006501000003de0000005a0000003500fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c0000026100000001000001100000040cfc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073000000002c0000040c000000a300fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b200000000000000000000000200000490000000a9fc0100000001fb0000000a00560069006500770073030000004e00000080000002e10000019700000003000002d00000003efc0100000001fb0000000800540069006d00650100000000000004500000000000000000000005840000040c00000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -483,6 +476,6 @@ Window Geometry:
     collapsed: false
   Views:
     collapsed: true
-  Width: 1440
-  X: 57
+  Width: 1920
+  X: 0
   Y: 23

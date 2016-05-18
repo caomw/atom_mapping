@@ -64,9 +64,9 @@ namespace atom {
     bool Initialize(const ros::NodeHandle& n);
 
     // Getters.
-    void GetSignedDistance(double x, double y, double z,
-                           double* distance, double* variance);
-    double GetProbability(double x, double y, double z);
+    void GetSignedDistance(float x, float y, float z,
+                           float* distance, float* variance);
+    float GetProbability(float x, float y, float z);
 
     // Update.
     void Update(const PointCloud::ConstPtr& cloud, const pcl::PointXYZ& robot);
@@ -80,26 +80,26 @@ namespace atom {
     AtomKdtree map_;
 
     // Atomic radius.
-    double radius_;
+    float radius_;
 
     // Min and max scan ranges.
-    double min_scan_range_;
-    double max_scan_range_;
+    float min_scan_range_;
+    float max_scan_range_;
 
     // Optionally update signed distance and/or occupancy.
     bool update_occupancy_;
     bool update_signed_distance_;
 
     // Radius for nearest neighbor search for surface normal extraction.
-    double surface_normal_radius_;
+    float surface_normal_radius_;
 
     // Maximum distance to trace a ray inside of an object. This should be small,
     // in order to ensure we don't accidentally trace all the way through. However,
     // it is definitely necessary in order to ensure proper surface detection.
-    double max_occupied_backoff_;
+    float max_occupied_backoff_;
 
     // Maximum distance to trace the surface normal inside (supposedly) free space.
-    double max_normal_backoff_;
+    float max_normal_backoff_;
 
     // Maximum number of Atoms to lay down along the ray between robot and scan point
     // and also along the normal vector into free space.
@@ -107,8 +107,8 @@ namespace atom {
     int max_samples_normal_;
 
     // Probability of hits and misses for occupancy updates.
-    double probability_hit_;
-    double probability_miss_;
+    float probability_hit_;
+    float probability_miss_;
 
     // Number of nearest neighbors to examine for GP surface distance regression.
     int num_neighbors_;
@@ -116,18 +116,18 @@ namespace atom {
     // Characteristic parameter for the radial basis function used as a
     // covariance kernel for signed distance function estimation. Larger gamma
     // means that covariance decreases faster as points get farther apart.
-    double gamma_;
+    float gamma_;
 
     // Noise variance to add to covariance matrices. Assume isotropic noise.
-    double noise_variance_;
+    float noise_variance_;
 
     // Visualization parameters and publishers.
     std::string fixed_frame_id_;
     std::string full_occupancy_topic_;
     std::string full_sdf_topic_;
     bool only_show_occupied_;
-    double occupied_threshold_; // Above this is considered occupied.
-    double sdf_threshold_;      // Smaller than this is considered occupied.
+    float occupied_threshold_; // Above this is considered occupied.
+    float sdf_threshold_;      // Smaller than this is considered occupied.
     ros::Publisher full_occupancy_publisher_;
     ros::Publisher full_sdf_publisher_;
 
@@ -140,7 +140,7 @@ namespace atom {
     bool RegisterCallbacks(const ros::NodeHandle& n);
 
     // Try to add a single atom.
-    void MaybeInsertAtom(const pcl::PointXYZ& position, double sdf);
+    void MaybeInsertAtom(const pcl::PointXYZ& position, float sdf);
     void MaybeInsertAtom(const Atom::Ptr& atom);
 
     // Copy parameters from a different AtomMap.
@@ -161,13 +161,13 @@ namespace atom {
 #endif
 
     // Apply the covariance kernel function.
-    double CovarianceKernel(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2);
+    float CovarianceKernel(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2);
 
     // Convert a probability of occupancy to a ROS color.
-    std_msgs::ColorRGBA ProbabilityToRosColor(double probability) const;
+    std_msgs::ColorRGBA ProbabilityToRosColor(float probability) const;
 
     // Convert a signed distnace value to a ROS color.
-    std_msgs::ColorRGBA SignedDistanceToRosColor(double sdf) const;
+    std_msgs::ColorRGBA SignedDistanceToRosColor(float sdf) const;
   };
 }
 

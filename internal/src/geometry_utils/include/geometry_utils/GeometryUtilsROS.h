@@ -66,7 +66,25 @@ inline geometry_msgs::Point ToRosPoint(const Vec2& v) {
   return msg;
 }
 
+inline geometry_msgs::Point ToRosPoint(const Vec2f& v) {
+  geometry_msgs::Point msg;
+  msg.x = v(0);
+  msg.y = v(1);
+  msg.z = 0.0;
+
+  return msg;
+}
+
 inline geometry_msgs::Point ToRosPoint(const Vec3& v) {
+  geometry_msgs::Point msg;
+  msg.x = v(0);
+  msg.y = v(1);
+  msg.z = v(2);
+
+  return msg;
+}
+
+inline geometry_msgs::Point ToRosPoint(const Vec3f& v) {
   geometry_msgs::Point msg;
   msg.x = v(0);
   msg.y = v(1);
@@ -84,7 +102,25 @@ inline geometry_msgs::Point32 ToRosPoint32(const Vec2& v) {
   return msg;
 }
 
+inline geometry_msgs::Point32 ToRosPoint32(const Vec2f& v) {
+  geometry_msgs::Point32 msg;
+  msg.x = v(0);
+  msg.y = v(1);
+  msg.z = 0.0f;
+
+  return msg;
+}
+
 inline geometry_msgs::Point32 ToRosPoint32(const Vec3& v) {
+  geometry_msgs::Point32 msg;
+  msg.x = v(0);
+  msg.y = v(1);
+  msg.z = v(2);
+
+  return msg;
+}
+
+inline geometry_msgs::Point32 ToRosPoint32(const Vec3f& v) {
   geometry_msgs::Point32 msg;
   msg.x = v(0);
   msg.y = v(1);
@@ -102,7 +138,25 @@ inline geometry_msgs::Vector3 ToRosVec(const Vec2& v) {
   return msg;
 }
 
+inline geometry_msgs::Vector3 ToRosVec(const Vec2f& v) {
+  geometry_msgs::Vector3 msg;
+  msg.x = v(0);
+  msg.y = v(1);
+  msg.z = 0.0;
+
+  return msg;
+}
+
 inline geometry_msgs::Vector3 ToRosVec(const Vec3& v) {
+  geometry_msgs::Vector3 msg;
+  msg.x = v(0);
+  msg.y = v(1);
+  msg.z = v(2);
+
+  return msg;
+}
+
+inline geometry_msgs::Vector3 ToRosVec(const Vec3f& v) {
   geometry_msgs::Vector3 msg;
   msg.x = v(0);
   msg.y = v(1);

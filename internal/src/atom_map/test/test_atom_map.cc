@@ -60,9 +60,9 @@ TEST(Atom, TestCreateAtom) {
   ASSERT_TRUE(atom.get());
 
   // Set params.
-  const double kProbability = 0.5;
-  const double kSignedDistance = 1.0;
-  const gu::Vec3 kPosition(1.0, 1.0, 1.0);
+  const float kProbability = 0.5;
+  const float kSignedDistance = 1.0;
+  const gu::Vec3f kPosition(1.0, 1.0, 1.0);
   atom->SetProbability(kProbability);
   atom->SetSignedDistance(kSignedDistance);
   atom->SetPosition(kPosition);
@@ -82,9 +82,9 @@ TEST(Atom, TestUpdateProbability) {
   ASSERT_TRUE(atom.get());
 
   // Set params.
-  const double kProbability = 0.5;
-  const double kSignedDistance = 1.0;
-  const gu::Vec3 kPosition(1.0, 1.0, 1.0);
+  const float kProbability = 0.5;
+  const float kSignedDistance = 1.0;
+  const gu::Vec3f kPosition(1.0, 1.0, 1.0);
   atom->SetProbability(kProbability);
   atom->SetSignedDistance(kSignedDistance);
   atom->SetPosition(kPosition);
@@ -92,7 +92,7 @@ TEST(Atom, TestUpdateProbability) {
   // Update probability a bunch of times with the same small value and
   // make sure that the resulting probability is approximately zero.
   const size_t kNumUpdates = 30;
-  const double kProbabilityUpdate = 0.1;
+  const float kProbabilityUpdate = 0.1;
   for (size_t ii = 0; ii < kNumUpdates; ii++)
     atom->UpdateProbability(kProbabilityUpdate);
 
@@ -105,9 +105,9 @@ TEST(Atom, TestUpdateSignedDistance) {
   ASSERT_TRUE(atom.get());
 
   // Set params.
-  const double kProbability = 0.5;
-  const double kSignedDistance = 1.0;
-  const gu::Vec3 kPosition(1.0, 1.0, 1.0);
+  const float kProbability = 0.5;
+  const float kSignedDistance = 1.0;
+  const gu::Vec3f kPosition(1.0, 1.0, 1.0);
   atom->SetProbability(kProbability);
   atom->SetSignedDistance(kSignedDistance);
   atom->SetPosition(kPosition);
@@ -115,7 +115,7 @@ TEST(Atom, TestUpdateSignedDistance) {
   // Update signed distance a bunch of times with the same value and make sure
   // that the resulting signed distance is approximately the new value.
   const size_t kNumUpdates = 100;
-  const double kSignedDistanceUpdate = 0.3;
+  const float kSignedDistanceUpdate = 0.3;
   for (size_t ii = 0; ii < kNumUpdates; ii++)
     atom->UpdateSignedDistance(kSignedDistanceUpdate);
 
@@ -127,18 +127,18 @@ TEST(AtomKdtree, TestAtomKdtreeInsertion) {
   AtomKdtree tree;
 
   // Set params for random point generation.
-  const double kRadius = 0.0001;
+  const float kRadius = 0.0001;
   const size_t kNumPoints = 500;
-  const double kLowerBound = 0.0;
-  const double kUpperBound = 1.0;
-  std::uniform_real_distribution<double> unif(kLowerBound, kUpperBound);
+  const float kLowerBound = 0.0;
+  const float kUpperBound = 1.0;
+  std::uniform_real_distribution<float> unif(kLowerBound, kUpperBound);
   std::default_random_engine rng;
 
   // Generate a bunch of random points and add to the tree.
   std::vector<Atom::Ptr> atoms;
   for (size_t ii = 0; ii < kNumPoints; ii++) {
     Atom::Ptr atom = Atom::Create(kRadius);
-    gu::Vec3 pos(unif(rng), unif(rng), unif(rng));
+    gu::Vec3f pos(unif(rng), unif(rng), unif(rng));
     atom->SetPosition(pos);
 
     // Insert.
@@ -173,17 +173,17 @@ TEST(AtomKdtree, TestAtomKdtreeRadiusSearch) {
   AtomKdtree tree;
 
   // Set params for random point generation.
-  const double kRadius = 0.5;
+  const float kRadius = 0.5;
   const size_t kNumPoints = 1000;
-  const double kLowerBound = -10.0;
-  const double kUpperBound = 10.0;
-  std::uniform_real_distribution<double> unif(kLowerBound, kUpperBound);
+  const float kLowerBound = -10.0;
+  const float kUpperBound = 10.0;
+  std::uniform_real_distribution<float> unif(kLowerBound, kUpperBound);
   std::default_random_engine rng;
 
   // Generate a bunch of random points and add to the tree.
   for (size_t ii = 0; ii < kNumPoints; ii++) {
     Atom::Ptr atom = Atom::Create(kRadius);
-    gu::Vec3 pos(unif(rng), unif(rng), unif(rng));
+    gu::Vec3f pos(unif(rng), unif(rng), unif(rng));
     atom->SetPosition(pos);
 
     // Insert.
@@ -194,7 +194,7 @@ TEST(AtomKdtree, TestAtomKdtreeRadiusSearch) {
   const size_t kNumChecks = 1000;
   for (size_t ii = 0; ii < kNumChecks; ii++) {
     std::vector<Atom::Ptr> neighbors;
-    const double kSearchRadius = kRadius;
+    const float kSearchRadius = kRadius;
     const pcl::PointXYZ p(unif(rng), unif(rng), unif(rng));
     ASSERT_TRUE(tree.RadiusSearch(p.x, p.y, p.z,
                                   kSearchRadius, &neighbors));

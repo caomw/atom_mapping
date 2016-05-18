@@ -46,17 +46,17 @@ namespace atom {
     // List of points and signed distances along rays between the observer
     // and the surface.
     std::vector<pcl::PointXYZ> ray_points_;
-    std::vector<double> ray_distances_;
+    std::vector<float> ray_distances_;
 
     // List of points and signed distances normal to the surface, on the side of
     // and the observer.
     std::vector<pcl::PointXYZ> normal_points_;
-    std::vector<double> normal_distances_;
+    std::vector<float> normal_distances_;
 
     // List of points and signed distances normal to the surface and on the
     // 'occupied' side of the surface.
     std::vector<pcl::PointXYZ> occupied_points_;
-    std::vector<double> occupied_distances_;
+    std::vector<float> occupied_distances_;
 
     // Clear all of these lists.
     void ClearAll() {
