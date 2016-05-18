@@ -204,7 +204,7 @@ namespace atom {
     // Find all neighbors within a radius of one atomic diameter.
     std::vector<Atom::Ptr> neighbors;
     gu::Vec3 pos = atom->GetPosition();
-    if (!RadiusSearch(pos(0), pos(1), pos(2), atom->GetRadius(), &neighbors))
+    if (!RadiusSearch(pos(0), pos(1), pos(2), 2.0 * atom->GetRadius(), &neighbors))
       return false;
 
     // Add all neighbors. Check if any are within one atomic radius. If so,
