@@ -102,7 +102,7 @@ namespace atom {
 
     // Transform point cloud into world frame.
     PointCloud::Ptr transformed_cloud(new PointCloud);
-    pcl::transformPointCloud(*filtered_cloud, *transformed_cloud, pose);
+    pcl::transformPointCloud(*cloud, *transformed_cloud, pose);
 
     // Run map update.
     pcl::PointXYZ p(pose(0, 3), pose(1, 3), pose(2, 3));

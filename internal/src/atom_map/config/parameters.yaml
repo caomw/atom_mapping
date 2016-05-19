@@ -4,7 +4,7 @@ atom:
   gamma: 2.0
 
   # Atomic radius.
-  radius: 0.1
+  radius: 0.3
 
   # Min and max range to consider valid scans.
   min_scan_range: 0.1
@@ -20,7 +20,7 @@ atom:
 
   # Maximum distance to raycast into a surface (think of this as the surface
   # thickness).
-  max_occupied_backoff: 0.21
+  max_occupied_backoff: 0.61
 
   # Maximum distance to raycast into free space along the surface normal.
   max_normal_backoff: 4.1
@@ -31,12 +31,12 @@ atom:
   # Sensor angular resolution. This is the smallest angle between two range
   # measurements. For the Velodyne Puck at 10 Hz, this is 0.2 degrees. We also
   # provide a flag to turn on angular interleaving. Lambda is the Lagrange
-  # coefficient of the probability of missing an atom (i.e. probability that 
+  # coefficient of the probability of missing an atom (i.e. probability that
   #  all atoms overlapping a particular atom are not chosen).
   angular_resolution: 0.0035
-  angular_interleaving: false
+  angular_interleaving: true
   lambda: 1.0
-  
+
   # Noise variance for GP signed distance function regression.
   noise: 1.0
 
