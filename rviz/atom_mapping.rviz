@@ -58,7 +58,7 @@ Visualization Manager:
         base:
           Value: true
         odometry:
-          Value: true
+          Value: false
         world:
           Value: true
       Marker Scale: 10
@@ -68,7 +68,10 @@ Visualization Manager:
       Show Names: true
       Tree:
         world:
-          {}
+          base:
+            {}
+          odometry:
+            {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -303,7 +306,7 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 1
+      Size (Pixels): 2
       Size (m): 0.01
       Style: Points
       Topic: /blam/blam_slam/octree_map_updates
@@ -408,7 +411,7 @@ Visualization Manager:
       Marker Topic: /atom_map_example/occupancy
       Name: AtomMap Occupancy
       Namespaces:
-        {}
+        world: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -451,22 +454,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 98.1072
+      Distance: 135.658
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -3.83671
-        Y: 0.0368664
-        Z: 4.90217
+        X: 3.82587
+        Y: -1.72584
+        Z: -6.0685
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 1.4904
+      Pitch: 1.3698
       Target Frame: base
       Value: Orbit (rviz)
-      Yaw: 0.915391
+      Yaw: 4.3371
     Saved: ~
 Window Geometry:
   Displays:
