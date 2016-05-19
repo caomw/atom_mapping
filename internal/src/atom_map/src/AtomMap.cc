@@ -296,7 +296,9 @@ void AtomMap::CopyParametersFrom(const AtomMap& reference) {
   surface_normal_radius_ = reference.surface_normal_radius_;
   max_occupied_backoff_ = reference.max_occupied_backoff_;
   max_normal_backoff_ = reference.max_normal_backoff_;
-  max_samples_ray_ = reference.max_samples_ray_;
+  angular_resolution_ = reference.angular_resolution_;
+  angular_interleaving_ = reference.angular_interleaving_;
+  lambda_ = reference.lambda_;
   max_samples_normal_ = reference.max_samples_normal_;
   probability_hit_ = reference.probability_hit_;
   probability_miss_ = reference.probability_miss_;
@@ -432,8 +434,11 @@ bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
   if (!pu::Get("atom/update_occupancy", update_occupancy_)) return false;
   if (!pu::Get("atom/update_signed_distance", update_signed_distance_))
     return false;
-  if (!pu::Get("atom/max_samples_ray", max_samples_ray_)) return false;
   if (!pu::Get("atom/max_samples_normal", max_samples_normal_)) return false;
+  if (!pu::Get("atom/angular_resolution", angular_resolution_)) return false;
+  if (!pu::Get("atom/angular_interleaving", angular_interleaving_))
+    return false;
+  if (!pu::Get("atom/lambda", lambda_)) return false;
 
   // Radius is constant across all atoms. Call static setter.
   Atom::SetRadius(radius_);
@@ -447,6 +452,8 @@ bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
 // tangent to it. Behind the surface, walk along the surface normal (which by
 // default points toward the robot's side of the surface). Also optionally
 // walk along the surface normal but on the unoccupied side of the surface.
+// Moreover, along the ray to the robot, optionally interleave Atoms as they
+// approach the sensor.
 void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
                         const pcl::PointXYZ& robot, RaySamples* samples) {
   CHECK_NOTNULL(samples);
@@ -528,25 +535,48 @@ void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
     // If this backoff distance is greater than the range to the robot, just
     // ignore this point.
     if (ray_initial_backoff < range) {
-      const size_t dense_samples_ray =
-          static_cast<size_t>(0.5 * (range - ray_initial_backoff) / radius_);
       const size_t num_samples_ray =
-          (dense_samples_ray < max_samples_ray_)
-              ? dense_samples_ray
-              : static_cast<size_t>(max_samples_ray_);
+          static_cast<size_t>(0.5 * (range - ray_initial_backoff) / radius_);
       const float step_size_ray = 0.5 * (range - ray_initial_backoff) /
                                    static_cast<float>(num_samples_ray);
+
+      // This is the counter to track which 'delta' we are at: i.e. how many rays
+      // can possibly intersect here.
+      float delta_number = 1.0;
+      //float delta = radius_ / tan(0.5 * angular_resolution_);
+      float delta = radius_ * sqrt(2.0 / (1.0 - cos(angular_resolution_)));
+      float probability = (1.0 + lambda_) / (lambda_ + 2.0 * delta_number - 1.0);
+
+      // Random number generation. This is really important to get right.
+      std::random_device rd;
+      std::default_random_engine rng(rd());
+      std::uniform_real_distribution<float> unif(0.0, 1.0);
       for (size_t ii = 0; ii < num_samples_ray; ii++) {
-        const float backoff = static_cast<float>(2 * ii + 1) * step_size_ray +
-                               ray_initial_backoff;
+        const float backoff =
+          static_cast<float>(2 * ii + 1) * step_size_ray + ray_initial_backoff;
 
-        pcl::PointXYZ p;
-        p.x = point.x + backoff * dx;
-        p.y = point.y + backoff * dy;
-        p.z = point.z + backoff * dz;
+        // Updating delta parameters.
+        if (angular_interleaving_ && range - backoff < delta) {
+          //delta_number =
+          //  std::ceil(2.0 * atan2(radius_, range - backoff) / angular_resolution_);
+          //delta = radius_ / tan(0.5 * delta_number * angular_resolution_);
+          delta_number =
+            std::ceil(acos(1 - 2.0 * radius_ * radius_ /
+                           ((range - backoff) * (range - backoff))) / angular_resolution_);
+          delta = radius_ * sqrt(2.0 / (1.0 - cos(delta_number * angular_resolution_)));
+          probability = (1.0 + lambda_) / (lambda_ + 2.0 * delta_number - 1.0);
+        }
 
-        samples->ray_points_.push_back(p);
-        samples->ray_distances_.push_back(backoff);
+        // Interleaving.
+        if (!angular_interleaving_ || unif(rng) < probability) {
+          pcl::PointXYZ p;
+          p.x = point.x + backoff * dx;
+          p.y = point.y + backoff * dy;
+          p.z = point.z + backoff * dz;
+
+          samples->ray_points_.push_back(p);
+          samples->ray_distances_.push_back(backoff);
+        }
       }
     }
   }

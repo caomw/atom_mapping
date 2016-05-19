@@ -101,10 +101,14 @@ namespace atom {
     // Maximum distance to trace the surface normal inside (supposedly) free space.
     float max_normal_backoff_;
 
-    // Maximum number of Atoms to lay down along the ray between robot and scan point
-    // and also along the normal vector into free space.
-    int max_samples_ray_;
+    // Maximum number of Atoms to lay down along the normal vector into free space.
     int max_samples_normal_;
+
+    // Sensor angular resolution. This is the smallest anglue between two range
+    // measurements. We also provide a flag to turn on angular interleaving.
+    float angular_resolution_;
+    bool angular_interleaving_;
+    float lambda_;
 
     // Probability of hits and misses for occupancy updates.
     float probability_hit_;

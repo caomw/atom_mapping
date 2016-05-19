@@ -25,11 +25,18 @@ atom:
   # Maximum distance to raycast into free space along the surface normal.
   max_normal_backoff: 4.1
 
-  # Maximum number of atoms to lay down along the ray toward the robot and the
-  # normal vector (both into free space).
+  # Maximum number of atoms to lay down along the normal vector into free space.
   max_samples_normal: 3
-  max_samples_ray: 6
 
+  # Sensor angular resolution. This is the smallest angle between two range
+  # measurements. For the Velodyne Puck at 10 Hz, this is 0.2 degrees. We also
+  # provide a flag to turn on angular interleaving. Lambda is the Lagrange
+  # coefficient of the probability of missing an atom (i.e. probability that 
+  #  all atoms overlapping a particular atom are not chosen).
+  angular_resolution: 0.0035
+  angular_interleaving: false
+  lambda: 1.0
+  
   # Noise variance for GP signed distance function regression.
   noise: 1.0
 
