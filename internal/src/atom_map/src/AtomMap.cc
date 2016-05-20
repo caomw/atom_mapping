@@ -458,73 +458,90 @@ void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
                         const pcl::PointXYZ& robot, RaySamples* samples) {
   CHECK_NOTNULL(samples);
 
+  // Unpack point for convenience.
+  float px = point.x;
+  float py = point.y;
+  float pz = point.z;
+
   // Compute the range to the observed point and the unit direction.
-  float dx = robot.x - point.x;
-  float dy = robot.y - point.y;
-  float dz = robot.z - point.z;
-  const float range = std::sqrt(dx * dx + dy * dy + dz * dz);
+  float dx = robot.x - px;
+  float dy = robot.y - py;
+  float dz = robot.z - pz;
+  float range = std::sqrt(dx * dx + dy * dy + dz * dz);
 
   // Handle non-returns, i.e. range == 0.
   if (range < 1e-6) return;
 
-  // Check range in bounds.
-  if (range < min_scan_range_ || range > max_scan_range_) return;
+  // Stop if range is below lower bound.
+  if (range < min_scan_range_) return;
 
   dx /= range;
   dy /= range;
   dz /= range;
 
-  // Unpack normal vector. Not const because it will be set to dx/dy/dz if NAN.
+  // Unpack normal vector. Not const because it will be set to dx/dy/dz if NAN
+  // or if out of range.
   float nx = normal.normal_x;
   float ny = normal.normal_y;
   float nz = normal.normal_z;
 
-  if (isnan(nx) || isnan(ny) || isnan(nz)) {
+  if (isnan(nx) || isnan(ny) || isnan(nz) || range > max_scan_range_) {
     nx = dx;
     ny = dy;
     nz = dz;
   }
 
-  // Start at the surface and walk away from the robot, ideally along the normal
-  // vector, if it is not NAN. Otherwise just trace along the ray.
-  const size_t num_samples_back =
+  // Only update occupied and normal directions if range is below upper bound.
+  if (range <= max_scan_range_) {
+    // Start at the surface and walk away from the robot, ideally along the normal
+    // vector, if it is not NAN. Otherwise just trace along the ray.
+    const size_t num_samples_back =
       static_cast<size_t>(0.5 * max_occupied_backoff_ / radius_);
-  const float step_size_back =
+    const float step_size_back =
       0.5 * max_occupied_backoff_ / static_cast<float>(num_samples_back);
-  for (size_t ii = 0; ii < num_samples_back; ii++) {
-    const float backoff = static_cast<float>(2 * ii + 1) * step_size_back;
-
-    pcl::PointXYZ p;
-    p.x = point.x - backoff * nx;
-    p.y = point.y - backoff * ny;
-    p.z = point.z - backoff * nz;
-
-    samples->occupied_points_.push_back(p);
-    samples->occupied_distances_.push_back(-backoff);
-  }
-
-  if (update_signed_distance_) {
-    // Start at the surface and walk along the surface normal (toward free
-    // space).
-    const size_t dense_samples_normal =
-        static_cast<size_t>(0.5 * max_normal_backoff_ / radius_);
-    const size_t num_samples_normal =
-        (dense_samples_normal < max_samples_normal_)
-            ? dense_samples_normal
-            : static_cast<size_t>(max_samples_normal_);
-    const float step_size_normal =
-        0.5 * max_normal_backoff_ / static_cast<float>(num_samples_normal);
-    for (size_t ii = 0; ii < num_samples_normal; ii++) {
-      const float backoff = static_cast<float>(2 * ii + 1) * step_size_normal;
+    for (size_t ii = 0; ii < num_samples_back; ii++) {
+      const float backoff = static_cast<float>(2 * ii + 1) * step_size_back;
 
       pcl::PointXYZ p;
-      p.x = point.x + backoff * nx;
-      p.y = point.y + backoff * ny;
-      p.z = point.z + backoff * nz;
+      p.x = px - backoff * nx;
+      p.y = py - backoff * ny;
+      p.z = pz - backoff * nz;
 
-      samples->normal_points_.push_back(p);
-      samples->normal_distances_.push_back(backoff);
+      samples->occupied_points_.push_back(p);
+      samples->occupied_distances_.push_back(-backoff);
     }
+
+    if (update_signed_distance_) {
+      // Start at the surface and walk along the surface normal (toward free
+      // space).
+      const size_t dense_samples_normal =
+        static_cast<size_t>(0.5 * max_normal_backoff_ / radius_);
+      const size_t num_samples_normal =
+        (dense_samples_normal < max_samples_normal_)
+        ? dense_samples_normal
+        : static_cast<size_t>(max_samples_normal_);
+      const float step_size_normal =
+        0.5 * max_normal_backoff_ / static_cast<float>(num_samples_normal);
+      for (size_t ii = 0; ii < num_samples_normal; ii++) {
+        const float backoff = static_cast<float>(2 * ii + 1) * step_size_normal;
+
+        pcl::PointXYZ p;
+        p.x = px + backoff * nx;
+        p.y = py + backoff * ny;
+        p.z = pz + backoff * nz;
+
+        samples->normal_points_.push_back(p);
+        samples->normal_distances_.push_back(backoff);
+      }
+    }
+  } else {
+    // Set range equal to upper bound.
+    range = max_scan_range_;
+
+    // Set px, py, pz.
+    px = robot.x - range * dx;
+    py = robot.y - range * dy;
+    pz = robot.z - range * dz;
   }
 
   if (update_occupancy_) {
@@ -534,49 +551,50 @@ void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
 
     // If this backoff distance is greater than the range to the robot, just
     // ignore this point.
-    if (ray_initial_backoff < range) {
-      const size_t num_samples_ray =
-          static_cast<size_t>(0.5 * (range - ray_initial_backoff) / radius_);
-      const float step_size_ray = 0.5 * (range - ray_initial_backoff) /
-                                   static_cast<float>(num_samples_ray);
+    if (ray_initial_backoff >= range) return;
 
-      // This is the counter to track which 'delta' we are at: i.e. how many rays
-      // can possibly intersect here.
-      float delta_number = 1.0;
-      //float delta = radius_ / tan(0.5 * angular_resolution_);
-      float delta = radius_ * sqrt(2.0 / (1.0 - cos(angular_resolution_)));
-      float probability = (1.0 + lambda_) / (lambda_ + 2.0 * delta_number - 1.0);
+    // Compute number of samples.
+    const size_t num_samples_ray =
+      static_cast<size_t>(0.5 * (range - ray_initial_backoff) / radius_);
+    const float step_size_ray = 0.5 * (range - ray_initial_backoff) /
+      static_cast<float>(num_samples_ray);
 
-      // Random number generation. This is really important to get right.
-      std::random_device rd;
-      std::default_random_engine rng(rd());
-      std::uniform_real_distribution<float> unif(0.0, 1.0);
-      for (size_t ii = 0; ii < num_samples_ray; ii++) {
-        const float backoff =
-          static_cast<float>(2 * ii + 1) * step_size_ray + ray_initial_backoff;
+    // This is the counter to track which 'delta' we are at: i.e. how many rays
+    // can possibly intersect here.
+    float delta_number = 1.0;
+    //float delta = radius_ / tan(0.5 * angular_resolution_);
+    float delta = radius_ * sqrt(2.0 / (1.0 - cos(angular_resolution_)));
+    float probability = (1.0 + lambda_) / (lambda_ + 2.0 * delta_number - 1.0);
 
-        // Updating delta parameters.
-        if (angular_interleaving_ && range - backoff < delta) {
-          //delta_number =
-          //  std::ceil(2.0 * atan2(radius_, range - backoff) / angular_resolution_);
-          //delta = radius_ / tan(0.5 * delta_number * angular_resolution_);
-          delta_number =
-            std::ceil(acos(1 - 2.0 * radius_ * radius_ /
-                           ((range - backoff) * (range - backoff))) / angular_resolution_);
-          delta = radius_ * sqrt(2.0 / (1.0 - cos(delta_number * angular_resolution_)));
-          probability = (1.0 + lambda_) / (lambda_ + 2.0 * delta_number - 1.0);
-        }
+    // Random number generation. This is really important to get right.
+    std::random_device rd;
+    std::default_random_engine rng(rd());
+    std::uniform_real_distribution<float> unif(0.0, 1.0);
+    for (size_t ii = 0; ii < num_samples_ray; ii++) {
+      const float backoff =
+        static_cast<float>(2 * ii + 1) * step_size_ray + ray_initial_backoff;
 
-        // Interleaving.
-        if (!angular_interleaving_ || unif(rng) < probability) {
-          pcl::PointXYZ p;
-          p.x = point.x + backoff * dx;
-          p.y = point.y + backoff * dy;
-          p.z = point.z + backoff * dz;
+      // Updating delta parameters.
+      if (angular_interleaving_ && range - backoff < delta) {
+        //delta_number =
+        //  std::ceil(2.0 * atan2(radius_, range - backoff) / angular_resolution_);
+        //delta = radius_ / tan(0.5 * delta_number * angular_resolution_);
+        delta_number =
+          std::ceil(acos(1 - 2.0 * radius_ * radius_ /
+                         ((range - backoff) * (range - backoff))) / angular_resolution_);
+        delta = radius_ * sqrt(2.0 / (1.0 - cos(delta_number * angular_resolution_)));
+        probability = (1.0 + lambda_) / (lambda_ + 2.0 * delta_number - 1.0);
+      }
 
-          samples->ray_points_.push_back(p);
-          samples->ray_distances_.push_back(backoff);
-        }
+      // Interleaving.
+      if (!angular_interleaving_ || unif(rng) < probability) {
+        pcl::PointXYZ p;
+        p.x = px + backoff * dx;
+        p.y = py + backoff * dy;
+        p.z = pz + backoff * dz;
+
+        samples->ray_points_.push_back(p);
+        samples->ray_distances_.push_back(backoff);
       }
     }
   }

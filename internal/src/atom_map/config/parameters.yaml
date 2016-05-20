@@ -33,7 +33,7 @@ atom:
   # provide a flag to turn on angular interleaving. Lambda is the Lagrange
   # coefficient of the probability of missing an atom (i.e. probability that
   #  all atoms overlapping a particular atom are not chosen).
-  angular_resolution: 0.0035
+  angular_resolution: 0.02
   angular_interleaving: true
   lambda: 1.0
 
@@ -57,8 +57,8 @@ atom:
 
   # Thresholds for visualizing occupied atoms and those near surfaces.
   occupied_threshold: 0.65
-  sdf_threshold: 1.1
+  sdf_threshold: 0.61
 
   # Boolean to visualize only those atoms that are either occupied
   # or near surfaces.
-  only_show_occupied: true
+  only_show_occupied: false
