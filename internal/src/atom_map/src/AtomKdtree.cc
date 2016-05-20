@@ -86,6 +86,9 @@ namespace atom {
     for (size_t ii = 0; ii < num_neighbors_found; ii++)
       neighbors->push_back(registry_[ query_match_indices[0][ii] ]);
 
+    // Remember to delete query point.
+    delete[] flann_query.ptr();
+
     return true;
   }
 
@@ -126,6 +129,9 @@ namespace atom {
     // Assign output.
     for (size_t ii = 0; ii < num_neighbors_found; ii++)
       neighbors->push_back(registry_[ query_match_indices[0][ii] ]);
+
+    // Remember to delete query point.
+    delete[] flann_query.ptr();
 
     return true;
   }
