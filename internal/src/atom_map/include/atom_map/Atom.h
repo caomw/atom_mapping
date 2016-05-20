@@ -70,7 +70,7 @@ class Atom {
   float GetSignedDistance() const;
   float GetSignedDistanceVariance() const;
   float GetRadius() const;
-  geometry_utils::Vec3f GetPosition() const;
+  geometry_utils::Vec3f& GetPosition();
 
   // Setters.
   static void SetRadius(float r);
@@ -133,10 +133,12 @@ class Atom {
   // radius.
   static float radius_;
 
+#if 0
   // Pointers to neighboring atoms. This list is incrementally updated when new
   // atoms are added to the map, and begins empty.
   std::vector<Ptr> neighbors_;
-
+#endif
+  
   // Private constructor.
   Atom();
 }; //\class Atom

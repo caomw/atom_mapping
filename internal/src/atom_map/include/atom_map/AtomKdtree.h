@@ -85,12 +85,13 @@ namespace atom {
     // Keep track of maximum and minimum signed distances to the surface.
     float max_distance_;
     float min_distance_;
-
+#if 0
     // Find all neighbors for an Atom and set that Atom's neighbors_ field.
     bool SetNeighbors(Atom::Ptr atom);
 
     // Update neighbors' lists of neighboring Atoms to include a new Atom.
     void UpdateNeighbors(Atom::Ptr atom);
+#endif
   };
 }
 

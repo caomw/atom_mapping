@@ -43,6 +43,7 @@ namespace atom {
     max_distance_(-std::numeric_limits<float>::infinity()),
     min_distance_(std::numeric_limits<float>::infinity()) {}
   AtomKdtree::~AtomKdtree() {
+#if 0
     // Free memory from points in the kd tree.
     if (index_ != nullptr) {
       for (size_t ii = 0; ii < index_->size(); ++ii) {
@@ -50,6 +51,7 @@ namespace atom {
         delete[] point;
       }
     }
+#endif
   }
 
   // Nearest neighbor queries.
@@ -140,12 +142,15 @@ namespace atom {
 
     // Copy the input point into FLANN's Matrix type.
     const int kNumColumns = 3;
+    flann::Matrix<float> flann_point(atom->GetPosition().data.data(), 1, kNumColumns);
+
+#if 0
+    const gu::Vec3f pos = atom->GetPosition();
     flann::Matrix<float> flann_point(new float[kNumColumns], 1, kNumColumns);
-    gu::Vec3f pos = atom->GetPosition();
     flann_point[0][0] = pos(0);
     flann_point[0][1] = pos(1);
     flann_point[0][2] = pos(2);
-
+#endif
     // If this is the first point in the index, create the index and exit.
     if (index_ == nullptr) {
       // Single kd-tree.
@@ -155,14 +160,6 @@ namespace atom {
 
       index_->buildIndex();
     } else {
-#if 0
-      // Find all neighbors and add them to this Atom's neighbors list.
-      if (!SetNeighbors(atom))
-        return false;
-
-      // Update those neighbors' lists to include this Atom.
-      UpdateNeighbors(atom);
-#endif
       // If the index is already created, add the data point to the index. Rebuild
       // every time the index floats in size to occasionally rebalance the kdtree.
       const int kRebuildThreshold = 2;
@@ -183,6 +180,7 @@ namespace atom {
     return true;
   }
 
+#if 0
   // Find all neighbors for an Atom and set that Atom's neighbors_ field.
   bool AtomKdtree::SetNeighbors(Atom::Ptr atom) {
     CHECK_NOTNULL(atom.get());
@@ -217,6 +215,7 @@ namespace atom {
     for (size_t ii = 0; ii < neighbors.size(); ii++)
       neighbors[ii]->AddNeighbor(atom);
   }
+#endif
 
   // Return a list of all Atoms in the map.
   const std::vector<Atom::Ptr>& AtomKdtree::GetAtoms() const {

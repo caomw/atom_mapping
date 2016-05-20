@@ -61,4 +61,4 @@ atom:
 
   # Boolean to visualize only those atoms that are either occupied
   # or near surfaces.
-  only_show_occupied: false
+  only_show_occupied: true

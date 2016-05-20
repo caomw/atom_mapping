@@ -74,7 +74,7 @@ TEST(VoxelGrid, TestVoxelGrid) {
   // Run the VoxelGrid filter.
   const float kLeafSize = 0.05;
   const float kMaxSize = 10000.0;
-  VoxelGrid vg(-kMaxSize, kMaxSize, kLeafSize);
+  VoxelGrid vg(kLeafSize, -kMaxSize, kMaxSize);
   EXPECT_TRUE(vg.Filter(raw, filtered));
 }
 

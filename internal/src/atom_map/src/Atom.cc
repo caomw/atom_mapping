@@ -79,7 +79,7 @@ namespace atom {
     return radius_;
   }
 
-  gu::Vec3f Atom::GetPosition() const {
+  gu::Vec3f& Atom::GetPosition() {
     return position_;
   }
 
@@ -187,6 +187,7 @@ namespace atom {
       (3.0 * pow(radius_, 2) - 0.25 * pow(distance, 2));
   }
 
+#if 0
   void Atom::AddNeighbor(Atom::Ptr neighbor) {
     CHECK_NOTNULL(neighbor.get());
     neighbors_.push_back(neighbor);
@@ -199,6 +200,7 @@ namespace atom {
   const std::vector<Atom::Ptr>& Atom::GetNeighbors() const {
     return neighbors_;
   }
+#endif
 
   float ToProbability(float log_odds) {
 #ifdef ENABLE_DEBUG_MESSAGES
