@@ -36,6 +36,7 @@
  */
 
 #include <atom_map_example/atom_map_example.h>
+#include <atom_map/VoxelGrid.h>
 
 namespace atom {
   AtomMapExample::AtomMapExample() : initialized_(false) {}
@@ -94,11 +95,8 @@ namespace atom {
                                          const Eigen::Matrix4d& pose) {
     // Voxel grid filter.
     PointCloud::Ptr filtered_cloud(new PointCloud);
-    pcl::VoxelGrid<pcl::PointXYZ> grid_filter;
-    grid_filter.setInputCloud(cloud);
-    grid_filter.setLeafSize(filter_leaf_size_,
-                            filter_leaf_size_, filter_leaf_size_);
-    grid_filter.filter(*filtered_cloud);
+    VoxelGrid grid_filter(filter_leaf_size_);
+    grid_filter.Filter(cloud, filtered_cloud);
 
     // Transform point cloud into world frame.
     PointCloud::Ptr transformed_cloud(new PointCloud);

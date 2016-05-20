@@ -71,10 +71,16 @@ namespace atom {
 
       // Check not out of bounds.
       if (isnan(p.x) || isnan(p.y) || isnan(p.z) ||
-          isinf(p.x) || isinf(p.y) || isinf(p.z)) continue;
+          isinf(p.x) || isinf(p.y) || isinf(p.z)) {
+        ROS_WARN("Point was NAN or INF.");
+        continue;
+      }
 
       if (p.x >= limit_max_ || p.y >= limit_max_ || p.z >= limit_max_ ||
-          p.x <= limit_min_ || p.y <= limit_min_ || p.z <= limit_min_) continue;
+          p.x <= limit_min_ || p.y <= limit_min_ || p.z <= limit_min_) {
+        ROS_WARN("Point out of bounds.");
+        continue;
+      }
 
       // Get 3D voxel coordinates by dividing by leaf size and flooring.
       const unsigned long voxel_x =
