@@ -69,6 +69,8 @@ namespace atom {
   bool AtomMapExample::LoadParameters(const ros::NodeHandle& n) {
     if (!pu::Get("atom_example/data_topic", data_topic_)) return false;
     if (!pu::Get("atom_example/pose_topic", pose_topic_)) return false;
+    if (!pu::Get("atom_example/filtered_cloud_topic", filtered_cloud_topic_))
+      return false;
     if (!pu::Get("atom_example/filter_leaf_size", filter_leaf_size_)) return false;
 
     return true;
@@ -87,6 +89,10 @@ namespace atom {
       node.subscribe<geometry_msgs::PoseStamped>(pose_topic_.c_str(), 100,
                                                  &AtomMapExample::AddPoseCallback, this);
 
+    // Set up filtered cloud publisher.
+    filtered_cloud_publisher_ =
+      node.advertise<PointCloud>(filtered_cloud_topic_.c_str(), 0);
+
     return true;
   }
 
@@ -97,6 +103,10 @@ namespace atom {
     PointCloud::Ptr filtered_cloud(new PointCloud);
     VoxelGrid grid_filter(filter_leaf_size_);
     grid_filter.Filter(cloud, filtered_cloud);
+
+    // Set frame name and publish.
+    filtered_cloud->header = cloud->header;
+    PublishFilteredCloud(filtered_cloud);
 
     // Transform point cloud into world frame.
     PointCloud::Ptr transformed_cloud(new PointCloud);
@@ -109,6 +119,14 @@ namespace atom {
     // Publish.
     map_.PublishFullOccupancy();
     map_.PublishFullSignedDistance();
+  }
+
+  // Publish the filtered cloud.
+  void AtomMapExample::PublishFilteredCloud(const PointCloud::ConstPtr& filtered) {
+    CHECK_NOTNULL(filtered.get());
+
+    if (filtered_cloud_publisher_.getNumSubscribers() <= 0) return;
+    filtered_cloud_publisher_.publish(filtered);
   }
 
 

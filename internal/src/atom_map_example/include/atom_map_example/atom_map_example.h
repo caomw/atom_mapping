@@ -78,6 +78,10 @@ namespace atom {
     // radius, in order to avoid oversampling.
     double filter_leaf_size_;
 
+    // Publisher. Republishes filtered point clouds if there are any listeners.
+    ros::Publisher filtered_cloud_publisher_;
+    std::string filtered_cloud_topic_;
+
     // Topics to listen to.
     std::string data_topic_;
     std::string pose_topic_;
@@ -93,6 +97,9 @@ namespace atom {
     // Process a point cloud, pose pair.
     void ProcessPointCloud(const PointCloud::ConstPtr& cloud,
                            const Eigen::Matrix4d& pose);
+
+    // Publishing.
+    void PublishFilteredCloud(const PointCloud::ConstPtr& filtered);
 
     // Callbacks.
     void AddPointCloudCallback(const PointCloud::ConstPtr& cloud);
