@@ -74,6 +74,8 @@ class Atom {
 
   // Setters.
   static void SetRadius(float r);
+  static void SetProbabilityClamps(float low, float high);
+  static void SetLogOddsClamps(float low, float high);
   void SetProbability(float p);
   void SetLogOdds(float l);
   void SetSignedDistance(float d);
@@ -133,12 +135,16 @@ class Atom {
   // radius.
   static float radius_;
 
+  // Clamping thresholds. Above or below these, do not update probability.
+  static float log_odds_clamp_low_;
+  static float log_odds_clamp_high_;
+
 #if 0
   // Pointers to neighboring atoms. This list is incrementally updated when new
   // atoms are added to the map, and begins empty.
   std::vector<Ptr> neighbors_;
 #endif
-  
+
   // Private constructor.
   Atom();
 }; //\class Atom

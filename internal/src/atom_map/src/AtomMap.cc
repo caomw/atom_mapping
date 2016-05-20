@@ -358,21 +358,24 @@ void AtomMap::Update(const PointCloud::ConstPtr& cloud,
     SampleRay(cloud->points[ii], normal, robot, &samples);
   }
 
-  // (3) Shuffle points randomly.
+  // (3) Shuffle points randomly if no angular interleaving.
   std::vector<size_t> occupied_indices(samples.occupied_points_.size());
   std::iota(occupied_indices.begin(), occupied_indices.end(), 0);
-  std::shuffle(occupied_indices.begin(), occupied_indices.end(),
-               std::mt19937{std::random_device{}()});
 
   std::vector<size_t> ray_indices(samples.ray_points_.size());
   std::iota(ray_indices.begin(), ray_indices.end(), 0);
-  std::shuffle(ray_indices.begin(), ray_indices.end(),
-               std::mt19937{std::random_device{}()});
 
   std::vector<size_t> normal_indices(samples.normal_points_.size());
   std::iota(normal_indices.begin(), normal_indices.end(), 0);
-  std::shuffle(normal_indices.begin(), normal_indices.end(),
-               std::mt19937{std::random_device{}()});
+
+  if (!angular_interleaving_) {
+    std::shuffle(occupied_indices.begin(), occupied_indices.end(),
+                 std::mt19937{std::random_device{}()});
+    std::shuffle(ray_indices.begin(), ray_indices.end(),
+                 std::mt19937{std::random_device{}()});
+    std::shuffle(normal_indices.begin(), normal_indices.end(),
+                 std::mt19937{std::random_device{}()});
+  }
 
   // (4) Build miniature atom map for new point cloud.
   AtomMap small_map;
@@ -411,37 +414,48 @@ bool AtomMap::RegisterCallbacks(const ros::NodeHandle& n) {
 }
 
 bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
-  if (!pu::Get("atom/gamma", gamma_)) return false;
+  // General parameters.
   if (!pu::Get("atom/radius", radius_)) return false;
-  if (!pu::Get("atom/min_scan_range", min_scan_range_)) return false;
-  if (!pu::Get("atom/max_scan_range", max_scan_range_)) return false;
-  if (!pu::Get("atom/noise", noise_variance_)) return false;
+  if (!pu::Get("atom/update_occupancy", update_occupancy_)) return false;
+  if (!pu::Get("atom/update_signed_distance", update_signed_distance_))
+    return false;
+  if (!pu::Get("atom/only_show_occupied", only_show_occupied_)) return false;
+  if (!pu::Get("atom/occupied_threshold", occupied_threshold_)) return false;
+  if (!pu::Get("atom/sdf_threshold", sdf_threshold_)) return false;
   if (!pu::Get("atom/probability_hit", probability_hit_)) return false;
   if (!pu::Get("atom/probability_miss", probability_miss_)) return false;
+  if (!pu::Get("atom/probability_clamp_high", probability_clamp_high_))
+    return false;
+  if (!pu::Get("atom/probability_clamp_low", probability_clamp_low_))
+    return false;
+  if (!pu::Get("atom/surface_normal_radius", surface_normal_radius_))
+    return false;
   if (!pu::Get("atom/full_occupancy_topic", full_occupancy_topic_))
     return false;
   if (!pu::Get("atom/full_sdf_topic", full_sdf_topic_)) return false;
   if (!pu::Get("atom/fixed_frame_id", fixed_frame_id_)) return false;
-  if (!pu::Get("atom/only_show_occupied", only_show_occupied_)) return false;
-  if (!pu::Get("atom/occupied_threshold", occupied_threshold_)) return false;
-  if (!pu::Get("atom/sdf_threshold", sdf_threshold_)) return false;
-  if (!pu::Get("atom/surface_normal_radius", surface_normal_radius_))
+
+  // Raytracing parameters.
+  if (!pu::Get("atom/raytracing/min_scan_range", min_scan_range_)) return false;
+  if (!pu::Get("atom/raytracing/max_scan_range", max_scan_range_)) return false;
+  if (!pu::Get("atom/raytracing/max_occupied_backoff", max_occupied_backoff_))
     return false;
-  if (!pu::Get("atom/max_occupied_backoff", max_occupied_backoff_))
-    return false;
-  if (!pu::Get("atom/max_normal_backoff", max_normal_backoff_)) return false;
-  if (!pu::Get("atom/num_neighbors", num_neighbors_)) return false;
-  if (!pu::Get("atom/update_occupancy", update_occupancy_)) return false;
-  if (!pu::Get("atom/update_signed_distance", update_signed_distance_))
-    return false;
-  if (!pu::Get("atom/max_samples_normal", max_samples_normal_)) return false;
-  if (!pu::Get("atom/angular_resolution", angular_resolution_)) return false;
-  if (!pu::Get("atom/angular_interleaving", angular_interleaving_))
+  if (!pu::Get("atom/raytracing/max_normal_backoff", max_normal_backoff_)) return false;
+  if (!pu::Get("atom/raytracing/max_samples_normal", max_samples_normal_)) return false;
+  if (!pu::Get("atom/raytracing/angular_resolution", angular_resolution_)) return false;
+  if (!pu::Get("atom/raytracing/angular_interleaving", angular_interleaving_))
     return false;
   if (!pu::Get("atom/lambda", lambda_)) return false;
 
-  // Radius is constant across all atoms. Call static setter.
+  // Gaussian process regression parameters.
+  if (!pu::Get("atom/gp/gamma", gamma_)) return false;
+  if (!pu::Get("atom/gp/noise", noise_variance_)) return false;
+  if (!pu::Get("atom/gp/num_neighbors", num_neighbors_)) return false;
+
+  // Radius and clamping are constant across all atoms. Call static setters.
   Atom::SetRadius(radius_);
+  Atom::SetProbabilityClamps(probability_clamp_low_,
+                             probability_clamp_high_);
 
   return true;
 }

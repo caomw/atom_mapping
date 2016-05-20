@@ -46,6 +46,8 @@ namespace gu = geometry_utils;
 namespace atom {
 
   float Atom::radius_ = 0;
+  float Atom::log_odds_clamp_low_ = 0;
+  float Atom::log_odds_clamp_high_ = 0;
 
   Atom::~Atom() {}
   Atom::Atom()
@@ -87,6 +89,15 @@ namespace atom {
     radius_ = r;
   }
 
+  void Atom::SetProbabilityClamps(float low, float high) {
+    SetLogOddsClamps(ToLogOdds(low), ToLogOdds(high));
+  }
+
+  void Atom::SetLogOddsClamps(float low, float high) {
+    log_odds_clamp_low_ = low;
+    log_odds_clamp_high_ = high;
+  }
+
   void Atom::SetProbability(float p) {
     log_odds_ = ToLogOdds(p);
   }
@@ -115,7 +126,11 @@ namespace atom {
               << weight << ".";
     }
 #endif
-    log_odds_ += weight * ToLogOdds(probability_update);
+
+    // Only update if current log odds is between clamps.
+    if (log_odds_ >= log_odds_clamp_low_ &&
+        log_odds_ <= log_odds_clamp_high_)
+      log_odds_ += weight * ToLogOdds(probability_update);
   }
 
   void Atom::UpdateLogOdds(float log_odds_update, float weight) {
@@ -128,7 +143,11 @@ namespace atom {
               << weight << ".";
     }
 #endif
-    log_odds_ += weight * log_odds_update;
+
+    // Only update if current log odds is between clamps.
+    if (log_odds_ >= log_odds_clamp_low_ &&
+        log_odds_ <= log_odds_clamp_high_)
+      log_odds_ += weight * log_odds_update;
   }
 
   void Atom::UpdateSignedDistance(float sdf_update, float weight) {

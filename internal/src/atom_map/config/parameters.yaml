@@ -1,51 +1,28 @@
 atom:
-  # Gamma parameter for RBF covariance kernel. Higher values reduce covariance at
-  # a given distance.
-  gamma: 2.0
-
   # Atomic radius.
   radius: 0.3
 
-  # Min and max range to consider valid scans.
-  min_scan_range: 0.1
-  max_scan_range: 25.0
-
-  # Radius for nearest neighbor search for surface normal estimation. This should
-  # be on the order of the voxel grid resolution if input point clouds are filtered.
-  surface_normal_radius: 0.5
-
-  # Optionally update signed distance and occupancy separately.
+  # Occupancy and SDF modes.
   update_occupancy: true
   update_signed_distance: false
+  only_show_occupied: false
 
-  # Maximum distance to raycast into a surface (think of this as the surface
-  # thickness).
-  max_occupied_backoff: 0.61
-
-  # Maximum distance to raycast into free space along the surface normal.
-  max_normal_backoff: 4.1
-
-  # Maximum number of atoms to lay down along the normal vector into free space.
-  max_samples_normal: 3
-
-  # Sensor angular resolution. This is the smallest angle between two range
-  # measurements. For the Velodyne Puck at 10 Hz, this is 0.2 degrees. We also
-  # provide a flag to turn on angular interleaving. Lambda is the Lagrange
-  # coefficient of the probability of missing an atom (i.e. probability that
-  #  all atoms overlapping a particular atom are not chosen).
-  angular_resolution: 0.02
-  angular_interleaving: true
-  lambda: 1.0
-
-  # Noise variance for GP signed distance function regression.
-  noise: 1.0
-
-  # Number of neighbors to examine for GP regression.
-  num_neighbors: 30
+  # Thresholds for visualizing occupied atoms and those near surfaces.
+  occupied_threshold: 0.65
+  sdf_threshold: 0.61
 
   # Probability update for hits/misses.
   probability_hit: 0.7
   probability_miss: 0.3
+
+  # Clamping probability values. If probability dips below or rises above these
+  # thresholds, do not ever update it again.
+  probability_clamp_high: 0.97
+  probability_clamp_low: 0.03
+
+  # Radius for nearest neighbor search for surface normal estimation. This should
+  # be on the order of the voxel grid resolution if input point clouds are filtered.
+  surface_normal_radius: 0.5
 
   # Visualization topic names.
   full_occupancy_topic: occupancy
@@ -53,12 +30,40 @@ atom:
 
   # Fixed frame id.
   fixed_frame_id: world
-#  fixed_frame_id: velodyne
 
-  # Thresholds for visualizing occupied atoms and those near surfaces.
-  occupied_threshold: 0.65
-  sdf_threshold: 0.61
+  # Ray tracing parameters.
+  raytracing:
+    # Min and max range to consider valid scans.
+    min_scan_range: 0.1
+    max_scan_range: 25.0
+    
+    # Maximum distance to raycast into a surface (think of this as the surface
+    # thickness).
+    max_occupied_backoff: 0.61
 
-  # Boolean to visualize only those atoms that are either occupied
-  # or near surfaces.
-  only_show_occupied: false
+    # Maximum distance to raycast into free space along the surface normal.
+    max_normal_backoff: 4.1
+
+    # Maximum number of atoms to lay down along the normal vector into free space.
+    max_samples_normal: 3
+
+    # Sensor angular resolution. This is the smallest angle between two range
+    # measurements. For the Velodyne Puck at 10 Hz, this is 0.2 degrees. We also
+    # provide a flag to turn on angular interleaving. Lambda is the Lagrange
+    # coefficient of the probability of missing an atom (i.e. probability that
+    #  all atoms overlapping a particular atom are not chosen).
+    angular_resolution: 0.02
+    angular_interleaving: true
+    lambda: 1.0
+
+  # Gaussian process parameters.
+  gp:
+    # Gamma parameter for RBF covariance kernel. Higher values reduce covariance at
+    # a given distance.
+    gamma: 2.0
+
+    # Number of neighbors to examine for GP regression.
+    num_neighbors: 30
+
+    # Noise variance for GP signed distance function regression.
+    noise: 1.0

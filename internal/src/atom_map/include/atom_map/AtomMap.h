@@ -114,6 +114,10 @@ namespace atom {
     float probability_hit_;
     float probability_miss_;
 
+    // Probability clamping values.
+    float probability_clamp_high_;
+    float probability_clamp_low_;
+
     // Number of nearest neighbors to examine for GP surface distance regression.
     int num_neighbors_;
 
