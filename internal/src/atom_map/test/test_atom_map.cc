@@ -44,6 +44,7 @@
 #include <gtest/gtest.h>
 
 #include <atom_map/Atom.h>
+#include <atom_map/VoxelGrid.h>
 #include <atom_map/AtomKdtree.h>
 #include <geometry_utils/Vector3.h>
 
@@ -54,9 +55,33 @@
 using namespace atom;
 namespace gu = geometry_utils;
 
+// Test the VoxelGrid class.
+TEST(VoxelGrid, TestVoxelGrid) {
+  PointCloud::Ptr raw(new PointCloud);
+  PointCloud::Ptr filtered(new PointCloud);
+
+  // Put a bunch of random points in the raw point cloud.
+  const size_t kNumPoints = 1000;
+  const float kLowerBound = -1000.0;
+  const float kUpperBound = 1000.0;
+  std::uniform_real_distribution<float> unif(kLowerBound, kUpperBound);
+  std::default_random_engine rng;
+
+  for (size_t ii = 0; ii < kNumPoints; ii++) {
+    raw->points.push_back(pcl::PointXYZ(unif(rng), unif(rng), unif(rng)));
+  }
+
+  // Run the VoxelGrid filter.
+  const float kLeafSize = 0.05;
+  const float kMaxSize = 10000.0;
+  VoxelGrid vg(-kMaxSize, kMaxSize, kLeafSize);
+  EXPECT_TRUE(vg.Filter(raw, filtered));
+}
+
 // Test that we can create an Atom and set values appropriately.
 TEST(Atom, TestCreateAtom) {
-  Atom::Ptr atom = Atom::Create(0.01);
+  Atom::SetRadius(0.01);
+  Atom::Ptr atom = Atom::Create();
   ASSERT_TRUE(atom.get());
 
   // Set params.
@@ -78,7 +103,8 @@ TEST(Atom, TestCreateAtom) {
 
 // Test that we can update probability/log odds.
 TEST(Atom, TestUpdateProbability) {
-  Atom::Ptr atom = Atom::Create(0.01);
+  Atom::SetRadius(0.01);
+  Atom::Ptr atom = Atom::Create();
   ASSERT_TRUE(atom.get());
 
   // Set params.
@@ -101,7 +127,8 @@ TEST(Atom, TestUpdateProbability) {
 
 // Test that we can update signed distance.
 TEST(Atom, TestUpdateSignedDistance) {
-  Atom::Ptr atom = Atom::Create(0.01);
+  Atom::SetRadius(0.01);
+  Atom::Ptr atom = Atom::Create();
   ASSERT_TRUE(atom.get());
 
   // Set params.
@@ -128,6 +155,7 @@ TEST(AtomKdtree, TestAtomKdtreeInsertion) {
 
   // Set params for random point generation.
   const float kRadius = 0.0001;
+  Atom::SetRadius(kRadius);
   const size_t kNumPoints = 500;
   const float kLowerBound = 0.0;
   const float kUpperBound = 1.0;
@@ -137,7 +165,7 @@ TEST(AtomKdtree, TestAtomKdtreeInsertion) {
   // Generate a bunch of random points and add to the tree.
   std::vector<Atom::Ptr> atoms;
   for (size_t ii = 0; ii < kNumPoints; ii++) {
-    Atom::Ptr atom = Atom::Create(kRadius);
+    Atom::Ptr atom = Atom::Create();
     gu::Vec3f pos(unif(rng), unif(rng), unif(rng));
     atom->SetPosition(pos);
 
@@ -174,6 +202,7 @@ TEST(AtomKdtree, TestAtomKdtreeRadiusSearch) {
 
   // Set params for random point generation.
   const float kRadius = 0.5;
+  Atom::SetRadius(kRadius);
   const size_t kNumPoints = 1000;
   const float kLowerBound = -10.0;
   const float kUpperBound = 10.0;
@@ -182,7 +211,7 @@ TEST(AtomKdtree, TestAtomKdtreeRadiusSearch) {
 
   // Generate a bunch of random points and add to the tree.
   for (size_t ii = 0; ii < kNumPoints; ii++) {
-    Atom::Ptr atom = Atom::Create(kRadius);
+    Atom::Ptr atom = Atom::Create();
     gu::Vec3f pos(unif(rng), unif(rng), unif(rng));
     atom->SetPosition(pos);
 
