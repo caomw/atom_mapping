@@ -35,11 +35,12 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#ifndef ATOM_MAPPING_ATOM_MAP_H
-#define ATOM_MAPPING_ATOM_MAP_H
+#ifndef ATOM_MAPPING_APPROX_ATOM_MAP_H
+#define ATOM_MAPPING_APPROX_ATOM_MAP_H
 
 #include <atom_map/Atom.h>
-#include <atom_map/AtomKdtree.h>
+#include <atom_map/ApproximateAtomKdtree.h>
+#include <atom_map/AtomMapParameters.h>
 #include <atom_map/RaySamples.h>
 #include <parameter_utils/ParameterUtils.h>
 #include <geometry_utils/GeometryUtilsROS.h>
@@ -55,111 +56,71 @@
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
 namespace atom {
-  class AtomMap {
+  class ApproximateAtomMap {
   public:
-    AtomMap();
-    ~AtomMap();
+    ~ApproximateAtomMap();
+    ApproximateAtomMap(const AtomMapParameters& params,
+                       const PointCloud::ConstPtr& cloud,
+                       const pcl::PointXYZ& robot);
 
-    // Initialize.
-    bool Initialize(const ros::NodeHandle& n);
-
-    // Getters.
-    void GetSignedDistance(float x, float y, float z,
-                           float* distance, float* variance);
-    float GetProbability(float x, float y, float z);
+    // Return a list of all Atoms in the map.
     const std::vector<Atom::Ptr>& GetAtoms() const;
 
-    // Update.
-    void Update(const PointCloud::ConstPtr& cloud, const pcl::PointXYZ& robot);
-
-    // Publishing.
-    void PublishFullOccupancy() const;
-    void PublishFullSignedDistance() const;
-
   private:
-    // A kdtree to hold all the Atoms.
-    AtomKdtree map_;
+    // An approximate kdtree to hold all the Atoms. Since we are only
+    // inserting one scan (ideally with interleaving), and we are going
+    // to then use an exact kdtree to merge this with the big map, it is
+    // alright to use FLANN speedups and sacrifice accuracy here.
+    ApproximateAtomKdtree map_;
 
     // Atomic radius.
-    float radius_;
+    const float radius_;
 
     // Min and max scan ranges.
-    float min_scan_range_;
-    float max_scan_range_;
+    const float min_scan_range_;
+    const float max_scan_range_;
 
     // Optionally update signed distance and/or occupancy.
-    bool update_occupancy_;
-    bool update_signed_distance_;
+    const bool update_occupancy_;
+    const bool update_signed_distance_;
 
     // Radius for nearest neighbor search for surface normal extraction.
-    float surface_normal_radius_;
+    const float surface_normal_radius_;
 
     // Maximum distance to trace a ray inside of an object. This should be small,
     // in order to ensure we don't accidentally trace all the way through. However,
     // it is definitely necessary in order to ensure proper surface detection.
-    float max_occupied_backoff_;
+    const float max_occupied_backoff_;
 
     // Maximum distance to trace the surface normal inside (supposedly) free space.
-    float max_normal_backoff_;
+    const float max_normal_backoff_;
 
     // Maximum number of Atoms to lay down along the normal vector into free space.
-    int max_samples_normal_;
+    const int max_samples_normal_;
 
     // Sensor angular resolution. This is the smallest anglue between two range
     // measurements. We also provide a flag to turn on angular interleaving.
-    float angular_resolution_;
-    bool angular_interleaving_;
-    float lambda_;
+    const float angular_resolution_;
+    const bool angular_interleaving_;
+    const float lambda_;
 
     // Probability of hits and misses for occupancy updates.
-    float probability_hit_;
-    float probability_miss_;
+    const float probability_hit_;
+    const float probability_miss_;
 
-    // Probability clamping values.
-    float probability_clamp_high_;
-    float probability_clamp_low_;
-
-    // Number of nearest neighbors to examine for GP surface distance regression.
-    int num_neighbors_;
-
-    // Characteristic parameter for the radial basis function used as a
-    // covariance kernel for signed distance function estimation. Larger gamma
-    // means that covariance decreases faster as points get farther apart.
-    float gamma_;
-
-    // Noise variance to add to covariance matrices. Assume isotropic noise.
-    float noise_variance_;
-
-    // Visualization parameters and publishers.
-    std::string fixed_frame_id_;
-    std::string full_occupancy_topic_;
-    std::string full_sdf_topic_;
-    bool only_show_occupied_;
-    float occupied_threshold_; // Above this is considered occupied.
-    float sdf_threshold_;      // Smaller than this is considered occupied.
-    ros::Publisher full_occupancy_publisher_;
-    ros::Publisher full_sdf_publisher_;
-
-    // Initialization and naming.
-    bool initialized_;
-    std::string name_;
-
-    // Load parameters and register callbacks.
-    bool LoadParameters(const ros::NodeHandle& n);
-    bool RegisterCallbacks(const ros::NodeHandle& n);
+    // Name, for ROS warnings and debug messages.
+    const std::string name_;
 
     // Try to add a single atom.
-    void MaybeInsertAtom(const Atom::Ptr& atom);
+    void MaybeInsertAtom(const pcl::PointXYZ& position, float sdf);
 
-    // Apply the covariance kernel function.
-    float CovarianceKernel(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2);
-
-    // Convert a probability of occupancy to a ROS color.
-    std_msgs::ColorRGBA ProbabilityToRosColor(float probability) const;
-
-    // Convert a signed distnace value to a ROS color.
-    std_msgs::ColorRGBA SignedDistanceToRosColor(float sdf) const;
-  };
-}
+    // Sample a ray and do a probabilistic and signed distance update.
+    // Given a robot position and a measured point, discretize the ray from sensor
+    // to observation and return vectors of points and distances. Append to the
+    // output RaySamples argument.
+    void SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
+                   const pcl::PointXYZ& robot, RaySamples* samples);
+  }; // class ApproximateAtomMap
+} // namespace atom
 
 #endif

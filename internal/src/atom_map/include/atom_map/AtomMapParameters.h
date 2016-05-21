@@ -35,51 +35,11 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#ifndef ATOM_MAPPING_ATOM_MAP_H
-#define ATOM_MAPPING_ATOM_MAP_H
-
-#include <atom_map/Atom.h>
-#include <atom_map/AtomKdtree.h>
-#include <atom_map/RaySamples.h>
-#include <parameter_utils/ParameterUtils.h>
-#include <geometry_utils/GeometryUtilsROS.h>
-
-#include <ros/ros.h>
-#include <std_msgs/ColorRGBA.h>
-#include <pcl/point_types.h>
-#include <pcl/features/normal_3d.h>
-#include <pcl_ros/point_cloud.h>
-#include <glog/logging.h>
-#include <math.h>
-
-typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
+#ifndef ATOM_MAPPING_ATOM_MAP_PARAMS_H
+#define ATOM_MAPPING_ATOM_MAP_PARAMS_H
 
 namespace atom {
-  class AtomMap {
-  public:
-    AtomMap();
-    ~AtomMap();
-
-    // Initialize.
-    bool Initialize(const ros::NodeHandle& n);
-
-    // Getters.
-    void GetSignedDistance(float x, float y, float z,
-                           float* distance, float* variance);
-    float GetProbability(float x, float y, float z);
-    const std::vector<Atom::Ptr>& GetAtoms() const;
-
-    // Update.
-    void Update(const PointCloud::ConstPtr& cloud, const pcl::PointXYZ& robot);
-
-    // Publishing.
-    void PublishFullOccupancy() const;
-    void PublishFullSignedDistance() const;
-
-  private:
-    // A kdtree to hold all the Atoms.
-    AtomKdtree map_;
-
+  struct AtomMapParameters {
     // Atomic radius.
     float radius_;
 
@@ -115,51 +75,9 @@ namespace atom {
     float probability_hit_;
     float probability_miss_;
 
-    // Probability clamping values.
-    float probability_clamp_high_;
-    float probability_clamp_low_;
-
-    // Number of nearest neighbors to examine for GP surface distance regression.
-    int num_neighbors_;
-
-    // Characteristic parameter for the radial basis function used as a
-    // covariance kernel for signed distance function estimation. Larger gamma
-    // means that covariance decreases faster as points get farther apart.
-    float gamma_;
-
-    // Noise variance to add to covariance matrices. Assume isotropic noise.
-    float noise_variance_;
-
-    // Visualization parameters and publishers.
-    std::string fixed_frame_id_;
-    std::string full_occupancy_topic_;
-    std::string full_sdf_topic_;
-    bool only_show_occupied_;
-    float occupied_threshold_; // Above this is considered occupied.
-    float sdf_threshold_;      // Smaller than this is considered occupied.
-    ros::Publisher full_occupancy_publisher_;
-    ros::Publisher full_sdf_publisher_;
-
-    // Initialization and naming.
-    bool initialized_;
+    // Name, for ROS warnings and debug messages.
     std::string name_;
-
-    // Load parameters and register callbacks.
-    bool LoadParameters(const ros::NodeHandle& n);
-    bool RegisterCallbacks(const ros::NodeHandle& n);
-
-    // Try to add a single atom.
-    void MaybeInsertAtom(const Atom::Ptr& atom);
-
-    // Apply the covariance kernel function.
-    float CovarianceKernel(const pcl::PointXYZ& p1, const pcl::PointXYZ& p2);
-
-    // Convert a probability of occupancy to a ROS color.
-    std_msgs::ColorRGBA ProbabilityToRosColor(float probability) const;
-
-    // Convert a signed distnace value to a ROS color.
-    std_msgs::ColorRGBA SignedDistanceToRosColor(float sdf) const;
-  };
-}
+  }; // struct AtomMapParameters
+} // namespace atom
 
 #endif
