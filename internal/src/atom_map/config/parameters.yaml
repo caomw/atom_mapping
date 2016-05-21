@@ -3,8 +3,8 @@ atom:
   radius: 0.3
 
   # Occupancy and SDF modes.
-  update_occupancy: false
-  update_signed_distance: true
+  update_occupancy: true
+  update_signed_distance: false
   only_show_occupied: true
 
   # Thresholds for visualizing occupied atoms and those near surfaces.

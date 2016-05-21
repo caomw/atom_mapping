@@ -65,12 +65,12 @@ namespace atom {
     std::vector< std::vector<int> > query_match_indices;
     std::vector< std::vector<float> > query_distances;
 
-    const int kNumChecks = 128;
-    const float kEpsilon = 0.01;
+    const int kNumChecks = 32;
+    //    const float kEpsilon = 0.5;
     const int num_neighbors_found =
       index_->knnSearch(flann_query, query_match_indices,
                         query_distances, static_cast<int>(k),
-                        flann::SearchParams(kNumChecks, kEpsilon));
+                        flann::SearchParams(kNumChecks)); //, kEpsilon));
 
     // Assign output.
     for (size_t ii = 0; ii < num_neighbors_found; ii++)
@@ -112,12 +112,12 @@ namespace atom {
     std::vector< std::vector<float> > query_distances;
 
     // FLANN checks Euclidean distance squared, so we pass in r * r.
-    const int kNumChecks = 128;
-    const float kEpsilon = 0.01;
+    const int kNumChecks = 32;
+    //    const float kEpsilon = 0.5;
     int num_neighbors_found =
       index_->radiusSearch(flann_query, query_match_indices,
                            query_distances, static_cast<float>(r * r),
-                           flann::SearchParams(kNumChecks, kEpsilon, false));
+                           flann::SearchParams(kNumChecks)); //, kEpsilon, false));
     // Assign output.
     for (size_t ii = 0; ii < num_neighbors_found; ii++)
       neighbors->push_back(registry_[ query_match_indices[0][ii] ]);

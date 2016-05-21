@@ -284,7 +284,7 @@ bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
   if (!pu::Get("atom/raytracing/angular_resolution", angular_resolution_)) return false;
   if (!pu::Get("atom/raytracing/angular_interleaving", angular_interleaving_))
     return false;
-  if (!pu::Get("atom/lambda", lambda_)) return false;
+  if (!pu::Get("atom/raytracing/lambda", lambda_)) return false;
 
   // Gaussian process regression parameters.
   if (!pu::Get("atom/gp/gamma", gamma_)) return false;
