@@ -3,9 +3,9 @@ atom:
   radius: 0.3
 
   # Occupancy and SDF modes.
-  update_occupancy: true
-  update_signed_distance: false
-  only_show_occupied: false
+  update_occupancy: false
+  update_signed_distance: true
+  only_show_occupied: true
 
   # Thresholds for visualizing occupied atoms and those near surfaces.
   occupied_threshold: 0.65
@@ -22,7 +22,7 @@ atom:
 
   # Radius for nearest neighbor search for surface normal estimation. This should
   # be on the order of the voxel grid resolution if input point clouds are filtered.
-  surface_normal_radius: 0.5
+  surface_normal_radius: 2.0
 
   # Visualization topic names.
   full_occupancy_topic: occupancy
@@ -45,7 +45,7 @@ atom:
     max_normal_backoff: 4.1
 
     # Maximum number of atoms to lay down along the normal vector into free space.
-    max_samples_normal: 3
+    max_samples_normal: 10
 
     # Sensor angular resolution. This is the smallest angle between two range
     # measurements. For the Velodyne Puck at 10 Hz, this is 0.2 degrees. We also

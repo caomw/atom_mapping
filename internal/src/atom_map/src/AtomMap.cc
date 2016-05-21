@@ -302,6 +302,8 @@ void AtomMap::CopyParametersFrom(const AtomMap& reference) {
   max_samples_normal_ = reference.max_samples_normal_;
   probability_hit_ = reference.probability_hit_;
   probability_miss_ = reference.probability_miss_;
+  probability_clamp_low_ = reference.probability_clamp_low_;
+  probability_clamp_high_ = reference.probability_clamp_high_;
   num_neighbors_ = reference.num_neighbors_;
   gamma_ = reference.gamma_;
   noise_variance_ = reference.noise_variance_;
@@ -548,20 +550,16 @@ void AtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
         samples->normal_distances_.push_back(backoff);
       }
     }
-  } else {
-    // Set range equal to upper bound.
-    range = max_scan_range_;
-
-    // Set px, py, pz.
-    px = robot.x - range * dx;
-    py = robot.y - range * dy;
-    pz = robot.z - range * dz;
   }
 
   if (update_occupancy_) {
     // Start at the surface and walk toward the robot. Initially, backoff just
     // enough to be tangent to the surface.
-    const float ray_initial_backoff = radius_ / (dx * nx + dy * ny + dz * nz);
+    float ray_initial_backoff = radius_ / (dx * nx + dy * ny + dz * nz);
+
+    // If range is outside the max, then add the difference to the initial backoff.
+    if (range > max_scan_range_)
+      ray_initial_backoff += range - max_scan_range_;
 
     // If this backoff distance is greater than the range to the robot, just
     // ignore this point.
@@ -730,15 +728,14 @@ std_msgs::ColorRGBA AtomMap::ProbabilityToRosColor(float probability) const {
 // Convert a signed distnace to a ROS color. Red is probably close to a surface,
 // and blue is probably far from a surface.
 std_msgs::ColorRGBA AtomMap::SignedDistanceToRosColor(float sdf) const {
-  // const float min_dist = map_.GetMinDistance();
-  // const float max_dist = map_.GetMaxDistance();
-  const float min_dist = -sdf_threshold_;
-  const float max_dist = sdf_threshold_;
+  const float min_dist = (only_show_occupied_) ? -sdf_threshold_ : 0.0;
+  const float max_dist = (only_show_occupied_) ? sdf_threshold_
+    : std::max(map_.GetMaxDistance(), std::abs(map_.GetMinDistance()));
 
   std_msgs::ColorRGBA c;
-  c.r = 1.0 - (sdf - min_dist) / (max_dist - min_dist);
+  c.r = (sdf - min_dist) / (max_dist - min_dist);
   c.g = 0.0;
-  c.b = (sdf - min_dist) / (max_dist - min_dist);
+  c.b = 1.0 - (sdf - min_dist) / (max_dist - min_dist);
   c.a = 1.0;
 
   return c;

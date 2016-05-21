@@ -242,6 +242,7 @@ namespace atom {
 
   float ToVariance(float sdf_update) {
     return sdf_update * sdf_update; // This is arbitrary.
+    //return 1.0;
   }
 
 } //\namespace atom
