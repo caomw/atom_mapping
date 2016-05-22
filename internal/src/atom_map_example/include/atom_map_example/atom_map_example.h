@@ -46,6 +46,8 @@
 #include <pcl/common/transforms.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl_ros/point_cloud.h>
+#include <tf2_ros/transform_listener.h>
+#include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <Eigen/Core>
 #include <queue>
@@ -82,10 +84,16 @@ namespace atom {
     ros::Publisher filtered_cloud_publisher_;
     std::string filtered_cloud_topic_;
 
-    // Topics to listen to.
+    // Topics to listen to. Pose topic is only used if buffer flag is set. If
+    // buffer flag is not set, then we need to know the fixed frame id and use
+    // ROS's transform tree.
+    bool buffer_all_;
     std::string data_topic_;
     std::string pose_topic_;
-
+    std::string fixed_frame_;
+    tf2_ros::Buffer tf_buffer_;
+    tf2_ros::TransformListener tf_listener_;
+    
     // Name and initialization.
     bool initialized_;
     std::string name_;

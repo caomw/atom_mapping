@@ -3,9 +3,15 @@ atom_example:
   data_topic: /blam/blam_slam/base_frame_point_cloud
   #data_topic: /velodyne_points
 
-  # Name of robot and world frames.
-#  robot_frame: base
-#  world_frame: world
+  # Optionally buffer up both point clouds and poses and use all the data
+  # even if it is not in real-time. If this flag is not set, then the default
+  # behavior is to read transforms from the tf tree provided by ROS whenever
+  # a new point cloud message is received. This means that some frames may be skipped
+  # if processing is not otherwise real-time.
+  buffer_all: false
+
+  # Name of fixed frame.
+  fixed_frame: world
 
   # Topic for pose estimate for robot in world frame.
   pose_topic: /blam/blam_slam/localization_integrated_estimate

@@ -37,9 +37,11 @@
 
 #include <atom_map_example/atom_map_example.h>
 #include <atom_map/VoxelGrid.h>
+#include <pcl/conversions.h>
 
 namespace atom {
-  AtomMapExample::AtomMapExample() : initialized_(false) {}
+  AtomMapExample::AtomMapExample()
+    : tf_listener_(tf_buffer_), initialized_(false) {}
   AtomMapExample::~AtomMapExample() {}
 
   // Initialize.
@@ -68,10 +70,12 @@ namespace atom {
   // Load parameters and register callbacks.
   bool AtomMapExample::LoadParameters(const ros::NodeHandle& n) {
     if (!pu::Get("atom_example/data_topic", data_topic_)) return false;
-    if (!pu::Get("atom_example/pose_topic", pose_topic_)) return false;
     if (!pu::Get("atom_example/filtered_cloud_topic", filtered_cloud_topic_))
       return false;
     if (!pu::Get("atom_example/filter_leaf_size", filter_leaf_size_)) return false;
+    if (!pu::Get("atom_example/buffer_all", buffer_all_)) return false;
+    if (!pu::Get("atom_example/pose_topic", pose_topic_)) return false;
+    if (!pu::Get("atom_example/fixed_frame", fixed_frame_)) return false;
 
     return true;
   }
@@ -79,15 +83,20 @@ namespace atom {
   bool AtomMapExample::RegisterCallbacks(const ros::NodeHandle& n) {
     ros::NodeHandle node(n);
 
+    // Set buffer size. (Octomap uses 5.)
+    const int kBufferSize = (buffer_all_) ? 100 : 5;
+
     // Register point cloud subscriber callback.
     point_cloud_subscriber_ =
-      node.subscribe<PointCloud>(data_topic_.c_str(), 100,
+      node.subscribe<PointCloud>(data_topic_.c_str(), kBufferSize,
                                  &AtomMapExample::AddPointCloudCallback, this);
 
     // Register robot pose subscriber callback.
-    pose_subscriber_ =
-      node.subscribe<geometry_msgs::PoseStamped>(pose_topic_.c_str(), 100,
-                                                 &AtomMapExample::AddPoseCallback, this);
+    if (buffer_all_) {
+      pose_subscriber_ =
+        node.subscribe<geometry_msgs::PoseStamped>(pose_topic_.c_str(), kBufferSize,
+                                                   &AtomMapExample::AddPoseCallback, this);
+    }
 
     // Set up filtered cloud publisher.
     filtered_cloud_publisher_ =
@@ -155,16 +164,43 @@ namespace atom {
 
   // Callback to process incoming point clouds.
   void AtomMapExample::AddPointCloudCallback(const PointCloud::ConstPtr& cloud) {
-    // Add to queue if there is no available pose.
-    if (pose_queue_.empty())
-      point_cloud_queue_.push(cloud);
+    Eigen::Matrix4d pose = Eigen::Matrix4d::Identity();
 
-    // Otherwise, go ahead and process this pair.
-    else {
-      const Eigen::Matrix4d pose = pose_queue_.front();
-      ProcessPointCloud(cloud, pose);
-      pose_queue_.pop();
+    if (buffer_all_) {
+      // Add to queue if there is no available pose.
+      if (pose_queue_.empty())
+        point_cloud_queue_.push(cloud);
+
+      // Otherwise, go ahead and process this pair.
+      else {
+        pose = pose_queue_.front();
+        pose_queue_.pop();
+      }
+    } else {
+      // Get transform.
+      geometry_msgs::TransformStamped tf;
+      try {
+        tf = tf_buffer_.lookupTransform(fixed_frame_.c_str(),
+                                        cloud->header.frame_id,
+                                        pcl_conversions::fromPCL(cloud->header.stamp));
+      } catch(tf2::TransformException &ex) {
+        ROS_WARN("%s: %s", name_.c_str(), ex.what());
+        ROS_WARN("%s: Did not insert this scan.", name_.c_str());
+        ros::Duration(0.1).sleep();
+        return;
+      }
+
+      // Transform point cloud into world frame.
+      const gu::Transform3 transform = gr::FromROS(tf.transform);
+      const Eigen::Matrix3d rotation = transform.rotation.Eigen();
+      const Eigen::Vector3d translation = transform.translation.Eigen();
+
+      pose.block(0, 0, 3, 3) = rotation;
+      pose.block(0, 3, 3, 1) = translation;
     }
+
+    // Process the point cloud.
+    ProcessPointCloud(cloud, pose);
   }
 
 } // namespace atom
