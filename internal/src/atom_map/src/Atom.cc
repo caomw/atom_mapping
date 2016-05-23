@@ -127,10 +127,11 @@ namespace atom {
     }
 #endif
 
-    // Only update if current log odds is between clamps.
-    if (log_odds_ >= log_odds_clamp_low_ &&
-        log_odds_ <= log_odds_clamp_high_)
-      log_odds_ += weight * ToLogOdds(probability_update);
+    log_odds_ += weight * ToLogOdds(probability_update);
+
+    // Enforce clamping.
+    if (log_odds_ > log_odds_clamp_high_) log_odds_ = log_odds_clamp_high_;
+    else if (log_odds_ < log_odds_clamp_low_) log_odds_ = log_odds_clamp_low_;
   }
 
   void Atom::UpdateLogOdds(float log_odds_update, float weight) {
@@ -144,10 +145,11 @@ namespace atom {
     }
 #endif
 
-    // Only update if current log odds is between clamps.
-    if (log_odds_ >= log_odds_clamp_low_ &&
-        log_odds_ <= log_odds_clamp_high_)
-      log_odds_ += weight * log_odds_update;
+    log_odds_ += weight * log_odds_update;
+
+    // Enforce clamping.
+    if (log_odds_ > log_odds_clamp_high_) log_odds_ = log_odds_clamp_high_;
+    else if (log_odds_ < log_odds_clamp_low_) log_odds_ = log_odds_clamp_low_;
   }
 
   void Atom::UpdateSignedDistance(float sdf_update, float weight) {
