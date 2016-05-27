@@ -76,6 +76,10 @@ namespace atom {
     void PublishFullOccupancy() const;
     void PublishFullSignedDistance() const;
 
+    // Save to '.csv' file. First line contains just the number of Atoms in the
+    // map. Subsequent lines contain x, y, z coordinates followed by sdf.
+    void Save(const std::string& filename = "atoms.csv") const;
+
   private:
     // A kdtree to hold all the Atoms.
     AtomKdtree map_;
