@@ -344,10 +344,7 @@ void AtomMap::PublishFullOccupancy() const {
     // Maybe only show if probably occupied.
     if (!only_show_occupied_ || probability_occupied > occupied_threshold_) {
       const gu::Vec3f p = atoms[ii]->GetPosition();
-      geometry_msgs::Point msg;
-      msg.x = p(0); msg.y = p(1); msg.z = p(2);
-
-      m.points.push_back(msg);
+      m.points.push_back(gr::ToRosPoint(p));
       m.colors.push_back(ProbabilityToRosColor(probability_occupied));
     }
   }
@@ -385,11 +382,8 @@ void AtomMap::PublishFullSignedDistance() const {
 
     // Maybe only show if probably occupied.
     if (!only_show_occupied_ || std::abs(sdf) < sdf_threshold_) {
-      gu::Vec3f p = atoms[ii]->GetPosition();
-      geometry_msgs::Point msg;
-      msg.x = p(0); msg.y = p(1); msg.z = p(2);
-
-      m.points.push_back(msg);
+      const gu::Vec3f p = atoms[ii]->GetPosition();
+      m.points.push_back(gr::ToRosPoint(p));
       m.colors.push_back(SignedDistanceToRosColor(sdf));
     }
   }
