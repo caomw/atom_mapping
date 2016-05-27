@@ -93,7 +93,11 @@ namespace atom {
     std::string fixed_frame_;
     tf2_ros::Buffer tf_buffer_;
     tf2_ros::TransformListener tf_listener_;
-    
+
+    // Optionally save the map on close.
+    bool save_on_close_;
+    std::string file_to_save_;
+
     // Name and initialization.
     bool initialized_;
     std::string name_;

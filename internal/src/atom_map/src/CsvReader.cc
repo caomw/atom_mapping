@@ -35,56 +35,69 @@
  *          David Fridovich-Keil   ( dfk@eecs.berkeley.edu )
  */
 
-///////////////////////////////////////////////////////////////////////////////
-//
-// This file defines a Comma Separated Value (CSV) reader class, which loads
-// CSV files, parses them, and returns their values.
-//
-///////////////////////////////////////////////////////////////////////////////
+#include <glog/logging.h>
 
-#ifndef ATOM_FILE_CSV_READER_H
-#define ATOM_FILE_CSV_READER_H
-
-#include <memory>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <vector>
+#include <atom_map/CsvReader.h>
+#include <atom_map/tokenize.h>
 
 namespace atom {
 namespace file {
 
-class CsvReader {
- public:
-  typedef std::string Token;
-  typedef std::vector<Token> Line;
-  typedef std::vector<Line> File;
+CsvReader::CsvReader() {
+  file_.reset(new std::ifstream());
+}
 
-  CsvReader();
-  CsvReader(const std::string& filename);
+CsvReader::CsvReader(const std::string& filename) {
+  file_.reset(new std::ifstream());
+  file_->open(filename.c_str(), std::ifstream::in);
+}
 
-  ~CsvReader();
+CsvReader::~CsvReader() {}
 
-  // Open a file for reading.
-  bool Open(const std::string& filename);
+bool CsvReader::Open(const std::string& filename) {
+  file_->open(filename.c_str(), std::ifstream::in);
+  return IsOpen();
+}
 
-  // Check if the file is open.
-  bool IsOpen() const;
+bool CsvReader::IsOpen() const {
+  return file_->is_open();
+}
 
-  // Check if the file has more lines to read.
-  bool HasMoreLines() const;
+bool CsvReader::HasMoreLines() const {
+  return file_->peek() != std::ifstream::traits_type::eof();
+}
 
-  // Read the next line, splitting all delimited values into tokens.
-  bool ReadLine(Line* line, char delimiter = ',') const;
+bool CsvReader::ReadLine(CsvReader::Line* line, char delimiter) const {
+  CHECK_NOTNULL(line)->clear();
 
-  // Read an entire file, splitting all delimited values into tokens.
-  bool ReadFile(File* file, char delimiter = ',') const;
+  // Read a line into a string.
+  std::string line_string;
+  if (!std::getline(*file_, line_string)) {
+    return false;
+  }
 
- private:
-  std::shared_ptr<std::ifstream> file_;
-};  //\class CsvReader
+  // Tokenize the string.
+  CsvReader::Line tokenized_line;
+  ::atom::strings::Tokenize(line_string, delimiter, line);
+
+  return true;
+}
+
+bool CsvReader::ReadFile(CsvReader::File* file, char delimiter) const {
+  CHECK_NOTNULL(file)->clear();
+
+  std::string line;
+  while (std::getline(*file_, line)) {
+    // Tokenize the string.
+    CsvReader::Line tokenized_line;
+    ::atom::strings::Tokenize(line, delimiter, &tokenized_line);
+
+    file->push_back(tokenized_line);
+  }
+
+  // Did we read the entire file?
+  return !HasMoreLines();
+}
 
 }  //\namespace file
 }  //\namespace path
-
-#endif

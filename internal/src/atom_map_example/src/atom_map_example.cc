@@ -42,7 +42,11 @@
 namespace atom {
   AtomMapExample::AtomMapExample()
     : tf_listener_(tf_buffer_), initialized_(false) {}
-  AtomMapExample::~AtomMapExample() {}
+  AtomMapExample::~AtomMapExample() {
+    // Optionally save the map.
+    if (save_on_close_)
+      map_.Save(file_to_save_);
+  }
 
   // Initialize.
   bool AtomMapExample::Initialize(const ros::NodeHandle& n) {
@@ -76,6 +80,8 @@ namespace atom {
     if (!pu::Get("atom_example/buffer_all", buffer_all_)) return false;
     if (!pu::Get("atom_example/pose_topic", pose_topic_)) return false;
     if (!pu::Get("atom_example/fixed_frame", fixed_frame_)) return false;
+    if (!pu::Get("atom_example/save_on_close", save_on_close_)) return false;
+    if (!pu::Get("atom_example/file_to_save", file_to_save_)) return false;
 
     return true;
   }
@@ -95,7 +101,8 @@ namespace atom {
     if (buffer_all_) {
       pose_subscriber_ =
         node.subscribe<geometry_msgs::PoseStamped>(pose_topic_.c_str(), kBufferSize,
-                                                   &AtomMapExample::AddPoseCallback, this);
+                                                   &AtomMapExample::AddPoseCallback,
+                                                   this);
     }
 
     // Set up filtered cloud publisher.

@@ -38,6 +38,7 @@
 #include <atom_map/AtomMap.h>
 #include <atom_map/ApproximateAtomMap.h>
 #include <atom_map/AtomMapParameters.h>
+#include <atom_map/CsvWriter.h>
 
 #include <visualization_msgs/Marker.h>
 #include <algorithm>
@@ -434,7 +435,36 @@ std_msgs::ColorRGBA AtomMap::SignedDistanceToRosColor(float sdf) const {
   return c;
 }
 
+// Save to '.csv' file. First line contains just the number of Atoms in the
+// map. Subsequent lines contain x, y, z coordinates followed by sdf.
 void AtomMap::Save(const std::string& filename) const {
+  const std::vector<Atom::Ptr> atoms = map_.GetAtoms();
+
+  // Open a file.
+  file::CsvWriter writer(filename);
+
+  // Write the number of Atoms.
+  std::vector<int> first_line;
+  first_line.push_back(static_cast<int>(atoms.size()));
+  writer.WriteLine(first_line);
+
+  // Write each atom.
+  for (size_t ii = 0; ii < atoms.size(); ii++) {
+    Atom::Ptr atom = atoms[ii];
+    const gu::Vec3f position = atom->GetPosition();
+    const double sdf = atom->GetSignedDistance();
+
+    // Pack.
+    std::vector<double> data;
+    data.push_back(position(0));
+    data.push_back(position(1));
+    data.push_back(position(2));
+    data.push_back(sdf);
+
+    // Write.
+    writer.WriteLine(data);
+  }
+
   return;
 }
 

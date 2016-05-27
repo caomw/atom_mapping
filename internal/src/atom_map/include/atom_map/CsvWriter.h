@@ -42,8 +42,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-#ifndef PATH_FILE_CSV_WRITER_H
-#define PATH_FILE_CSV_WRITER_H
+#ifndef ATOM_FILE_CSV_WRITER_H
+#define ATOM_FILE_CSV_WRITER_H
 
 #include <memory>
 #include <Eigen/Core>
@@ -51,9 +51,7 @@
 #include <string>
 #include <vector>
 
-#include <util/disallow_copy_and_assign.h>
-
-namespace path {
+namespace atom {
 namespace file {
 
 class CsvWriter {
@@ -85,8 +83,6 @@ class CsvWriter {
                   char delimiter = ',');
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(CsvWriter)
-
   std::shared_ptr<std::ofstream> file_;
 
 };  //\class CsvWriter

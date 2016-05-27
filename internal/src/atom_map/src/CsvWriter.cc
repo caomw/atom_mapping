@@ -35,70 +35,93 @@
  *          David Fridovich-Keil   ( dfk@eecs.berkeley.edu )
  */
 
-#include <glog/logging.h>
+#include <atom_map/CsvWriter.h>
 
-#include <file/csv_reader.h>
-
-#include <strings/tokenize.h>
-
-namespace path {
+namespace atom {
 namespace file {
 
-CsvReader::CsvReader() {
-  file_.reset(new std::ifstream());
+CsvWriter::CsvWriter() {
+  file_.reset(new std::ofstream());
 }
 
-CsvReader::CsvReader(const std::string& filename) {
-  file_.reset(new std::ifstream());
-  file_->open(filename.c_str(), std::ifstream::in);
+CsvWriter::CsvWriter(const std::string& filename) {
+  file_.reset(new std::ofstream());
+  file_->open(filename.c_str(), std::ios::app | std::ios::out);
 }
 
-CsvReader::~CsvReader() {}
+CsvWriter::~CsvWriter() {}
 
-bool CsvReader::Open(const std::string& filename) {
-  file_->open(filename.c_str(), std::ifstream::in);
+bool CsvWriter::Open(const std::string& filename) {
+  file_->open(filename.c_str(), std::ios::app | std::ios::out);
   return IsOpen();
 }
 
-bool CsvReader::IsOpen() const {
+bool CsvWriter::Close() {
+  if (!IsOpen())
+    return false;
+
+  file_->close();
+  return !IsOpen();
+}
+
+bool CsvWriter::IsOpen() const {
   return file_->is_open();
 }
 
-bool CsvReader::HasMoreLines() const {
-  return file_->peek() != std::ifstream::traits_type::eof();
-}
-
-bool CsvReader::ReadLine(CsvReader::Line* line, char delimiter) const {
-  CHECK_NOTNULL(line)->clear();
-
-  // Read a line into a string.
-  std::string line_string;
-  if (!std::getline(*file_, line_string)) {
+bool CsvWriter::WriteLine(const std::vector<int>& data, char delimiter) {
+  if (!IsOpen()) {
     return false;
   }
 
-  // Tokenize the string.
-  CsvReader::Line tokenized_line;
-  ::path::strings::Tokenize(line_string, delimiter, line);
-
+  for (size_t ii = 0; ii < data.size() - 1; ++ii) {
+    *file_ << data[ii] << delimiter;
+  }
+  *file_ << data.back() << std::endl;
   return true;
 }
 
-bool CsvReader::ReadFile(CsvReader::File* file, char delimiter) const {
-  CHECK_NOTNULL(file)->clear();
-
-  std::string line;
-  while (std::getline(*file_, line)) {
-    // Tokenize the string.
-    CsvReader::Line tokenized_line;
-    ::path::strings::Tokenize(line, delimiter, &tokenized_line);
-
-    file->push_back(tokenized_line);
+bool CsvWriter::WriteLine(const std::vector<double>& data, char delimiter) {
+  if (!IsOpen()) {
+    return false;
   }
 
-  // Did we read the entire file?
-  return !HasMoreLines();
+  for (size_t ii = 0; ii < data.size() - 1; ++ii) {
+    *file_ << data[ii] << delimiter;
+  }
+  *file_ << data.back() << std::endl;
+  return true;
+}
+
+bool CsvWriter::WriteLine(const std::vector<std::string>& data, char delimiter) {
+  if (!IsOpen()) {
+    return false;
+  }
+
+  for (size_t ii = 0; ii < data.size() - 1; ++ii) {
+    *file_ << data[ii] << delimiter;
+  }
+  *file_ << data.back() << std::endl;
+  return true;
+}
+
+bool CsvWriter::WriteLine(const Eigen::VectorXd& data, char delimiter) {
+  if (!IsOpen()) {
+    return false;
+  }
+
+  for (size_t ii = 0; ii < data.size() - 1; ++ii) {
+    *file_ << data(ii) << delimiter;
+  }
+  *file_ << data(data.size() - 1) << std::endl;
+  return true;
+}
+
+bool CsvWriter::WriteLines(const std::vector<Eigen::VectorXd>& data, char delimiter) {
+  for (const auto& vector : data)
+    if (!WriteLine(vector, delimiter))
+      return false;
+  return true;
 }
 
 }  //\namespace file
-}  //\namespace path
+}  //\namespace atom

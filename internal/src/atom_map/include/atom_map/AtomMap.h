@@ -41,6 +41,7 @@
 #include <atom_map/Atom.h>
 #include <atom_map/AtomKdtree.h>
 #include <atom_map/RaySamples.h>
+#include <atom_map/CsvWriter.h>
 #include <parameter_utils/ParameterUtils.h>
 #include <geometry_utils/GeometryUtilsROS.h>
 

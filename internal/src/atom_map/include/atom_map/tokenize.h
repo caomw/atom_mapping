@@ -35,93 +35,50 @@
  *          David Fridovich-Keil   ( dfk@eecs.berkeley.edu )
  */
 
-#include <file/csv_writer.h>
+#ifndef ATOM_STRINGS_TOKENIZE_H
+#define ATOM_STRINGS_TOKENIZE_H
 
-namespace path {
-namespace file {
+#include <string>
+#include <vector>
 
-CsvWriter::CsvWriter() {
-  file_.reset(new std::ofstream());
-}
+namespace atom {
+namespace strings {
 
-CsvWriter::CsvWriter(const std::string& filename) {
-  file_.reset(new std::ofstream());
-  file_->open(filename.c_str(), std::ios::app | std::ios::out);
-}
-
-CsvWriter::~CsvWriter() {}
-
-bool CsvWriter::Open(const std::string& filename) {
-  file_->open(filename.c_str(), std::ios::app | std::ios::out);
-  return IsOpen();
-}
-
-bool CsvWriter::Close() {
-  if (!IsOpen())
-    return false;
-
-  file_->close();
-  return !IsOpen();
-}
-
-bool CsvWriter::IsOpen() const {
-  return file_->is_open();
-}
-
-bool CsvWriter::WriteLine(const std::vector<int>& data, char delimiter) {
-  if (!IsOpen()) {
-    return false;
+// Tokenize a string. All chars in the delimiters string are considered.
+inline void Tokenize(const std::string &string, const std::string &delimiters,
+                     std::vector<std::string> *tokens) {
+  size_t prev = 0, next = 0;
+  while ((next = string.find_first_of(delimiters, prev)) != std::string::npos) {
+    if (next - prev != 0) {
+      tokens->push_back(string.substr(prev, next - prev));
+    }
+    prev = next + 1;
   }
 
-  for (size_t ii = 0; ii < data.size() - 1; ++ii) {
-    *file_ << data[ii] << delimiter;
+  if (prev < string.size()) {
+    tokens->push_back(string.substr(prev));
   }
-  *file_ << data.back() << std::endl;
-  return true;
 }
 
-bool CsvWriter::WriteLine(const std::vector<double>& data, char delimiter) {
-  if (!IsOpen()) {
-    return false;
-  }
+// Tokenize using all elements in a vector of delimiters.
+inline void Tokenize(const std::string &string,
+                     const std::vector<char> &delimiters,
+                     std::vector<std::string> *tokens) {
+  std::string delimiters_string;
+  for (const auto &element : delimiters)
+    delimiters_string.push_back(element);
 
-  for (size_t ii = 0; ii < data.size() - 1; ++ii) {
-    *file_ << data[ii] << delimiter;
-  }
-  *file_ << data.back() << std::endl;
-  return true;
+  Tokenize(string, delimiters_string, tokens);
 }
 
-bool CsvWriter::WriteLine(const std::vector<std::string>& data, char delimiter) {
-  if (!IsOpen()) {
-    return false;
-  }
-
-  for (size_t ii = 0; ii < data.size() - 1; ++ii) {
-    *file_ << data[ii] << delimiter;
-  }
-  *file_ << data.back() << std::endl;
-  return true;
+// Tokenize with a single delimiter.
+inline void Tokenize(const std::string &string, char delimiter,
+                     std::vector<std::string> *tokens) {
+  std::string delimiter_string = { delimiter };
+  Tokenize(string, delimiter_string, tokens);
 }
 
-bool CsvWriter::WriteLine(const Eigen::VectorXd& data, char delimiter) {
-  if (!IsOpen()) {
-    return false;
-  }
-
-  for (size_t ii = 0; ii < data.size() - 1; ++ii) {
-    *file_ << data(ii) << delimiter;
-  }
-  *file_ << data(data.size() - 1) << std::endl;
-  return true;
-}
-
-bool CsvWriter::WriteLines(const std::vector<Eigen::VectorXd>& data, char delimiter) {
-  for (const auto& vector : data)
-    if (!WriteLine(vector, delimiter))
-      return false;
-  return true;
-}
-
-}  //\namespace file
+}  //\namespace strings
 }  //\namespace path
+
+#endif
