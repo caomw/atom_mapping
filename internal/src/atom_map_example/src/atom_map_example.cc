@@ -42,8 +42,10 @@
 namespace atom {
   AtomMapExample::AtomMapExample()
     : tf_listener_(tf_buffer_), initialized_(false) {}
-  AtomMapExample::~AtomMapExample() {
-    // Optionally save the map.
+  AtomMapExample::~AtomMapExample() {}
+
+  // Optionally save on close.
+  void AtomMapExample::Save() const {
     if (save_on_close_)
       map_.Save(file_to_save_);
   }

@@ -24,5 +24,5 @@ atom_example:
   filtered_cloud_topic: filtered
 
   # Optionally save to file on close.
-  save_on_close: false
-  file_to_save: /Users/davidfridovichkeil/Documents/Developer/atom_mapping/atom_map_example/saved_maps/map.csv
+  save_on_close: true
+  file_to_save: /Users/davidfridovichkeil/Documents/Developer/atom_mapping/internal/src/atom_map_example/saved_maps/map.csv

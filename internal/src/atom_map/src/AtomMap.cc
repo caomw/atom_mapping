@@ -432,6 +432,7 @@ std_msgs::ColorRGBA AtomMap::SignedDistanceToRosColor(float sdf) const {
 // Save to '.csv' file. First line contains just the number of Atoms in the
 // map. Subsequent lines contain x, y, z coordinates followed by sdf.
 void AtomMap::Save(const std::string& filename) const {
+  ROS_INFO("%s: Saving to %s.", name_.c_str(), filename.c_str());
   const std::vector<Atom::Ptr> atoms = map_.GetAtoms();
 
   // Open a file.

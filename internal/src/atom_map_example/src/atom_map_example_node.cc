@@ -44,10 +44,20 @@
 
 #include <ros/ros.h>
 #include <atom_map_example/atom_map_example.h>
+#include <signal.h>
+
+// Signal-safe flag.
+sig_atomic_t volatile request_shutdown_ = 0;
+
+// Replacement SIGINT handler.
+void SigIntHandler(int sig) {
+  request_shutdown_ = 1;
+}
 
 int main(int argc, char** argv) {
   // Generate a new node.
-  ros::init(argc, argv, "atom_map_example");
+  ros::init(argc, argv, "atom_map_example", ros::init_options::NoSigintHandler);
+  signal(SIGINT, SigIntHandler);
   ros::NodeHandle n("~");
 
   // Initialize a new UAVLocalization.
@@ -58,6 +68,10 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-  ros::spin();
+  while (!request_shutdown_)
+    ros::spinOnce();
+
+  atom_map_example.Save();
+
   return EXIT_SUCCESS;
 }

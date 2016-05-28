@@ -67,6 +67,9 @@ namespace atom {
     // Initialize.
     bool Initialize(const ros::NodeHandle& n);
 
+    // Optionally save.
+    void Save() const;
+
   private:
     AtomMap map_;
 

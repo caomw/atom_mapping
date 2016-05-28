@@ -13,6 +13,9 @@ internal/src/CMakeLists.txt
 # Bagfiles
 bagfiles/
 
+# Saved maps
+*/saved_maps/
+
 # Profiling
 profiling/
 
