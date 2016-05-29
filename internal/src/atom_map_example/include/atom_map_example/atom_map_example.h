@@ -39,6 +39,7 @@
 #define ATOM_MAPPING_ATOM_MAP_EXAMPLE_H
 
 #include <atom_map/AtomMap.h>
+#include <atom_map/AStarPlanner.h>
 #include <parameter_utils/ParameterUtils.h>
 #include <geometry_utils/GeometryUtilsROS.h>
 
@@ -68,10 +69,18 @@ namespace atom {
     bool Initialize(const ros::NodeHandle& n);
 
     // Optionally save.
-    void Save() const;
+    void MaybeSave() const;
+
+    // Optionally compute an A* path from start point to finish point and publish.
+    void MaybePublishPath();
 
   private:
     AtomMap map_;
+
+    // Keep track of first and last positions.
+    bool first_pose_;
+    gu::Vec3f initial_position_;
+    gu::Vec3f current_position_;
 
     // Subscribers and queues.
     ros::Subscriber point_cloud_subscriber_;
@@ -81,11 +90,16 @@ namespace atom {
 
     // Voxel grid filter leaf size. This should be on the order of the atomic
     // radius, in order to avoid oversampling.
-    double filter_leaf_size_;
+    float filter_leaf_size_;
 
-    // Publisher. Republishes filtered point clouds if there are any listeners.
+    // Republish filtered point clouds if there are any listeners.
     ros::Publisher filtered_cloud_publisher_;
     std::string filtered_cloud_topic_;
+
+    // Publish A* path on close from initial position to final position.
+    ros::Publisher path_publisher_;
+    std::string path_topic_;
+    bool path_on_close_;
 
     // Topics to listen to. Pose topic is only used if buffer flag is set. If
     // buffer flag is not set, then we need to know the fixed frame id and use

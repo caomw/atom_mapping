@@ -41,13 +41,23 @@
 
 namespace atom {
   AtomMapExample::AtomMapExample()
-    : tf_listener_(tf_buffer_), initialized_(false) {}
+    : tf_listener_(tf_buffer_), first_pose_(true), initialized_(false) {}
   AtomMapExample::~AtomMapExample() {}
 
   // Optionally save on close.
-  void AtomMapExample::Save() const {
+  void AtomMapExample::MaybeSave() const {
     if (save_on_close_)
       map_.Save(file_to_save_);
+  }
+
+  // Optionally compute an A* path and publish.
+  void AtomMapExample::MaybePublishPath() {
+    if (path_on_close_) {
+      AStarPlanner planner(&map_);
+      AtomPath path;
+      planner.Plan(initial_position_, current_position_, &path);
+      path.Visualize(path_publisher_, fixed_frame_);
+    }
   }
 
   // Initialize.
@@ -84,6 +94,8 @@ namespace atom {
     if (!pu::Get("atom_example/fixed_frame", fixed_frame_)) return false;
     if (!pu::Get("atom_example/save_on_close", save_on_close_)) return false;
     if (!pu::Get("atom_example/file_to_save", file_to_save_)) return false;
+    if (!pu::Get("atom_example/path_on_close", path_on_close_)) return false;
+    if (!pu::Get("atom_example/path_topic", path_topic_)) return false;
 
     return true;
   }
@@ -117,6 +129,17 @@ namespace atom {
   // Process a point cloud, pose pair.
   void AtomMapExample::ProcessPointCloud(const PointCloud::ConstPtr& cloud,
                                          const Eigen::Matrix4d& pose) {
+    // Update positions.
+    current_position_(0) = pose(0, 3);
+    current_position_(1) = pose(1, 3);
+    current_position_(2) = pose(2, 3);
+    if (first_pose_) {
+      initial_position_(0) = pose(0, 3);
+      initial_position_(1) = pose(1, 3);
+      initial_position_(2) = pose(2, 3);
+      first_pose_ = false;
+    }
+
     // Voxel grid filter.
     PointCloud::Ptr filtered_cloud(new PointCloud);
     VoxelGrid grid_filter(filter_leaf_size_);

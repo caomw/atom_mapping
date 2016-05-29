@@ -35,92 +35,109 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#ifndef ATOM_MAPPING_PLANNER_H
-#define ATOM_MAPPING_PLANNER_H
+#ifndef ATOM_MAPPING_ASTAR_PLANNER_H
+#define ATOM_MAPPING_ASTAR_PLANNER_H
 
 #include <atom_map/Planner.h>
 #include <atom_map/Atom.h>
 #include <atom_map/AtomMap.h>
 #include <atom_map/AtomPath.h>
+#include <geometry_utils/Vector3.h>
 
 #include <glog/logging.h>
 #include <math.h>
 #include <queue>
 #include <vector>
 
+namespace gu = geometry_utils;
+
 namespace atom {
   // A functor class for use in the priority queue. Comparitor should return
   // true if path1 is shorter than path2 (i.e. it should prefer shorter paths).
-  class AtomPathComparitor {
+  struct AtomPathComparitor {
     bool operator()(AtomPath& path1, AtomPath& path2) {
       return path1.Length() < path2.Length();
     }
-  }
+  };
 
 
   class AStarPlanner : public Planner {
   public:
-    AStarPlanner(AtomMap* map, size_t max_iters)
+    AStarPlanner(AtomMap* map, size_t max_iters = 1000)
       : Planner(map), max_iters_(max_iters) {}
     ~AStarPlanner() {}
 
     // Plan a path.
-    bool Plan(Atom::Ptr& start, Atom::Ptr& goal, AtomPath* path) const {
-      CHECK_NOTNULL(path);
-      std::priority_queue<AtomPath, std::vector<AtomPath>, AtomPathComparitor> pq;
-
-      // Steps:
-      // (1) Start from the 'start' Atom. Push it into the queue.
-      // (2) Pop from the queue. If goal, end.
-      // (3) Otherwise, add all neighbors to the queue.
-      // (4) Goto (2).
-
-      // (1) Put the 'start' Atom on the queue.
-      AtomPath initial_path;
-      initial_path.atoms_.push_back(start);
-      pq.push(initial_path);
-
-      // (2) Loop till top of the queue is the goal.
-      size_t iters = 0;
-      while (iters++ < max_iters_ &&
-             pq.top().atoms_.back()->GetDistanceTo(goal) > 1e-4) {
-        const AtomPath shortest = pq.top();
-        const size_t num_atoms = shortest.atoms_.size();
-        if (num_atoms == 0) return false;
-        pq.pop();
-
-        // Extract most recent Atom.
-        const Atom::Ptr current_atom = shortest.atoms_[num_atoms - 1];
-
-        // Maybe extract previous Atom.
-        const Atom::Ptr previous_atom =
-          (num_atoms > 1) ? shortest.atoms_[num_atoms - 2] : nullptr;
-
-        // (3) Add all neighboring paths that do not include the previous Atom.
-        const std::vector<Atom::Ptr> neighbors =
-          map->GetConnectedNeighbors(current_atom);
-
-        for (size_t ii = 0; ii < neighbors.size(); ii++) {
-          const Atom::Ptr neighbor = neighbors[ii];
-
-          if (previous_atom != nullptr && neighbor->GetDistanceTo(previous_atom) > 1e-4) {
-            AtomPath next_path;
-            next_path.atoms_ = shortest.atoms_;
-            next_path.atoms_.push_back(neighbor);
-            pq.push(next_path);
-          }
-        }
-      }
-
-      // Return the path at the top of the queue.
-      path->atoms_ = pq.top().atoms_;
-      return true;
-    };
+    bool Plan(const gu::Vec3f& start_position, const gu::Vec3f& goal_position,
+              AtomPath* path) const;
 
   private:
     // Maximum number of iterations during A* search.
     const size_t max_iters_;
   };
-}
 
+  // ------------------------------- IMPLEMENTATION --------------------------- //
+  bool AStarPlanner::Plan(const gu::Vec3f& start_position, const gu::Vec3f& goal_position,
+                     AtomPath* path) const {
+    CHECK_NOTNULL(path);
+    std::priority_queue<AtomPath, std::vector<AtomPath>, AtomPathComparitor> pq;
+
+    // Find nearest Atoms to start and goal positions.
+    Atom::Ptr start =
+      map_->GetNearestAtom(start_position(0), start_position(1), start_position(2));
+    Atom::Ptr goal =
+      map_->GetNearestAtom(goal_position(0), goal_position(1), goal_position(2));
+
+    if (start == nullptr || goal == nullptr) return false;
+
+    // Steps:
+    // (1) Start from the 'start' Atom. Push it into the queue.
+    // (2) Pop from the queue. If goal, end.
+    // (3) Otherwise, add all neighbors to the queue.
+    // (4) Goto (2).
+
+    // (1) Put the 'start' Atom on the queue.
+    AtomPath initial_path;
+    initial_path.atoms_.push_back(start);
+    pq.push(initial_path);
+
+    // (2) Loop till top of the queue is the goal.
+    size_t iters = 0;
+    while (iters++ < max_iters_ &&
+           pq.top().atoms_.back()->GetDistanceTo(goal) > 1e-4) {
+      const AtomPath shortest = pq.top();
+      const size_t num_atoms = shortest.atoms_.size();
+      if (num_atoms == 0) return false;
+      pq.pop();
+
+      // Extract most recent Atom.
+      Atom::Ptr current_atom = shortest.atoms_[num_atoms - 1];
+
+      // Maybe extract previous Atom.
+      Atom::Ptr previous_atom =
+        (num_atoms > 1) ? shortest.atoms_[num_atoms - 2] : nullptr;
+
+      // (3) Add all neighboring paths that do not include the previous Atom.
+      std::vector<Atom::Ptr> neighbors;
+      if (!map_->GetConnectedNeighbors(current_atom, &neighbors))
+        return false;
+
+      for (size_t ii = 0; ii < neighbors.size(); ii++) {
+        Atom::Ptr neighbor = neighbors[ii];
+
+        if (previous_atom != nullptr && neighbor->GetDistanceTo(previous_atom) > 1e-4) {
+          AtomPath next_path;
+          next_path.atoms_ = shortest.atoms_;
+          next_path.atoms_.push_back(neighbor);
+          pq.push(next_path);
+        }
+      }
+    }
+
+    // Return the path at the top of the queue.
+    path->atoms_ = pq.top().atoms_;
+    return true;
+  }
+
+}
 #endif

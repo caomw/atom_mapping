@@ -71,7 +71,8 @@ int main(int argc, char** argv) {
   while (!request_shutdown_)
     ros::spinOnce();
 
-  atom_map_example.Save();
+  atom_map_example.MaybeSave();
+  atom_map_example.MaybePublishPath();
 
   return EXIT_SUCCESS;
 }

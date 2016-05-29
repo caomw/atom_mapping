@@ -75,6 +75,15 @@ bool AtomMap::Initialize(const ros::NodeHandle& n) {
 }
 
 // Getters.
+Atom::Ptr AtomMap::GetNearestAtom(float x, float y, float z) {
+  std::vector<Atom::Ptr> neighbors;
+  if (!map_.GetKNearestNeighbors(x, y, z, 1, &neighbors))
+    return nullptr;
+
+  if (neighbors.size() != 1) return nullptr;
+  return neighbors[0];
+}
+
 void AtomMap::GetSignedDistance(float x, float y, float z, float* distance,
                                 float* variance) {
   CHECK_NOTNULL(distance);

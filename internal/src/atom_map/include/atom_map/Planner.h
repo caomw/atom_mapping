@@ -43,6 +43,7 @@
 #include <atom_map/AtomPath.h>
 #include <parameter_utils/ParameterUtils.h>
 #include <geometry_utils/GeometryUtilsROS.h>
+#include <geometry_utils/Vector3.h>
 
 #include <ros/ros.h>
 #include <glog/logging.h>
@@ -51,16 +52,20 @@
 namespace atom {
   class Planner {
   public:
-    Planner(AtomMap* map) : map_(map) { CHECK_NOTNULL(map); }
+    inline Planner(AtomMap* map);
     virtual ~Planner() {}
 
     // Plan a path.
-    virtual bool Plan(Atom::Ptr& start, Atom::Ptr& goal, AtomPath& path) const = 0;
+    virtual bool Plan(const gu::Vec3f& start_position, const gu::Vec3f& goal_position,
+                      AtomPath* path) const = 0;
 
-  private:
+  protected:
     // A pointer to a valid AtomMap.
     AtomMap* map_;
   };
+
+  // ----------------------------- IMPLEMENTATION -------------------------------- //
+  Planner::Planner(AtomMap* map) : map_(map) { CHECK_NOTNULL(map); }
 }
 
 #endif

@@ -68,6 +68,7 @@ namespace atom {
     void GetSignedDistance(float x, float y, float z,
                            float* distance, float* variance);
     float GetProbability(float x, float y, float z);
+    Atom::Ptr GetNearestAtom(float x, float y, float z);
     const std::vector<Atom::Ptr>& GetAtoms() const;
 
     // Get the neighbors of an Atom in the implicit graph. Returns false
