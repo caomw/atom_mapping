@@ -215,10 +215,28 @@ const std::vector<Atom::Ptr>& AtomMap::GetAtoms() const {
 // Get the neighbors of an Atom in the implicit graph. Returns false
 // if the Atom is not itself in the map.
 bool AtomMap::GetConnectedNeighbors(Atom::Ptr& atom,
-                                    std::vector<Atom::Ptr>* neighbors) const {
-  CHECK_NOTNULL(neighbors);
-  // TODO!
-  
+                                    std::vector<Atom::Ptr>* connected) {
+  CHECK_NOTNULL(connected);
+  connected->clear();
+
+  // Unpack.
+  const gu::Vec3f p = atom->GetPosition();
+
+  // Do a radius search.
+  std::vector<Atom::Ptr> neighbors;
+  if (!map_.RadiusSearch(p(0), p(1), p(2), connectedness_radius_, &neighbors))
+    return false;
+
+  // Filter out the given Atom if it exists. Otherwise return false.
+  bool contains_query = false;
+  for (size_t ii = 0; ii < neighbors.size(); ii++) {
+    if (!contains_query && neighbors[ii]->GetDistanceTo(atom) < 1e-4)
+      contains_query = true;
+    else
+      connected->push_back(neighbors[ii]);
+  }
+
+  if (!contains_query) return false;
   return true;
 }
 

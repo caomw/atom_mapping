@@ -73,7 +73,7 @@ namespace atom {
     // Get the neighbors of an Atom in the implicit graph. Returns false
     // if the Atom is not itself in the map.
     bool GetConnectedNeighbors(Atom::Ptr& atom,
-                               std::vector<Atom::Ptr>* neighbors) const;
+                               std::vector<Atom::Ptr>* connected);
 
     // Update.
     void Update(const PointCloud::ConstPtr& cloud, const pcl::PointXYZ& robot);
