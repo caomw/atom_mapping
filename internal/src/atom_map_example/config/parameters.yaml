@@ -27,6 +27,5 @@ atom_example:
   save_on_close: true
   file_to_save: /Users/davidfridovichkeil/Documents/Developer/atom_mapping/internal/src/atom_map_example/saved_maps/map.csv
 
-  # Optionally publish path from start to finish points on close.
-  path_on_close: true
+  # Publish path from start to finish points.
   path_topic: path

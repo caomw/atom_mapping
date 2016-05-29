@@ -77,7 +77,7 @@ namespace atom {
   private:
     AtomMap map_;
 
-    // Keep track of first and last positions.
+    // Keep track of first and current positions.
     bool first_pose_;
     gu::Vec3f initial_position_;
     gu::Vec3f current_position_;
@@ -96,10 +96,9 @@ namespace atom {
     ros::Publisher filtered_cloud_publisher_;
     std::string filtered_cloud_topic_;
 
-    // Publish A* path on close from initial position to final position.
+    // Publish A* path from initial position to final position.
     ros::Publisher path_publisher_;
     std::string path_topic_;
-    bool path_on_close_;
 
     // Topics to listen to. Pose topic is only used if buffer flag is set. If
     // buffer flag is not set, then we need to know the fixed frame id and use

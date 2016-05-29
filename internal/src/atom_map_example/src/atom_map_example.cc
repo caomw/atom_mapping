@@ -37,6 +37,8 @@
 
 #include <atom_map_example/atom_map_example.h>
 #include <atom_map/VoxelGrid.h>
+
+#include <visualization_msgs/Marker.h>
 #include <pcl/conversions.h>
 
 namespace atom {
@@ -52,14 +54,12 @@ namespace atom {
 
   // Optionally compute an A* path and publish.
   void AtomMapExample::MaybePublishPath() {
-    if (path_on_close_) {
-      ROS_INFO("%s: Visualizing path.", name_.c_str());
-      
-      AStarPlanner planner(&map_);
-      AtomPath path;
-      planner.Plan(initial_position_, current_position_, &path);
-      path.Visualize(path_publisher_, fixed_frame_);
-    }
+    ROS_INFO("%s: Visualizing path.", name_.c_str());
+
+    AStarPlanner planner(&map_);
+    AtomPath path;
+    planner.Plan(initial_position_, current_position_, &path);
+    path.Visualize(path_publisher_, fixed_frame_);
   }
 
   // Initialize.
@@ -96,7 +96,6 @@ namespace atom {
     if (!pu::Get("atom_example/fixed_frame", fixed_frame_)) return false;
     if (!pu::Get("atom_example/save_on_close", save_on_close_)) return false;
     if (!pu::Get("atom_example/file_to_save", file_to_save_)) return false;
-    if (!pu::Get("atom_example/path_on_close", path_on_close_)) return false;
     if (!pu::Get("atom_example/path_topic", path_topic_)) return false;
 
     return true;
@@ -124,6 +123,10 @@ namespace atom {
     // Set up filtered cloud publisher.
     filtered_cloud_publisher_ =
       node.advertise<PointCloud>(filtered_cloud_topic_.c_str(), 0);
+
+    // And path publisher.
+    path_publisher_ =
+      node.advertise<visualization_msgs::Marker>(path_topic_.c_str(), 0);
 
     return true;
   }
@@ -162,6 +165,7 @@ namespace atom {
     // Publish.
     map_.PublishFullOccupancy();
     map_.PublishFullSignedDistance();
+    MaybePublishPath();
   }
 
   // Publish the filtered cloud.
