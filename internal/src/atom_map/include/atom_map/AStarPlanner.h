@@ -105,6 +105,7 @@ namespace atom {
     size_t iters = 0;
     while (iters++ < max_iters_ &&
            pq.top().atoms_.back()->GetDistanceTo(goal) > 1e-4) {
+      ROS_INFO("Iteration : %lu", iters);
       const AtomPath shortest = pq.top();
       const size_t num_atoms = shortest.atoms_.size();
       if (num_atoms == 0) return false;
@@ -132,6 +133,11 @@ namespace atom {
           pq.push(next_path);
         }
       }
+    }
+
+    if (iters == max_iters_) {
+      ROS_WARN("A* planner ran out if iterations.");
+      return false;
     }
 
     // Return the path at the top of the queue.

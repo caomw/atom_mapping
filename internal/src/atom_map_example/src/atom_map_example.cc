@@ -53,6 +53,8 @@ namespace atom {
   // Optionally compute an A* path and publish.
   void AtomMapExample::MaybePublishPath() {
     if (path_on_close_) {
+      ROS_INFO("%s: Visualizing path.", name_.c_str());
+      
       AStarPlanner planner(&map_);
       AtomPath path;
       planner.Plan(initial_position_, current_position_, &path);
