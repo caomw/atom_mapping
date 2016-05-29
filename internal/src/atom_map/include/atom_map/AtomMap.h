@@ -70,6 +70,11 @@ namespace atom {
     float GetProbability(float x, float y, float z);
     const std::vector<Atom::Ptr>& GetAtoms() const;
 
+    // Get the neighbors of an Atom in the implicit graph. Returns false
+    // if the Atom is not itself in the map.
+    bool GetConnectedNeighbors(Atom::Ptr& atom,
+                               std::vector<Atom::Ptr>* neighbors) const;
+
     // Update.
     void Update(const PointCloud::ConstPtr& cloud, const pcl::PointXYZ& robot);
 
@@ -87,6 +92,10 @@ namespace atom {
 
     // Atomic radius.
     float radius_;
+
+    // Connectedness radius. Atoms within this distance of any given Atom are considered
+    // to be 'connected' in the implicit graph.
+    float connectedness_radius_;
 
     // Min and max scan ranges.
     float min_scan_range_;

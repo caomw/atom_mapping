@@ -212,6 +212,16 @@ const std::vector<Atom::Ptr>& AtomMap::GetAtoms() const {
   return map_.GetAtoms();
 }
 
+// Get the neighbors of an Atom in the implicit graph. Returns false
+// if the Atom is not itself in the map.
+bool AtomMap::GetConnectedNeighbors(Atom::Ptr& atom,
+                                    std::vector<Atom::Ptr>* neighbors) const {
+  CHECK_NOTNULL(neighbors);
+  // TODO!
+  
+  return true;
+}
+
 // Update the map given a set of observations.
 void AtomMap::Update(const PointCloud::ConstPtr& cloud,
                      const pcl::PointXYZ& robot) {
@@ -256,6 +266,7 @@ bool AtomMap::RegisterCallbacks(const ros::NodeHandle& n) {
 bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
   // General parameters.
   if (!pu::Get("atom/radius", radius_)) return false;
+  if (!pu::Get("atom/connectedness_radius", connectedness_radius_)) return false;
   if (!pu::Get("atom/update_occupancy", update_occupancy_)) return false;
   if (!pu::Get("atom/update_signed_distance", update_signed_distance_))
     return false;

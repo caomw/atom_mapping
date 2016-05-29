@@ -2,6 +2,9 @@ atom:
   # Atomic radius.
   radius: 0.3
 
+  # Connectedness radius. Determines connectedness in the implicit graph.
+  connectedness_radius: 1.0
+
   # Occupancy and SDF modes.
   update_occupancy: true
   update_signed_distance: true
