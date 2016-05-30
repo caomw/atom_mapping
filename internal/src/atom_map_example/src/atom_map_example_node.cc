@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
     ros::spinOnce();
 
   atom_map_example.MaybeSave();
-  atom_map_example.MaybePublishPath();
+  //  atom_map_example.MaybePublishPath();
 
   return EXIT_SUCCESS;
 }

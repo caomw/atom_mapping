@@ -52,18 +52,17 @@
 namespace gu = geometry_utils;
 
 namespace atom {
-  // A functor class for use in the priority queue. Comparitor should return
-  // true if path1 is shorter than path2 (i.e. it should prefer shorter paths).
+  // A functor class for use in the priority queue.
   struct AtomPathComparitor {
     bool operator()(AtomPath& path1, AtomPath& path2) {
-      return path1.Length() < path2.Length();
+      return path1.ExpectedTotalLength() <= path2.ExpectedTotalLength();
     }
   };
 
 
   class AStarPlanner : public Planner {
   public:
-    AStarPlanner(AtomMap* map, size_t max_iters = 1000)
+    AStarPlanner(AtomMap* map, size_t max_iters = 500)
       : Planner(map), max_iters_(max_iters) {}
     ~AStarPlanner() {}
 
@@ -80,7 +79,6 @@ namespace atom {
   bool AStarPlanner::Plan(const gu::Vec3f& start_position, const gu::Vec3f& goal_position,
                      AtomPath* path) const {
     CHECK_NOTNULL(path);
-    std::priority_queue<AtomPath, std::vector<AtomPath>, AtomPathComparitor> pq;
 
     // Find nearest Atoms to start and goal positions.
     Atom::Ptr start =
@@ -90,6 +88,9 @@ namespace atom {
 
     if (start == nullptr || goal == nullptr) return false;
 
+    // Create a comparitor.
+    std::priority_queue<AtomPath, std::vector<AtomPath>, AtomPathComparitor> pq;
+
     // Steps:
     // (1) Start from the 'start' Atom. Push it into the queue.
     // (2) Pop from the queue. If goal, end.
@@ -98,23 +99,25 @@ namespace atom {
 
     // (1) Put the 'start' Atom on the queue.
     AtomPath initial_path;
+    initial_path.goal_ = goal;
     initial_path.atoms_.push_back(start);
     pq.push(initial_path);
 
     // (2) Loop till top of the queue is the goal.
     size_t iters = 0;
-    while (iters++ < max_iters_ &&
+    while (iters++ < max_iters_ && pq.size() > 0 &&
            pq.top().atoms_.back()->GetDistanceTo(goal) > 1e-4) {
       ROS_INFO("Iteration : %lu", iters);
-      const AtomPath shortest = pq.top();
+      AtomPath shortest = pq.top();
       const size_t num_atoms = shortest.atoms_.size();
       if (num_atoms == 0) return false;
-      pq.pop();
 
       // Extract most recent Atom.
+      ROS_INFO("Getting most recent Atom.");
       Atom::Ptr current_atom = shortest.atoms_[num_atoms - 1];
 
       // Maybe extract previous Atom.
+      ROS_INFO("Getting previous Atom.");
       Atom::Ptr previous_atom =
         (num_atoms > 1) ? shortest.atoms_[num_atoms - 2] : nullptr;
 
@@ -122,21 +125,32 @@ namespace atom {
       std::vector<Atom::Ptr> neighbors;
       if (!map_->GetConnectedNeighbors(current_atom, &neighbors))
         return false;
+      ROS_INFO("Adding %lu neighboring paths.", neighbors.size());
 
       for (size_t ii = 0; ii < neighbors.size(); ii++) {
         Atom::Ptr neighbor = neighbors[ii];
 
-        if (previous_atom != nullptr && neighbor->GetDistanceTo(previous_atom) > 1e-4) {
+        if (previous_atom == nullptr ||
+            neighbor->GetDistanceTo(previous_atom) > 1e-4) {
           AtomPath next_path;
+          next_path.goal_ = goal;
           next_path.atoms_ = shortest.atoms_;
           next_path.atoms_.push_back(neighbor);
           pq.push(next_path);
         }
       }
+
+      // Pop.
+      pq.pop();
     }
 
-    if (iters == max_iters_) {
-      ROS_WARN("A* planner ran out if iterations.");
+    if (iters >= max_iters_) {
+      ROS_WARN("A* planner ran out of iterations.");
+      return false;
+    }
+
+    if (pq.size() == 0) {
+      ROS_WARN("A* planner attempted to pop an empty queue.");
       return false;
     }
 

@@ -53,6 +53,9 @@ namespace atom {
     // A list to store the Atoms.
     std::vector<Atom::Ptr> atoms_;
 
+    // Also store the goal if that is relevant.
+    Atom::Ptr goal_;
+
     // Compute length.
     double Length() const {
       double length = 0.0;
@@ -61,6 +64,13 @@ namespace atom {
         length += atoms_[ii - 1]->GetDistanceTo(atoms_[ii]);
 
       return length;
+    }
+
+    // Compute expected total length to goal.
+    double ExpectedTotalLength() const {
+      if (atoms_.size() == 0 || goal_ == nullptr)
+        return std::numeric_limits<double>::infinity();
+      return Length() + atoms_.back()->GetDistanceTo(goal_);
     }
 
     // A function to publish a visualization of this path.
