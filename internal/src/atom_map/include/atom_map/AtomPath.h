@@ -91,7 +91,7 @@ namespace atom {
       atom_color.r = 0.0;
       atom_color.g = 0.8;
       atom_color.b = 0.4;
-      line_color.a = 1.0;
+      atom_color.a = 1.0;
 
       visualization_msgs::Marker atom_marker;
       atom_marker.header.frame_id = fixed_frame_id;

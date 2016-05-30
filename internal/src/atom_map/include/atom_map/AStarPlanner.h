@@ -117,7 +117,7 @@ namespace atom {
       sp::Node::Ptr shortest = pq.top();
       Atom::Ptr current_atom = shortest->GetAtom();
       if (iters % 100 == 0)
-        ROS_INFO("Iteration %lu: length = %f",
+        ROS_INFO("A* iteration %lu: length = %f",
                  iters, shortest->GetPathLength());
 
       // (3) Add all neighboring Atoms that are not already in the tree.
