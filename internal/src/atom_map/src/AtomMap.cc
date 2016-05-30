@@ -471,8 +471,8 @@ std_msgs::ColorRGBA AtomMap::SignedDistanceToRosColor(float sdf) const {
   return c;
 }
 
-// Save to '.csv' file. First line contains just the number of Atoms in the
-// map. Subsequent lines contain x, y, z coordinates followed by sdf.
+// Save to '.csv' file. Each line contains x, y, z coordinates followed by sdf.
+// Only includes atoms whose signed distance is within the threshold.
 void AtomMap::Save(const std::string& filename) const {
   ROS_INFO("%s: Saving to %s.", name_.c_str(), filename.c_str());
   const std::vector<Atom::Ptr> atoms = map_.GetAtoms();
@@ -480,23 +480,26 @@ void AtomMap::Save(const std::string& filename) const {
   // Open a file.
   file::CsvWriter writer(filename);
 
+#if 0
   // Write the number of Atoms.
   std::vector<int> first_line;
   first_line.push_back(static_cast<int>(atoms.size()));
   writer.WriteLine(first_line);
+#endif
 
   // Write each atom.
   for (size_t ii = 0; ii < atoms.size(); ii++) {
     Atom::Ptr atom = atoms[ii];
     const gu::Vec3f position = atom->GetPosition();
-    const double sdf = atom->GetSignedDistance();
+    const float sdf = atom->GetSignedDistance();
+    if (std::abs(sdf) > sdf_threshold_) continue;
 
     // Pack.
     std::vector<double> data;
-    data.push_back(position(0));
-    data.push_back(position(1));
-    data.push_back(position(2));
-    data.push_back(sdf);
+    data.push_back(static_cast<double>(position(0)));
+    data.push_back(static_cast<double>(position(1)));
+    data.push_back(static_cast<double>(position(2)));
+    data.push_back(static_cast<double>(sdf));
 
     // Write.
     writer.WriteLine(data);

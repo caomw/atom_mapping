@@ -7,7 +7,7 @@ atom:
 
   # Occupancy and SDF modes.
   update_occupancy: true
-  update_signed_distance: false
+  update_signed_distance: true
   only_show_occupied: true
 
   # Thresholds for classifying atoms as obstacles, free space, or 'near surfaces.'
