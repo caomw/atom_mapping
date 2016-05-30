@@ -151,7 +151,8 @@ namespace atom {
     std::string full_sdf_topic_;
     bool only_show_occupied_;
     float occupied_threshold_; // Above this is considered occupied.
-    float sdf_threshold_;      // Smaller than this is considered occupied.
+    float free_threshold_;     // Below this is considered free space.
+    float sdf_threshold_;      // Smaller than this is considered near a surface.
     ros::Publisher full_occupancy_publisher_;
     ros::Publisher full_sdf_publisher_;
 

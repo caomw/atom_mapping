@@ -237,12 +237,15 @@ bool AtomMap::GetConnectedNeighbors(Atom::Ptr& atom,
     return false;
 
   // Filter out the given Atom if it exists. Otherwise return false.
+  // Obviously only add if the atom is considered free.
   bool contains_query = false;
   for (size_t ii = 0; ii < neighbors.size(); ii++) {
-    if (!contains_query && neighbors[ii]->GetDistanceTo(atom) < 1e-4)
+    Atom::Ptr neighbor = neighbors[ii];
+
+    if (!contains_query && neighbor->GetDistanceTo(atom) < 1e-4)
       contains_query = true;
-    else
-      connected->push_back(neighbors[ii]);
+    else if (neighbor->GetProbability() < free_threshold_)
+      connected->push_back(neighbor);
   }
 
   if (!contains_query) return false;
@@ -299,6 +302,7 @@ bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
     return false;
   if (!pu::Get("atom/only_show_occupied", only_show_occupied_)) return false;
   if (!pu::Get("atom/occupied_threshold", occupied_threshold_)) return false;
+  if (!pu::Get("atom/free_threshold", free_threshold_)) return false;
   if (!pu::Get("atom/sdf_threshold", sdf_threshold_)) return false;
   if (!pu::Get("atom/probability_hit", probability_hit_)) return false;
   if (!pu::Get("atom/probability_miss", probability_miss_)) return false;

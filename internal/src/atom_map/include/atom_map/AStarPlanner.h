@@ -65,7 +65,7 @@ namespace atom {
 
   class AStarPlanner : public Planner {
   public:
-    AStarPlanner(AtomMap* map, size_t max_iters = 2000)
+    AStarPlanner(AtomMap* map, size_t max_iters = std::numeric_limits<size_t>::max())
       : Planner(map), max_iters_(max_iters) {}
     ~AStarPlanner() {}
 

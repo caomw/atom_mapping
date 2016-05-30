@@ -139,7 +139,7 @@ namespace shortest_paths {
         const float score2 =
           node2->GetPathLength() + node2->GetAtom()->GetDistanceTo(goal_);
 
-        return score1 <= score2;
+        return score1 > score2;
       }
     }; // class NodeComparitor
 
