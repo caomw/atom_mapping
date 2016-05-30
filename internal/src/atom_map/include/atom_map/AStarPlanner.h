@@ -62,7 +62,7 @@ namespace atom {
 
   class AStarPlanner : public Planner {
   public:
-    AStarPlanner(AtomMap* map, size_t max_iters = 500)
+    AStarPlanner(AtomMap* map, size_t max_iters = 2000)
       : Planner(map), max_iters_(max_iters) {}
     ~AStarPlanner() {}
 
@@ -107,17 +107,17 @@ namespace atom {
     size_t iters = 0;
     while (iters++ < max_iters_ && pq.size() > 0 &&
            pq.top().atoms_.back()->GetDistanceTo(goal) > 1e-4) {
-      ROS_INFO("Iteration : %lu", iters);
       AtomPath shortest = pq.top();
+      if (iters % 100 == 0)
+        ROS_INFO("Iteration %lu: length = %f, expected total = %f",
+                 iters, shortest.Length(), shortest.ExpectedTotalLength());
       const size_t num_atoms = shortest.atoms_.size();
       if (num_atoms == 0) return false;
 
       // Extract most recent Atom.
-      ROS_INFO("Getting most recent Atom.");
       Atom::Ptr current_atom = shortest.atoms_[num_atoms - 1];
 
       // Maybe extract previous Atom.
-      ROS_INFO("Getting previous Atom.");
       Atom::Ptr previous_atom =
         (num_atoms > 1) ? shortest.atoms_[num_atoms - 2] : nullptr;
 
@@ -125,7 +125,6 @@ namespace atom {
       std::vector<Atom::Ptr> neighbors;
       if (!map_->GetConnectedNeighbors(current_atom, &neighbors))
         return false;
-      ROS_INFO("Adding %lu neighboring paths.", neighbors.size());
 
       for (size_t ii = 0; ii < neighbors.size(); ii++) {
         Atom::Ptr neighbor = neighbors[ii];
