@@ -42,6 +42,7 @@
 #include <atom_map/Atom.h>
 #include <atom_map/AtomMap.h>
 #include <atom_map/AtomPath.h>
+#include <atom_map/ShortestPathsTree.h>
 #include <geometry_utils/Vector3.h>
 
 #include <glog/logging.h>
@@ -50,15 +51,17 @@
 #include <vector>
 
 namespace gu = geometry_utils;
+namespace sp = atom::shortest_paths;
 
 namespace atom {
-  // A functor class for use in the priority queue.
-  struct AtomPathComparitor {
-    bool operator()(AtomPath& path1, AtomPath& path2) {
-      return path1.ExpectedTotalLength() <= path2.ExpectedTotalLength();
+#if 0
+  // A functor for use in the priority queue.
+  struct NodeComparitor {
+    bool operator()(sp::Node::Ptr& node1, sp::Node::Ptr& node2) {
+      return node1->Score() <= node2->Score();
     }
   };
-
+#endif
 
   class AStarPlanner : public Planner {
   public:
@@ -89,7 +92,12 @@ namespace atom {
     if (start == nullptr || goal == nullptr) return false;
 
     // Create a comparitor.
-    std::priority_queue<AtomPath, std::vector<AtomPath>, AtomPathComparitor> pq;
+    std::priority_queue<sp::Node::Ptr, std::vector<sp::Node::Ptr>,
+                        sp::Tree::NodeComparitor> pq;
+
+    // Create an empty ShortestPathsTree.
+    sp::Tree tree;
+    sp::Tree::SetGoal(goal);
 
     // Steps:
     // (1) Start from the 'start' Atom. Push it into the queue.
@@ -98,30 +106,21 @@ namespace atom {
     // (4) Goto (2).
 
     // (1) Put the 'start' Atom on the queue.
-    AtomPath initial_path;
-    initial_path.goal_ = goal;
-    initial_path.atoms_.push_back(start);
-    pq.push(initial_path);
+    sp::Node::Ptr start_node = sp::Node::Create(start);
+    tree.SetRoot(start_node);
+    pq.push(start_node);
 
     // (2) Loop till top of the queue is the goal.
     size_t iters = 0;
     while (iters++ < max_iters_ && pq.size() > 0 &&
-           pq.top().atoms_.back()->GetDistanceTo(goal) > 1e-4) {
-      AtomPath shortest = pq.top();
+           pq.top()->GetAtom()->GetDistanceTo(goal) > 1e-4) {
+      sp::Node::Ptr shortest = pq.top();
+      Atom::Ptr current_atom = shortest->GetAtom();
       if (iters % 100 == 0)
-        ROS_INFO("Iteration %lu: length = %f, expected total = %f",
-                 iters, shortest.Length(), shortest.ExpectedTotalLength());
-      const size_t num_atoms = shortest.atoms_.size();
-      if (num_atoms == 0) return false;
+        ROS_INFO("Iteration %lu: length = %f",
+                 iters, shortest->GetPathLength());
 
-      // Extract most recent Atom.
-      Atom::Ptr current_atom = shortest.atoms_[num_atoms - 1];
-
-      // Maybe extract previous Atom.
-      Atom::Ptr previous_atom =
-        (num_atoms > 1) ? shortest.atoms_[num_atoms - 2] : nullptr;
-
-      // (3) Add all neighboring paths that do not include the previous Atom.
+      // (3) Add all neighboring Atoms that are not already in the tree.
       std::vector<Atom::Ptr> neighbors;
       if (!map_->GetConnectedNeighbors(current_atom, &neighbors))
         return false;
@@ -129,13 +128,10 @@ namespace atom {
       for (size_t ii = 0; ii < neighbors.size(); ii++) {
         Atom::Ptr neighbor = neighbors[ii];
 
-        if (previous_atom == nullptr ||
-            neighbor->GetDistanceTo(previous_atom) > 1e-4) {
-          AtomPath next_path;
-          next_path.goal_ = goal;
-          next_path.atoms_ = shortest.atoms_;
-          next_path.atoms_.push_back(neighbor);
-          pq.push(next_path);
+        if (!tree.Contains(neighbor)) {
+          sp::Node::Ptr next_node = sp::Node::Create(neighbor);
+          tree.Attach(shortest, next_node);
+          pq.push(next_node);
         }
       }
 
@@ -154,7 +150,7 @@ namespace atom {
     }
 
     // Return the path at the top of the queue.
-    path->atoms_ = pq.top().atoms_;
+    pq.top()->GetPath(path);
     return true;
   }
 
