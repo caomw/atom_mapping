@@ -58,7 +58,7 @@ Visualization Manager:
         base:
           Value: true
         odometry:
-          Value: true
+          Value: false
         world:
           Value: true
       Marker Scale: 10
@@ -407,21 +407,21 @@ Visualization Manager:
       Use rainbow: true
       Value: false
     - Class: rviz/Marker
-      Enabled: false
+      Enabled: true
       Marker Topic: /atom_map_example/path
       Name: A* Path
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: false
-    - Class: rviz/Marker
-      Enabled: true
-      Marker Topic: /atom_map_example/occupancy
-      Name: AtomMap Occupancy
       Namespaces:
         world: true
       Queue Size: 100
       Value: true
+    - Class: rviz/Marker
+      Enabled: false
+      Marker Topic: /atom_map_example/occupancy
+      Name: AtomMap Occupancy
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
     - Class: rviz/Marker
       Enabled: false
       Marker Topic: /atom_map_example/sdf
@@ -484,7 +484,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 65.8795
+      Distance: 31.9204
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
@@ -496,10 +496,10 @@ Visualization Manager:
         Z: 0
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 1.5698
+      Pitch: 1.2848
       Target Frame: base
       Value: Orbit (rviz)
-      Yaw: 1.5304
+      Yaw: 2.6754
     Saved: ~
 Window Geometry:
   Displays:
