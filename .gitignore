@@ -16,6 +16,9 @@ bagfiles/
 # Saved maps
 */saved_maps/
 
+# Figures
+figures/
+
 # Profiling
 profiling/
 
