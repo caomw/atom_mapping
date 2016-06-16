@@ -46,6 +46,8 @@
 #include <atom_map_example/atom_map_example.h>
 #include <signal.h>
 
+#define SAVE false
+
 // Signal-safe flag.
 sig_atomic_t volatile request_shutdown_ = 0;
 
@@ -56,8 +58,11 @@ void SigIntHandler(int sig) {
 
 int main(int argc, char** argv) {
   // Generate a new node.
-  ros::init(argc, argv, "atom_map_example", ros::init_options::NoSigintHandler);
-  signal(SIGINT, SigIntHandler);
+  if (SAVE) {
+    ros::init(argc, argv, "atom_map_example", ros::init_options::NoSigintHandler);
+    signal(SIGINT, SigIntHandler);
+  } else
+    ros::init(argc, argv, "atom_map_example");
   ros::NodeHandle n("~");
 
   // Initialize a new UAVLocalization.
@@ -68,11 +73,13 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
+#if 0
   while (!request_shutdown_)
     ros::spinOnce();
+#endif
 
+  ros::spin();
   atom_map_example.MaybeSave();
-  //  atom_map_example.MaybePublishPath();
 
   return EXIT_SUCCESS;
 }

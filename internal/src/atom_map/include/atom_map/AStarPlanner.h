@@ -54,15 +54,6 @@ namespace gu = geometry_utils;
 namespace sp = atom::shortest_paths;
 
 namespace atom {
-#if 0
-  // A functor for use in the priority queue.
-  struct NodeComparitor {
-    bool operator()(sp::Node::Ptr& node1, sp::Node::Ptr& node2) {
-      return node1->Score() <= node2->Score();
-    }
-  };
-#endif
-
   class AStarPlanner : public Planner {
   public:
     AStarPlanner(AtomMap* map, size_t max_iters = std::numeric_limits<size_t>::max())
@@ -79,8 +70,9 @@ namespace atom {
   };
 
   // ------------------------------- IMPLEMENTATION --------------------------- //
-  bool AStarPlanner::Plan(const gu::Vec3f& start_position, const gu::Vec3f& goal_position,
-                     AtomPath* path) const {
+  bool AStarPlanner::Plan(const gu::Vec3f& start_position,
+                          const gu::Vec3f& goal_position,
+                          AtomPath* path) const {
     CHECK_NOTNULL(path);
 
     // Find nearest Atoms to start and goal positions.
@@ -116,9 +108,11 @@ namespace atom {
            pq.top()->GetAtom()->GetDistanceTo(goal) > 1e-4) {
       sp::Node::Ptr shortest = pq.top();
       Atom::Ptr current_atom = shortest->GetAtom();
+#if ENABLE_DEBUG_MESSAGES
       if (iters % 100 == 0)
         ROS_INFO("A* iteration %lu: length = %f",
                  iters, shortest->GetPathLength());
+#endif
 
       // (3) Add all neighboring Atoms that are not already in the tree.
       std::vector<Atom::Ptr> neighbors;

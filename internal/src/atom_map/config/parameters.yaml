@@ -1,9 +1,9 @@
 atom:
   # Atomic radius.
-  radius: 0.3
+  radius: 0.75
 
   # Connectedness radius. Determines connectedness in the implicit graph.
-  connectedness_radius: 0.7
+  connectedness_radius: 1.2
 
   # Occupancy and SDF modes.
   update_occupancy: true
@@ -12,8 +12,8 @@ atom:
 
   # Thresholds for classifying atoms as obstacles, free space, or 'near surfaces.'
   occupied_threshold: 0.65
-  free_threshold: 0.25
-  sdf_threshold: 0.61
+  free_threshold: 0.2
+  sdf_threshold: 1.5
 
   # Probability update for hits/misses.
   probability_hit: 0.7
@@ -22,11 +22,11 @@ atom:
   # Clamping probability values. If probability dips below or rises above these
   # thresholds, do not ever update it again.
   probability_clamp_high: 0.97
-  probability_clamp_low: 0.03
+  probability_clamp_low: 0.12
 
   # Radius for nearest neighbor search for surface normal estimation. This should
   # be on the order of the voxel grid resolution if input point clouds are filtered.
-  surface_normal_radius: 2.0
+  surface_normal_radius: 3.1
 
   # Visualization topic names.
   full_occupancy_topic: occupancy
@@ -43,7 +43,7 @@ atom:
     
     # Maximum distance to raycast into a surface (think of this as the surface
     # thickness).
-    max_occupied_backoff: 0.61
+    max_occupied_backoff: 1.6
 
     # Maximum distance to raycast into free space along the surface normal.
     max_normal_backoff: 4.1
@@ -56,7 +56,7 @@ atom:
     # provide a flag to turn on angular interleaving. Lambda is the Lagrange
     # coefficient of the probability of missing an atom (i.e. probability that
     #  all atoms overlapping a particular atom are not chosen).
-    angular_resolution: 0.02
+    angular_resolution: 0.0035 #0.02
     angular_interleaving: true
     lambda: 1.0
 

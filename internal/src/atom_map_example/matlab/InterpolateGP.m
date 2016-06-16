@@ -4,14 +4,14 @@
 % Author: David Fridovich-Keil (dfk@eecs.berkeley.edu)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function sdf = InterpolateGP(x, y, z, kdtree, data)
+function [sdf, var] = InterpolateGP(x, y, z, kdtree, data)
     % kNN search.
     neighbors_idx = knnsearch(kdtree, [x, y, z], 'k', 30);
     num_neighbors = length(neighbors_idx);
     
     % Set gamma and noise variance parameters.
-    GAMMA = 1.0;
-    NOISE = 0.05;
+    GAMMA = 0.7;
+    NOISE = 0.5;
     
     % Compute training covariance.
     K11 = zeros(num_neighbors, num_neighbors);
@@ -35,4 +35,7 @@ function sdf = InterpolateGP(x, y, z, kdtree, data)
     
     % Compute expected sdf.
     sdf = K12' * (K11 \ data(neighbors_idx, 4));
+    
+    % Compute variance.
+    var = 1.0 - K12' * (K11 \ K12);
 end

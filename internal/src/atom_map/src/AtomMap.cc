@@ -248,8 +248,7 @@ bool AtomMap::GetConnectedNeighbors(Atom::Ptr& atom,
       connected->push_back(neighbor);
   }
 
-  if (!contains_query) return false;
-  return true;
+  return contains_query;
 }
 
 // Update the map given a set of observations.
