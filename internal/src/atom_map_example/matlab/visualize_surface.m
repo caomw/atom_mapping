@@ -32,7 +32,7 @@ kdtree = KDTreeSearcher(subset(:, 1:3));
 
 if length(pts_x) == 2
 %% Allocate a mesh over the specified area.
-    resolution = 0.5;
+    resolution = 0.75;
     [X, Y, Z] = meshgrid(pts_x(1):resolution:pts_x(2), ...
                          pts_y(1):resolution:pts_y(2), ...
                          z_min:resolution:z_max);

@@ -73,13 +73,12 @@ int main(int argc, char** argv) {
     return EXIT_FAILURE;
   }
 
-#if 0
-  while (!request_shutdown_)
-    ros::spinOnce();
-#endif
-
-  ros::spin();
-  atom_map_example.MaybeSave();
+  if (SAVE) {
+    while (!request_shutdown_)
+      ros::spinOnce();
+    atom_map_example.MaybeSave();
+  } else
+    ros::spin();
 
   return EXIT_SUCCESS;
 }
