@@ -164,8 +164,9 @@ namespace atom {
     map_.Update(transformed_cloud, p);
 
     // Publish.
-    map_.PublishFullOccupancy();
-    map_.PublishFullSignedDistance();
+    map_.PublishOccupancy();
+    map_.PublishSignedDistance();
+    map_.PublishPointCloud();
     MaybePublishPath();
   }
 

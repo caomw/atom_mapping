@@ -80,8 +80,9 @@ namespace atom {
     void Update(const PointCloud::ConstPtr& cloud, const pcl::PointXYZ& robot);
 
     // Publishing.
-    void PublishFullOccupancy() const;
-    void PublishFullSignedDistance() const;
+    void PublishOccupancy() const;
+    void PublishSignedDistance() const;
+    void PublishPointCloud() const;
 
     // Save to '.csv' file. First line contains just the number of Atoms in the
     // map. Subsequent lines contain x, y, z coordinates followed by sdf.
@@ -147,14 +148,16 @@ namespace atom {
 
     // Visualization parameters and publishers.
     std::string fixed_frame_id_;
-    std::string full_occupancy_topic_;
-    std::string full_sdf_topic_;
+    std::string occupancy_topic_;
+    std::string sdf_topic_;
+    std::string pcld_topic_;
     bool only_show_occupied_;
     float occupied_threshold_; // Above this is considered occupied.
     float free_threshold_;     // Below this is considered free space.
     float sdf_threshold_;      // Smaller than this is considered near a surface.
-    ros::Publisher full_occupancy_publisher_;
-    ros::Publisher full_sdf_publisher_;
+    ros::Publisher occupancy_pub_;
+    ros::Publisher sdf_pub_;
+    ros::Publisher pcld_pub_;
 
     // Initialization and naming.
     bool initialized_;

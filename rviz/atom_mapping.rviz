@@ -8,6 +8,7 @@ Panels:
         - /TF1/Frames1
         - /3D Octree1/Autocompute Value Bounds1
         - /3D Incremental Octree1/Autocompute Value Bounds1
+        - /AtomMap PointCloud1
       Splitter Ratio: 0.5
     Tree Height: 652
   - Class: rviz/Selection
@@ -28,7 +29,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 2
-    SyncSource: 3D Incremental Octree
+    SyncSource: AtomMap PointCloud
 Visualization Manager:
   Class: ""
   Displays:
@@ -407,21 +408,21 @@ Visualization Manager:
       Use rainbow: true
       Value: false
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /atom_map_example/path
       Name: A* Path
       Namespaces:
-        world: true
+        {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /atom_map_example/occupancy
       Name: AtomMap Occupancy
       Namespaces:
-        world: true
+        {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Class: rviz/Marker
       Enabled: false
       Marker Topic: /atom_map_example/sdf
@@ -430,6 +431,36 @@ Visualization Manager:
         {}
       Queue Size: 100
       Value: false
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 26.2777
+        Min Value: -5.71925
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: AxisColor
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: AtomMap PointCloud
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.75
+      Style: Spheres
+      Topic: /atom_map_example/pcld
+      Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
     - Alpha: 0.8
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -484,22 +515,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 48.097
+      Distance: 220.011
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 6.7915
-        Y: -11.1602
-        Z: -14.2122
+        X: -63.0101
+        Y: -48.7939
+        Z: -13.5119
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.894797
+      Pitch: 0.659797
       Target Frame: base
       Value: Orbit (rviz)
-      Yaw: 1.55307
+      Yaw: 2.69306
     Saved: ~
 Window Geometry:
   Displays:

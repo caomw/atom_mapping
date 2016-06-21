@@ -26,7 +26,7 @@
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
  * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLOCUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
@@ -41,6 +41,7 @@
 #include <atom_map/CsvWriter.h>
 
 #include <visualization_msgs/Marker.h>
+#include <pcl/conversions.h>
 #include <algorithm>
 #include <Eigen/Dense>
 #include <iostream>
@@ -284,10 +285,10 @@ bool AtomMap::RegisterCallbacks(const ros::NodeHandle& n) {
   ros::NodeHandle node(n);
 
   // Publishers.
-  full_occupancy_publisher_ = node.advertise<visualization_msgs::Marker>(
-      full_occupancy_topic_.c_str(), 0);
-  full_sdf_publisher_ =
-      node.advertise<visualization_msgs::Marker>(full_sdf_topic_.c_str(), 0);
+  occupancy_pub_ = node.advertise<visualization_msgs::Marker>(
+      occupancy_topic_.c_str(), 0);
+  sdf_pub_ = node.advertise<visualization_msgs::Marker>(sdf_topic_.c_str(), 0);
+  pcld_pub_ = node.advertise<PointCloud>(pcld_topic_.c_str(), 0);
 
   return true;
 }
@@ -311,9 +312,9 @@ bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
     return false;
   if (!pu::Get("atom/surface_normal_radius", surface_normal_radius_))
     return false;
-  if (!pu::Get("atom/full_occupancy_topic", full_occupancy_topic_))
-    return false;
-  if (!pu::Get("atom/full_sdf_topic", full_sdf_topic_)) return false;
+  if (!pu::Get("atom/occupancy_topic", occupancy_topic_)) return false;
+  if (!pu::Get("atom/sdf_topic", sdf_topic_)) return false;
+  if (!pu::Get("atom/pcld_topic", pcld_topic_)) return false;
   if (!pu::Get("atom/fixed_frame_id", fixed_frame_id_)) return false;
 
   // Raytracing parameters.
@@ -355,8 +356,8 @@ float AtomMap::CovarianceKernel(const pcl::PointXYZ& p1,
 
 // Publish the full AtomMap colored by occupancy probability. Optionally,
 // only show the occupied atoms.
-void AtomMap::PublishFullOccupancy() const {
-  if (full_occupancy_publisher_.getNumSubscribers() <= 0) return;
+void AtomMap::PublishOccupancy() const {
+  if (occupancy_pub_.getNumSubscribers() <= 0) return;
 
   // Initialize marker.
   visualization_msgs::Marker m;
@@ -377,7 +378,9 @@ void AtomMap::PublishFullOccupancy() const {
 
   // Loop over all atoms and add to marker.
   const std::vector<Atom::Ptr> atoms = map_.GetAtoms();
+#ifdef ENABLE_DEBUG_MESSAGES
   ROS_INFO("%s: Publishing %lu atoms.", name_.c_str(), atoms.size());
+#endif
 
   for (size_t ii = 0; ii < atoms.size(); ii++) {
     const float probability_occupied = atoms[ii]->GetProbability();
@@ -390,12 +393,12 @@ void AtomMap::PublishFullOccupancy() const {
     }
   }
 
-  full_occupancy_publisher_.publish(m);
+  occupancy_pub_.publish(m);
 }
 
 // Publish the full AtomMap colored by signed distance.
-void AtomMap::PublishFullSignedDistance() const {
-  if (full_sdf_publisher_.getNumSubscribers() <= 0) return;
+void AtomMap::PublishSignedDistance() const {
+  if (sdf_pub_.getNumSubscribers() <= 0) return;
 
   // Initialize marker.
   visualization_msgs::Marker m;
@@ -416,7 +419,9 @@ void AtomMap::PublishFullSignedDistance() const {
 
   // Loop over all atoms and add to marker.
   const std::vector<Atom::Ptr> atoms = map_.GetAtoms();
+#ifdef ENABLE_DEBUG_MESSAGES
   ROS_INFO("%s: Publishing %lu atoms.", name_.c_str(), atoms.size());
+#endif
 
   for (size_t ii = 0; ii < atoms.size(); ii++) {
     const float sdf = atoms[ii]->GetSignedDistance();
@@ -429,8 +434,37 @@ void AtomMap::PublishFullSignedDistance() const {
     }
   }
 
-  full_sdf_publisher_.publish(m);
+  sdf_pub_.publish(m);
 }
+
+// Publish the occupied part of the AtomMap as a point cloud.
+void AtomMap::PublishPointCloud() const {
+  if (pcld_pub_.getNumSubscribers() <= 0) return;
+
+  // Initialize a new point cloud.
+  PointCloud::Ptr pcld(new PointCloud);
+  pcld->header.stamp = pcl_conversions::toPCL(ros::Time::now());
+  pcld->header.frame_id = fixed_frame_id_;
+
+  // Loop over all atoms and add to marker.
+  const std::vector<Atom::Ptr> atoms = map_.GetAtoms();
+#ifdef ENABLE_DEBUG_MESSAGES
+  ROS_INFO("%s: Publishing %lu atoms.", name_.c_str(), atoms.size());
+#endif
+
+  for (size_t ii = 0; ii < atoms.size(); ii++) {
+    const float probability_occupied = atoms[ii]->GetProbability();
+
+    // Maybe only show if probably occupied.
+    if (!only_show_occupied_ || probability_occupied > occupied_threshold_) {
+      const gu::Vec3f p = atoms[ii]->GetPosition();
+      pcld->points.push_back(pcl::PointXYZ(p(0), p(1), p(2)));
+    }
+  }
+
+  pcld_pub_.publish(pcld);
+}
+
 
 // Convert a probability of occupancy to a ROS color. Red is more likely to be
 // occupied, blue is more likely to be free.

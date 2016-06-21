@@ -29,8 +29,9 @@ atom:
   surface_normal_radius: 2.0
 
   # Visualization topic names.
-  full_occupancy_topic: occupancy
-  full_sdf_topic: sdf
+  occupancy_topic: occupancy
+  sdf_topic: sdf
+  pcld_topic: pcld
 
   # Fixed frame id.
   fixed_frame_id: world
