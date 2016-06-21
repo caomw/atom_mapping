@@ -40,6 +40,7 @@
 
 #include <atom_map/Atom.h>
 #include <atom_map/ApproximateAtomKdtree.h>
+#include <atom_map/AtomKdtree.h>
 #include <atom_map/AtomMapParameters.h>
 #include <atom_map/RaySamples.h>
 #include <parameter_utils/ParameterUtils.h>
@@ -71,7 +72,8 @@ namespace atom {
     // inserting one scan (ideally with interleaving), and we are going
     // to then use an exact kdtree to merge this with the big map, it is
     // alright to use FLANN speedups and sacrifice accuracy here.
-    ApproximateAtomKdtree map_;
+    //    ApproximateAtomKdtree map_;
+    AtomKdtree map_;
 
     // Atomic radius.
     const float radius_;
