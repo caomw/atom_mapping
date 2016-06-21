@@ -52,6 +52,7 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl_ros/point_cloud.h>
 #include <glog/logging.h>
+#include <random>
 #include <math.h>
 
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
@@ -70,10 +71,12 @@ namespace atom {
   private:
     // An approximate kdtree to hold all the Atoms. Since we are only
     // inserting one scan (ideally with interleaving), and we are going
-    // to then use an exact kdtree to merge this with the big map, it is
-    // alright to use FLANN speedups and sacrifice accuracy here.
-    //    ApproximateAtomKdtree map_;
-    AtomKdtree map_;
+    // to then use an exact kdtree to merge this with the big map, we
+    // only need to keep a list of Atoms to insert later.
+    std::vector<Atom::Ptr> atoms_;
+
+    // Random number generation.
+    std::random_device rd_;
 
     // Atomic radius.
     const float radius_;
@@ -113,8 +116,9 @@ namespace atom {
     // Name, for ROS warnings and debug messages.
     const std::string name_;
 
-    // Try to add a single atom.
-    void MaybeInsertAtom(const pcl::PointXYZ& position, float sdf);
+    // Add a single atom.
+    void InsertAtom(const pcl::PointXYZ& position, float sdf,
+                    std::vector<Atom::Ptr>* raw);
 
     // Sample a ray and do a probabilistic and signed distance update.
     // Given a robot position and a measured point, discretize the ray from sensor

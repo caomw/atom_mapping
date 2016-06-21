@@ -57,7 +57,7 @@ atom:
     # provide a flag to turn on angular interleaving. Lambda is the Lagrange
     # coefficient of the probability of missing an atom (i.e. probability that
     #  all atoms overlapping a particular atom are not chosen).
-    angular_resolution: 0.0035 #0.02
+    angular_resolution: 0.02 #0.035
     angular_interleaving: true
     lambda: 1.0
 

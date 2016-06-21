@@ -38,10 +38,13 @@
 #ifndef ATOM_MAPPING_VOXEL_GRID_H
 #define ATOM_MAPPING_VOXEL_GRID_H
 
+#include <atom_map/Atom.h>
+
 #include <ros/ros.h>
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 #include <unordered_map>
+#include <vector>
 #include <glog/logging.h>
 #include <math.h>
 
@@ -57,6 +60,10 @@ namespace atom {
     // Filter a point cloud.
     bool Filter(const PointCloud::ConstPtr& raw,
                 const PointCloud::Ptr filtered) const;
+
+    // Filter a list of Atoms.
+    bool Filter(const std::vector<Atom::Ptr>& raw,
+                std::vector<Atom::Ptr>* filtered) const;
 
   private:
     const float limit_min_;

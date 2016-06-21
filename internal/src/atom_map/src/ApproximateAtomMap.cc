@@ -36,10 +36,10 @@
  */
 
 #include <atom_map/ApproximateAtomMap.h>
+#include <atom_map/VoxelGrid.h>
 
 #include <Eigen/Dense>
 #include <iostream>
-#include <random>
 #include <math.h>
 
 namespace gu = geometry_utils;
@@ -71,6 +71,7 @@ namespace atom {
     // (2) Sample all rays along the point cloud.
     // (3) Shuffle points randomly.
     // (4) Insert points into the map.
+    // (5) Voxel grid filter.
 
     // (1) Get surface normals for incoming points.
     pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
@@ -118,108 +119,56 @@ namespace atom {
     }
 
     // (4) Insert points into this map.
+    std::vector<Atom::Ptr> raw;
     for (const auto& idx : occupied_indices)
-      MaybeInsertAtom(samples.occupied_points_[idx],
-                      samples.occupied_distances_[idx]);
+      InsertAtom(samples.occupied_points_[idx],
+                 samples.occupied_distances_[idx], &raw);
 
     if (update_occupancy_) {
       for (const auto& idx : ray_indices)
-        MaybeInsertAtom(samples.ray_points_[idx],
-                        samples.ray_distances_[idx]);
+        InsertAtom(samples.ray_points_[idx],
+                   samples.ray_distances_[idx], &raw);
     }
     if (update_signed_distance_) {
       for (const auto& idx : normal_indices)
-        MaybeInsertAtom(samples.normal_points_[idx],
-                        samples.normal_distances_[idx]);
+        InsertAtom(samples.normal_points_[idx],
+                   samples.normal_distances_[idx], &raw);
     }
+
+    // (5) Voxel grid filter.
+    VoxelGrid grid_filter(2.0 * radius_);
+    grid_filter.Filter(raw, &atoms_);
   }
 
-  // Insert Atom at this position into the tree. Handle options regarding
-  // updating occupancy and signed distance.
-  void ApproximateAtomMap::MaybeInsertAtom(const pcl::PointXYZ& position, float sdf) {
+  // Insert Atom into the provided list.
+  void ApproximateAtomMap::InsertAtom(const pcl::PointXYZ& position, float sdf,
+                                      std::vector<Atom::Ptr>* raw) {
+    CHECK_NOTNULL(raw);
+
     Atom::Ptr atom = Atom::Create();
     atom->SetPosition(gu::Vec3f(position.x, position.y, position.z));
 
-    // If the kdtree is empty, just insert this atom.
-    if (map_.Size() == 0) {
-      // Set probability of occupancy.
-      if (update_occupancy_) {
-        if (sdf > 0.0)
-          atom->SetProbability(probability_miss_);
-        else
-          atom->SetProbability(probability_hit_);
-      }
-
-      // Set signed distance.
-      if (update_signed_distance_) atom->SetSignedDistance(sdf);
-
-      // Insert.
-      if (!map_.Insert(atom))
-        ROS_WARN("%s: Error inserting a new Atom.", name_.c_str());
-
-      return;
+    // Set probability of occupancy.
+    if (update_occupancy_) {
+      if (sdf > 0.0)
+        atom->SetProbability(probability_miss_);
+      else
+        atom->SetProbability(probability_hit_);
     }
 
-    std::vector<Atom::Ptr> neighbors;
-    if (!map_.RadiusSearch(position, 2.0 * radius_ - 1e-4, &neighbors)) {
-      ROS_WARN("%s: Error in radius search during Update().", name_.c_str());
-      return;
-    }
+    // Set signed distance.
+    if (update_signed_distance_)
+      atom->SetSignedDistance(sdf);
 
-    // Handle case where sample lies inside an existing Atom.
-    size_t num_true_neighbors = 0;
-    for (size_t jj = 0; jj < neighbors.size(); jj++) {
-      Atom::Ptr neighbor = neighbors[jj];
+    // Insert.
+    raw->push_back(atom);
 
-      // Skip if this neighbor is actually not within one atomic diameter.
-      if (neighbor->GetDistanceTo(atom) > 2.0 * radius_) continue;
-      num_true_neighbors++;
-
-      // Compute overlap fraction.
-      const float weight = atom->ComputeOverlapFraction(neighbor);
-      if (weight >= 0.0 && weight <= 1.0) {
-        // Update occupancy.
-        if (update_occupancy_) {
-          if (sdf > 0.0)
-            neighbor->UpdateProbability(probability_miss_, weight);
-          else
-            neighbor->UpdateProbability(probability_hit_, weight);
-        }
-
-        // Update signed distance.
-        if (update_signed_distance_) {
-          neighbor->UpdateSignedDistance(sdf, weight);
-        }
-
-      } else
-        ROS_WARN("%s: Weight was out of bounds(%lf). Distance between atoms was %lf.",
-                 name_.c_str(), weight, neighbor->GetDistanceTo(atom));
-    }
-
-    // Handle case where sample lies more than twice the atomic radius
-    // from its nearest neighbor.
-    if (num_true_neighbors == 0) {
-      // Set probability of occupancy.
-      if (update_occupancy_) {
-        if (sdf > 0.0)
-          atom->SetProbability(probability_miss_);
-        else
-          atom->SetProbability(probability_hit_);
-      }
-
-      // Set signed distance.
-      if (update_signed_distance_) atom->SetSignedDistance(sdf);
-
-      // Insert into kdtree. Insertion here automatically updates neighbors
-      // in the implicit graph structure of the kdtree.
-      if (!map_.Insert(atom))
-        ROS_WARN("%s: Error inserting a new Atom.", name_.c_str());
-    }
+    return;
   }
 
   // Return a list of all Atoms in the map.
   const std::vector<Atom::Ptr>& ApproximateAtomMap::GetAtoms() const {
-    return map_.GetAtoms();
+    return atoms_;
   }
 
   // Sample a ray. Given a robot position and a measured point, discretize the
@@ -339,8 +288,7 @@ namespace atom {
       float probability = (1.0 + lambda_) / (lambda_ + 2.0 * delta_number - 1.0);
 
       // Random number generation. This is really important to get right.
-      std::random_device rd;
-      std::default_random_engine rng(rd());
+      std::default_random_engine rng(rd_());
       std::uniform_real_distribution<float> unif(0.0, 1.0);
       for (size_t ii = 0; ii < num_samples_ray; ii++) {
         const float backoff =
