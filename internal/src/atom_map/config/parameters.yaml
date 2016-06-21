@@ -24,6 +24,9 @@ atom:
   probability_clamp_high: 0.97
   probability_clamp_low: 0.12
 
+  # Flag for applying voxel grid filter to sampled Atoms for each new scan.
+  voxel_grid: true
+
   # Radius for nearest neighbor search for surface normal estimation. This should
   # be on the order of the voxel grid resolution if input point clouds are filtered.
   surface_normal_radius: 5.0

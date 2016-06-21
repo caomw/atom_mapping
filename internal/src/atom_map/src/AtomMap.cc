@@ -271,6 +271,7 @@ void AtomMap::Update(const PointCloud::ConstPtr& cloud,
   params.lambda_ = lambda_;
   params.probability_hit_ = probability_hit_;
   params.probability_miss_ = probability_miss_;
+  params.voxel_grid_ = voxel_grid_;
   params.name_ = name_ + "/single_scan";
 
   ApproximateAtomMap small_map(params, cloud, robot);
@@ -310,6 +311,7 @@ bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
     return false;
   if (!pu::Get("atom/probability_clamp_low", probability_clamp_low_))
     return false;
+  if (!pu::Get("atom/voxel_grid", voxel_grid_)) return false;
   if (!pu::Get("atom/surface_normal_radius", surface_normal_radius_))
     return false;
   if (!pu::Get("atom/occupancy_topic", occupancy_topic_)) return false;

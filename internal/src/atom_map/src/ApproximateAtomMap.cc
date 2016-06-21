@@ -63,6 +63,7 @@ namespace atom {
       angular_resolution_(params.angular_resolution_),
       angular_interleaving_(params.angular_interleaving_),
       lambda_(params.lambda_),
+      voxel_grid_(params.voxel_grid_),
       probability_hit_(params.probability_hit_),
       probability_miss_(params.probability_miss_),
       name_(params.name_) {
@@ -120,24 +121,27 @@ namespace atom {
 
     // (4) Insert points into this map.
     std::vector<Atom::Ptr> raw;
+    std::vector<Atom::Ptr>* ptr = (voxel_grid_) ? &raw : &atoms_;
     for (const auto& idx : occupied_indices)
       InsertAtom(samples.occupied_points_[idx],
-                 samples.occupied_distances_[idx], &raw);
+                 samples.occupied_distances_[idx], ptr);
 
     if (update_occupancy_) {
       for (const auto& idx : ray_indices)
         InsertAtom(samples.ray_points_[idx],
-                   samples.ray_distances_[idx], &raw);
+                   samples.ray_distances_[idx], ptr);
     }
     if (update_signed_distance_) {
       for (const auto& idx : normal_indices)
         InsertAtom(samples.normal_points_[idx],
-                   samples.normal_distances_[idx], &raw);
+                   samples.normal_distances_[idx], ptr);
     }
 
     // (5) Voxel grid filter.
-    VoxelGrid grid_filter(2.0 * radius_);
-    grid_filter.Filter(raw, &atoms_);
+    if (voxel_grid_) {
+      VoxelGrid grid_filter(2.0 * radius_);
+      grid_filter.Filter(raw, &atoms_);
+    }
   }
 
   // Insert Atom into the provided list.

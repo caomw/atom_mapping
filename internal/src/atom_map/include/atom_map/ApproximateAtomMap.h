@@ -109,6 +109,9 @@ namespace atom {
     const bool angular_interleaving_;
     const float lambda_;
 
+    // Flag for applying voxel grid filter to sampled Atoms.
+    const bool voxel_grid_;
+
     // Probability of hits and misses for occupancy updates.
     const float probability_hit_;
     const float probability_miss_;

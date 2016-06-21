@@ -135,6 +135,9 @@ namespace atom {
     float probability_clamp_high_;
     float probability_clamp_low_;
 
+    // Flag for applying voxel grid filter to sampled Atoms for each new scan.
+    bool voxel_grid_;
+
     // Number of nearest neighbors to examine for GP surface distance regression.
     int num_neighbors_;
 

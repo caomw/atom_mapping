@@ -75,6 +75,9 @@ namespace atom {
     float probability_hit_;
     float probability_miss_;
 
+    // Flag for applying voxel grid filter to sampled Atoms.
+    bool voxel_grid_;
+
     // Name, for ROS warnings and debug messages.
     std::string name_;
   }; // struct AtomMapParameters
