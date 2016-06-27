@@ -96,9 +96,11 @@ namespace atom {
     ros::Publisher filtered_cloud_publisher_;
     std::string filtered_cloud_topic_;
 
-    // Publish A* path from initial position to final position.
+    // Publish A* path from initial position to final position. Planner can optionally
+    // prefer paths near the specified manifold if path_sdf_manifold_ is positive.
     ros::Publisher path_publisher_;
     std::string path_topic_;
+    float path_sdf_manifold_;
 
     // Topics to listen to. Pose topic is only used if buffer flag is set. If
     // buffer flag is not set, then we need to know the fixed frame id and use

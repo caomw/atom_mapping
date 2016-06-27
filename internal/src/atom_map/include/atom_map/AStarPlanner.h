@@ -56,8 +56,11 @@ namespace sp = atom::shortest_paths;
 namespace atom {
   class AStarPlanner : public Planner {
   public:
-    AStarPlanner(AtomMap* map, size_t max_iters = std::numeric_limits<size_t>::max())
-      : Planner(map), max_iters_(max_iters) {}
+    AStarPlanner(AtomMap* map,
+                 float sdf_manifold = -1.0,
+                 size_t max_iters = std::numeric_limits<size_t>::max())
+      : Planner(map), max_iters_(max_iters), sdf_manifold_(sdf_manifold) {}
+
     ~AStarPlanner() {}
 
     // Plan a path.
@@ -67,7 +70,11 @@ namespace atom {
   private:
     // Maximum number of iterations during A* search.
     const size_t max_iters_;
-  };
+
+    // Signed distance value on which to plan. A* will try to plan a path
+    // that stays close to this manifold.
+    const float sdf_manifold_;
+  }; // class AStarPlanner
 
   // ------------------------------- IMPLEMENTATION --------------------------- //
   bool AStarPlanner::Plan(const gu::Vec3f& start_position,
@@ -90,6 +97,7 @@ namespace atom {
     // Create an empty ShortestPathsTree.
     sp::Tree tree;
     sp::Tree::SetGoal(goal);
+    sp::Tree::SetSDFManifold(sdf_manifold_);
 
     // Steps:
     // (1) Start from the 'start' Atom. Push it into the queue.

@@ -124,7 +124,7 @@ namespace atom {
     // FLANN checks Euclidean distance squared, so we pass in r * r.
     int num_neighbors_found =
       index_->radiusSearch(flann_query, query_match_indices,
-                           query_distances, static_cast<float>(r * r),
+                           query_distances, r * r,
                            flann::SearchParams(-1, 0.0, false));
     // Assign output.
     for (size_t ii = 0; ii < num_neighbors_found; ii++)

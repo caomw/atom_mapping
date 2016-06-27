@@ -1,9 +1,9 @@
 atom:
   # Atomic radius.
-  radius: 0.2
+  radius: 0.5
 
   # Connectedness radius. Determines connectedness in the implicit graph.
-  connectedness_radius: 0.75
+  connectedness_radius: 1.2
 
   # Occupancy and SDF modes.
   update_occupancy: true
@@ -29,7 +29,7 @@ atom:
 
   # Radius for nearest neighbor search for surface normal estimation. This should
   # be on the order of the voxel grid resolution if input point clouds are filtered.
-  surface_normal_radius: 0.75
+  surface_normal_radius: 2.0
 
   # Visualization topic names.
   occupancy_topic: occupancy
@@ -47,10 +47,10 @@ atom:
     
     # Maximum distance to raycast into a surface (think of this as the surface
     # thickness).
-    max_occupied_backoff: 0.41
+    max_occupied_backoff: 1.1
 
     # Maximum distance to raycast into free space along the surface normal.
-    max_normal_backoff: 1.01
+    max_normal_backoff: 4.1
 
     # Maximum number of atoms to lay down along the normal vector into free space.
     max_samples_normal: 10

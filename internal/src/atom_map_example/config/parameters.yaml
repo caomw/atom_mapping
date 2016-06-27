@@ -18,7 +18,7 @@ atom_example:
 
   # Voxel grid filter leaf size. This should probably be roughly on the order of
   # an atomic radius in order to avoid drastic oversampling.
-  filter_leaf_size: 0.3
+  filter_leaf_size: 1.0
 
   # Topic on which filtered point clouds should be published.
   filtered_cloud_topic: filtered
@@ -29,3 +29,7 @@ atom_example:
 
   # Publish path from start to finish points.
   path_topic: path
+
+  # Optionally, if this is positive the path planner will try to keep paths near
+  # this signed distance value.
+  path_sdf_manifold: 1.0

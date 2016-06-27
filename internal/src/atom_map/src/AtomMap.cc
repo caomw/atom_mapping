@@ -407,7 +407,7 @@ void AtomMap::PublishSignedDistance() const {
   m.header.frame_id = fixed_frame_id_;
   // m.header.stamp = ros::Time();
   m.ns = fixed_frame_id_;
-  m.id = 0;
+  m.id = 1;
   m.action = visualization_msgs::Marker::ADD;
   m.type = visualization_msgs::Marker::SPHERE_LIST;
   m.color.r = 0.0;

@@ -115,9 +115,10 @@ namespace shortest_paths {
     Tree() {}
     ~Tree() {}
 
-    // Static setter for the goal atom. Compiler insists on static because
-    // NodeComparitor needs to see it. Why?
+    // Static setters for the goal atom and sdf manifold.
+    // Compiler insists on static because NodeComparitor needs to see it. Why?
     static void SetGoal(Atom::Ptr& goal) { goal_ = goal; }
+    static void SetSDFManifold(float sdf_manifold) { sdf_manifold_ = sdf_manifold; }
 
     // Set root.
     void SetRoot(Node::Ptr& root) { registry_.insert({root->GetAtom(), root}); }
@@ -131,12 +132,20 @@ namespace shortest_paths {
     // Check if a node is contained in the tree.
     bool Contains(Atom::Ptr& node) { return registry_.count(node) > 0; }
 
-    // Comparitor.
+    // Comparitor. If sdf_manifold_ is specified, then add the perpendicular distance
+    // from the node to the manifold into the score.
     struct NodeComparitor {
       bool operator()(Node::Ptr& node1, Node::Ptr& node2) {
-        const float score1 =
+        const float manifold_dist1 =
+          (sdf_manifold_ < 0.0) ? 0.0
+          : std::abs(node1->GetAtom()->GetSignedDistance() - sdf_manifold_);
+        const float manifold_dist2 =
+          (sdf_manifold_ < 0.0) ? 0.0
+          : std::abs(node2->GetAtom()->GetSignedDistance() - sdf_manifold_);
+
+        const float score1 = manifold_dist1 +
           node1->GetPathLength() + node1->GetAtom()->GetDistanceTo(goal_);
-        const float score2 =
+        const float score2 = manifold_dist2 +
           node2->GetPathLength() + node2->GetAtom()->GetDistanceTo(goal_);
 
         return score1 > score2;
@@ -145,6 +154,7 @@ namespace shortest_paths {
 
   protected:
     static Atom::Ptr goal_;
+    static float sdf_manifold_;
 
   private:
     std::unordered_map<Atom::Ptr, Node::Ptr> registry_;
@@ -153,6 +163,7 @@ namespace shortest_paths {
 
   // ------------------------------ IMPLEMENTATION ---------------------------------- //
   Atom::Ptr Tree::goal_ = nullptr;
+  float Tree::sdf_manifold_ = -1.0;
 
 } // namespace shortest_paths
 } // namespace atom

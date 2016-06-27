@@ -8,6 +8,7 @@ Panels:
         - /TF1/Frames1
         - /3D Octree1/Autocompute Value Bounds1
         - /3D Incremental Octree1/Autocompute Value Bounds1
+        - /AtomMap PointCloud1
       Splitter Ratio: 0.5
     Tree Height: 652
   - Class: rviz/Selection
@@ -58,7 +59,7 @@ Visualization Manager:
         base:
           Value: true
         odometry:
-          Value: true
+          Value: false
         world:
           Value: true
       Marker Scale: 10
@@ -68,7 +69,10 @@ Visualization Manager:
       Show Names: true
       Tree:
         world:
-          {}
+          base:
+            {}
+          odometry:
+            {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -430,8 +434,8 @@ Visualization Manager:
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 26.2777
-        Min Value: -5.71925
+        Max Value: 12.3638
+        Min Value: -6.39717
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -449,8 +453,8 @@ Visualization Manager:
       Position Transformer: XYZ
       Queue Size: 10
       Selectable: true
-      Size (Pixels): 3
-      Size (m): 0.75
+      Size (Pixels): 1
+      Size (m): 0.4
       Style: Spheres
       Topic: /atom_map_example/pcld
       Unreliable: false
@@ -511,22 +515,22 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 182.696
+      Distance: 120.541
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.06
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -63.0101
-        Y: -48.7939
-        Z: -13.5119
+        X: -13.452
+        Y: -1.91011
+        Z: 3.57469
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 1.3198
+      Pitch: 0.489797
       Target Frame: base
       Value: Orbit (rviz)
-      Yaw: 2.49306
+      Yaw: 0.566658
     Saved: ~
 Window Geometry:
   Displays:
