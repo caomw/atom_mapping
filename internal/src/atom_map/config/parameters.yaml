@@ -1,6 +1,6 @@
 atom:
   # Atomic radius.
-  radius: 0.5
+  radius: 0.25
 
   # Connectedness radius. Determines connectedness in the implicit graph.
   connectedness_radius: 1.2
@@ -11,9 +11,9 @@ atom:
   only_show_occupied: true
 
   # Thresholds for classifying atoms as obstacles, free space, or 'near surfaces.'
-  occupied_threshold: 0.65
+  occupied_threshold: 0.5
   free_threshold: 0.2
-  sdf_threshold: 1.5
+  sdf_threshold: 1.2
 
   # Probability update for hits/misses.
   probability_hit: 0.7
@@ -29,7 +29,7 @@ atom:
 
   # Radius for nearest neighbor search for surface normal estimation. This should
   # be on the order of the voxel grid resolution if input point clouds are filtered.
-  surface_normal_radius: 2.0
+  surface_normal_radius: 1.1
 
   # Visualization topic names.
   occupancy_topic: occupancy
@@ -43,14 +43,14 @@ atom:
   raytracing:
     # Min and max range to consider valid scans.
     min_scan_range: 0.1
-    max_scan_range: 25.0
-    
+    max_scan_range: 100.0
+
     # Maximum distance to raycast into a surface (think of this as the surface
     # thickness).
-    max_occupied_backoff: 1.1
+    max_occupied_backoff: 0.6
 
     # Maximum distance to raycast into free space along the surface normal.
-    max_normal_backoff: 4.1
+    max_normal_backoff: 2.01
 
     # Maximum number of atoms to lay down along the normal vector into free space.
     max_samples_normal: 10

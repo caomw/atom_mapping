@@ -136,6 +136,8 @@ namespace atom {
   // Process a point cloud, pose pair.
   void AtomMapExample::ProcessPointCloud(const PointCloud::ConstPtr& cloud,
                                          const Eigen::Matrix4d& pose) {
+    ros::WallTime start_time = ros::WallTime::now();
+
     // Update positions.
     current_position_(0) = pose(0, 3);
     current_position_(1) = pose(1, 3);
@@ -147,6 +149,7 @@ namespace atom {
       first_pose_ = false;
     }
 
+#if 1
     // Voxel grid filter.
     PointCloud::Ptr filtered_cloud(new PointCloud);
     VoxelGrid grid_filter(filter_leaf_size_);
@@ -159,6 +162,13 @@ namespace atom {
     // Transform point cloud into world frame.
     PointCloud::Ptr transformed_cloud(new PointCloud);
     pcl::transformPointCloud(*filtered_cloud, *transformed_cloud, pose);
+#endif
+
+#if 0
+    // Assume incoming cloud is already filtered.
+    PointCloud::Ptr transformed_cloud(new PointCloud);
+    pcl::transformPointCloud(*cloud, *transformed_cloud, pose);
+#endif
 
     // Run map update.
     pcl::PointXYZ p(pose(0, 3), pose(1, 3), pose(2, 3));
@@ -169,6 +179,12 @@ namespace atom {
     map_.PublishSignedDistance();
     map_.PublishPointCloud();
     MaybePublishPath();
+
+    // Record timing.
+    ros::WallTime end_time = ros::WallTime::now();
+    double total_elapsed = (end_time - start_time).toSec();
+    ROS_INFO("%s: Insertion took %5.3f seconds.", name_.c_str(), total_elapsed);
+    //    std::cerr << total_elapsed << std::endl;
   }
 
   // Publish the filtered cloud.

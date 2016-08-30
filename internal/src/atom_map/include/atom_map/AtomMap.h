@@ -162,6 +162,9 @@ namespace atom {
     ros::Publisher sdf_pub_;
     ros::Publisher pcld_pub_;
 
+    // Publish on a timer.
+    ros::Timer timer;
+
     // Initialization and naming.
     bool initialized_;
     std::string name_;
@@ -169,6 +172,9 @@ namespace atom {
     // Load parameters and register callbacks.
     bool LoadParameters(const ros::NodeHandle& n);
     bool RegisterCallbacks(const ros::NodeHandle& n);
+
+    // Timer callback. Call all publishers on a timer.
+    void TimerCallback(const ros::TimerEvent& event) const;
 
     // Try to add a single atom.
     void MaybeInsertAtom(const Atom::Ptr& atom);

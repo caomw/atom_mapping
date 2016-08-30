@@ -291,6 +291,9 @@ bool AtomMap::RegisterCallbacks(const ros::NodeHandle& n) {
   sdf_pub_ = node.advertise<visualization_msgs::Marker>(sdf_topic_.c_str(), 0);
   pcld_pub_ = node.advertise<PointCloud>(pcld_topic_.c_str(), 0);
 
+  // Timer.
+  timer = node.createTimer(ros::Duration(1.0), &AtomMap::TimerCallback, this);
+
   return true;
 }
 
@@ -342,6 +345,13 @@ bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
                              probability_clamp_high_);
 
   return true;
+}
+
+// Timer callback. Call all publishers on a timer.
+void AtomMap::TimerCallback(const ros::TimerEvent& event) const {
+  PublishOccupancy();
+  PublishSignedDistance();
+  PublishPointCloud();
 }
 
 // Apply the covariance kernel function. This is just the simplest option, but

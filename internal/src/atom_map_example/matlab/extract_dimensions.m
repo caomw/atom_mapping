@@ -7,7 +7,7 @@
 clear all; close all; clc;
 
 %% Load an AtomMap.
-data = csvread('../saved_maps/map.csv');
+data = csvread('../saved_maps/lbl_500cm.csv');
 
 %% Extract dimensions.
 max_x = max(data(:, 1));
