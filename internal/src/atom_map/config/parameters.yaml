@@ -11,7 +11,7 @@ atom:
   only_show_occupied: true
 
   # Thresholds for classifying atoms as obstacles, free space, or 'near surfaces.'
-  occupied_threshold: 0.5
+  occupied_threshold: 0.65
   free_threshold: 0.2
   sdf_threshold: 1.2
 
