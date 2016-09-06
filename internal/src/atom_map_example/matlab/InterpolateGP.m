@@ -6,12 +6,12 @@
 
 function [sdf, var] = InterpolateGP(x, y, z, kdtree, data)
     % kNN search.
-    neighbors_idx = knnsearch(kdtree, [x, y, z], 'k', 30);
+    neighbors_idx = knnsearch(kdtree, [x, y, z], 'k', 20);
     num_neighbors = length(neighbors_idx);
     
     % Set gamma and noise variance parameters.
-    GAMMA = 0.7;
-    NOISE = 0.5;
+    GAMMA = 1.0;
+    NOISE = 2.0;
     
     % Compute training covariance.
     K11 = zeros(num_neighbors, num_neighbors);
