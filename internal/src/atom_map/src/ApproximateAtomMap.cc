@@ -289,7 +289,7 @@ namespace atom {
       float delta_number = 1.0;
       //float delta = radius_ / tan(0.5 * angular_resolution_);
       float delta = radius_ * sqrt(2.0 / (1.0 - cos(angular_resolution_)));
-      float probability = (1.0 + lambda_) / (lambda_ + 2.0 * delta_number - 1.0);
+      float probability = (1.0 + lambda_) / (lambda_ + 2.0 * delta_number + 1.0);
 
       // Random number generation. This is really important to get right.
       std::default_random_engine rng(rd_());

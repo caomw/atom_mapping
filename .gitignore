@@ -19,6 +19,9 @@ bagfiles/
 # Figures
 figures/
 
+# Simulation
+simulation/
+
 # Profiling
 profiling/
 
