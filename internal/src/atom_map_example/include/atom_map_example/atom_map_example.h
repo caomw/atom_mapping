@@ -40,8 +40,6 @@
 
 #include <atom_map/AtomMap.h>
 #include <atom_map/AStarPlanner.h>
-#include <parameter_utils/ParameterUtils.h>
-#include <geometry_utils/GeometryUtilsROS.h>
 
 #include <pcl/point_types.h>
 #include <pcl/common/transforms.h>
@@ -55,9 +53,7 @@
 
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
-namespace pu = parameter_utils;
-namespace gu = geometry_utils;
-namespace gr = gu::ros;
+using Eigen::Vector3f;
 
 namespace atom {
   class AtomMapExample {
@@ -79,8 +75,8 @@ namespace atom {
 
     // Keep track of first and current positions.
     bool first_pose_;
-    gu::Vec3f initial_position_;
-    gu::Vec3f current_position_;
+    Vector3f initial_position_;
+    Vector3f current_position_;
 
     // Subscribers and queues.
     ros::Subscriber point_cloud_subscriber_;

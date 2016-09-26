@@ -10,8 +10,6 @@ endif(NOT PCL_FOUND)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
-  geometry_utils
-  parameter_utils
   pcl_ros
   tf2_ros
   atom_map
@@ -22,8 +20,6 @@ catkin_package(
   LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS
     roscpp
-    geometry_utils
-    parameter_utils
     pcl_ros
     tf2_ros
     atom_map

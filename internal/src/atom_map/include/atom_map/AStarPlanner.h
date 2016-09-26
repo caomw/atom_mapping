@@ -43,15 +43,16 @@
 #include <atom_map/AtomMap.h>
 #include <atom_map/AtomPath.h>
 #include <atom_map/ShortestPathsTree.h>
-#include <geometry_utils/Vector3.h>
 
+#include <Eigen/Core>
 #include <glog/logging.h>
 #include <math.h>
 #include <queue>
 #include <vector>
 
-namespace gu = geometry_utils;
 namespace sp = atom::shortest_paths;
+
+using Eigen::Vector3f;
 
 namespace atom {
   class AStarPlanner : public Planner {
@@ -64,7 +65,7 @@ namespace atom {
     ~AStarPlanner() {}
 
     // Plan a path.
-    bool Plan(const gu::Vec3f& start_position, const gu::Vec3f& goal_position,
+    bool Plan(const Vector3f& start_position, const Vector3f& goal_position,
               AtomPath* path) const;
 
   private:
@@ -77,8 +78,8 @@ namespace atom {
   }; // class AStarPlanner
 
   // ------------------------------- IMPLEMENTATION --------------------------- //
-  bool AStarPlanner::Plan(const gu::Vec3f& start_position,
-                          const gu::Vec3f& goal_position,
+  bool AStarPlanner::Plan(const Vector3f& start_position,
+                          const Vector3f& goal_position,
                           AtomPath* path) const {
     CHECK_NOTNULL(path);
 

@@ -42,8 +42,6 @@
 #include <atom_map/AtomKdtree.h>
 #include <atom_map/RaySamples.h>
 #include <atom_map/CsvWriter.h>
-#include <parameter_utils/ParameterUtils.h>
-#include <geometry_utils/GeometryUtilsROS.h>
 
 #include <ros/ros.h>
 #include <std_msgs/ColorRGBA.h>
@@ -51,7 +49,10 @@
 #include <pcl/features/normal_3d.h>
 #include <pcl_ros/point_cloud.h>
 #include <glog/logging.h>
+#include <Eigen/Core>
 #include <math.h>
+
+using Eigen::Vector3f;
 
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 

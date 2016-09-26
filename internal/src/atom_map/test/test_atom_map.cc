@@ -46,14 +46,14 @@
 #include <atom_map/Atom.h>
 #include <atom_map/VoxelGrid.h>
 #include <atom_map/AtomKdtree.h>
-#include <geometry_utils/Vector3.h>
 
+#include <Eigen/Core>
 #include <math.h>
 #include <random>
 #include <iostream>
 
 using namespace atom;
-namespace gu = geometry_utils;
+using Eigen::Vector3f;
 
 // Test the VoxelGrid class.
 TEST(VoxelGrid, TestVoxelGrid) {
@@ -87,7 +87,7 @@ TEST(Atom, TestCreateAtom) {
   // Set params.
   const float kProbability = 0.5;
   const float kSignedDistance = 1.0;
-  const gu::Vec3f kPosition(1.0, 1.0, 1.0);
+  const Vector3f kPosition(1.0, 1.0, 1.0);
   atom->SetProbability(kProbability);
   atom->SetSignedDistance(kSignedDistance);
   atom->SetPosition(kPosition);
@@ -98,7 +98,7 @@ TEST(Atom, TestCreateAtom) {
   EXPECT_EQ(atom->GetSignedDistance(), kSignedDistance);
   EXPECT_EQ(atom->GetPosition()(0), kPosition(0));
   EXPECT_EQ(atom->GetPosition()(1), kPosition(1));
-  EXPECT_EQ(atom->GetPosition()(2), kPosition(2)); 
+  EXPECT_EQ(atom->GetPosition()(2), kPosition(2));
 }
 
 // Test that we can update probability/log odds.
@@ -110,7 +110,7 @@ TEST(Atom, TestUpdateProbability) {
   // Set params.
   const float kProbability = 0.5;
   const float kSignedDistance = 1.0;
-  const gu::Vec3f kPosition(1.0, 1.0, 1.0);
+  const Vector3f kPosition(1.0, 1.0, 1.0);
   atom->SetProbability(kProbability);
   atom->SetSignedDistance(kSignedDistance);
   atom->SetPosition(kPosition);
@@ -134,7 +134,7 @@ TEST(Atom, TestUpdateSignedDistance) {
   // Set params.
   const float kProbability = 0.5;
   const float kSignedDistance = 1.0;
-  const gu::Vec3f kPosition(1.0, 1.0, 1.0);
+  const Vector3f kPosition(1.0, 1.0, 1.0);
   atom->SetProbability(kProbability);
   atom->SetSignedDistance(kSignedDistance);
   atom->SetPosition(kPosition);
@@ -166,7 +166,7 @@ TEST(AtomKdtree, TestAtomKdtreeInsertion) {
   std::vector<Atom::Ptr> atoms;
   for (size_t ii = 0; ii < kNumPoints; ii++) {
     Atom::Ptr atom = Atom::Create();
-    gu::Vec3f pos(unif(rng), unif(rng), unif(rng));
+    Vector3f pos(unif(rng), unif(rng), unif(rng));
     atom->SetPosition(pos);
 
     // Insert.
@@ -212,7 +212,7 @@ TEST(AtomKdtree, TestAtomKdtreeRadiusSearch) {
   // Generate a bunch of random points and add to the tree.
   for (size_t ii = 0; ii < kNumPoints; ii++) {
     Atom::Ptr atom = Atom::Create();
-    gu::Vec3f pos(unif(rng), unif(rng), unif(rng));
+    Vector3f pos(unif(rng), unif(rng), unif(rng));
     atom->SetPosition(pos);
 
     // Insert.

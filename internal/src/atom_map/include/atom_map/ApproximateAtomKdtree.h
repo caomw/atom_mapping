@@ -45,8 +45,6 @@
 #include <glog/logging.h>
 #include <math.h>
 
-namespace gu = geometry_utils;
-
 namespace atom {
   class ApproximateAtomKdtree {
   public:

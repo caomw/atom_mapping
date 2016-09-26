@@ -42,8 +42,7 @@
 #include <iostream>
 #include <math.h>
 
-namespace gu = geometry_utils;
-namespace gr = gu::ros;
+using Eigen::Vector3f;
 
 namespace atom {
 
@@ -150,7 +149,7 @@ namespace atom {
     CHECK_NOTNULL(raw);
 
     Atom::Ptr atom = Atom::Create();
-    atom->SetPosition(gu::Vec3f(position.x, position.y, position.z));
+    atom->SetPosition(Vector3f(position.x, position.y, position.z));
 
     // Set probability of occupancy.
     if (update_occupancy_) {

@@ -140,7 +140,7 @@ namespace atom {
 
     // Copy the input point into FLANN's Matrix type.
     const int kNumColumns = 3;
-    flann::Matrix<float> flann_point(atom->GetPosition().data.data(), 1, kNumColumns);
+    flann::Matrix<float> flann_point(atom->GetPosition().data(), 1, kNumColumns);
 
     // If this is the first point in the index, create the index and exit.
     if (index_ == nullptr) {

@@ -43,8 +43,6 @@
 #include <atom_map/AtomKdtree.h>
 #include <atom_map/AtomMapParameters.h>
 #include <atom_map/RaySamples.h>
-#include <parameter_utils/ParameterUtils.h>
-#include <geometry_utils/GeometryUtilsROS.h>
 
 #include <ros/ros.h>
 #include <std_msgs/ColorRGBA.h>
@@ -69,7 +67,7 @@ namespace atom {
     const std::vector<Atom::Ptr>& GetAtoms() const;
 
   private:
-    // An approximate kdtree to hold all the Atoms. Since we are only
+    // An simple buffer to hold all the Atoms. Since we are only
     // inserting one scan (ideally with interleaving), and we are going
     // to then use an exact kdtree to merge this with the big map, we
     // only need to keep a list of Atoms to insert later.

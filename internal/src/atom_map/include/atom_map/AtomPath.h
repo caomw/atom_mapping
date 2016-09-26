@@ -39,14 +39,12 @@
 #define ATOM_MAPPING_ATOM_PATH_H
 
 #include <atom_map/Atom.h>
-#include <geometry_utils/GeometryUtilsROS.h>
 
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
+#include <geometry_msgs/Point.h>
+#include <Eigen/Core>
 #include <vector>
-
-namespace gu = geometry_utils;
-namespace gr = gu::ros;
 
 namespace atom {
   struct AtomPath {
@@ -85,7 +83,13 @@ namespace atom {
       line_marker.type = visualization_msgs::Marker::LINE_STRIP;
       line_marker.color = line_color;
       line_marker.scale.x = 0.25 * atoms_[0]->GetRadius();
-      line_marker.pose = gr::ToRosPose(gu::Transform3::Identity());
+      line_marker.pose.position.x = 0.0;
+      line_marker.pose.position.y = 0.0;
+      line_marker.pose.position.z = 0.0;
+      line_marker.pose.orientation.x = 0.0;
+      line_marker.pose.orientation.y = 0.0;
+      line_marker.pose.orientation.z = 0.0;
+      line_marker.pose.orientation.w = 1.0;
 
       std_msgs::ColorRGBA atom_color;
       atom_color.r = 0.0;
@@ -103,23 +107,39 @@ namespace atom {
       atom_marker.scale.x = 2.0 * atoms_[0]->GetRadius();
       atom_marker.scale.y = 2.0 * atoms_[0]->GetRadius();
       atom_marker.scale.z = 2.0 * atoms_[0]->GetRadius();
-      atom_marker.pose = gr::ToRosPose(gu::Transform3::Identity());
+      atom_marker.pose.position.x = 0.0;
+      atom_marker.pose.position.y = 0.0;
+      atom_marker.pose.position.z = 0.0;
+      atom_marker.pose.orientation.x = 0.0;
+      atom_marker.pose.orientation.y = 0.0;
+      atom_marker.pose.orientation.z = 0.0;
+      atom_marker.pose.orientation.w = 1.0;
 
       // If only one Atom, only populate the Atom marker.
       if (atoms_.size() == 1) {
-        const gu::Vec3f p = atoms_[0]->GetPosition();
-        atom_marker.points.push_back(gr::ToRosPoint(p));
+        const Vector3f p = atoms_[0]->GetPosition();
+        geometry_msgs::Point ros_point;
+        ros_point.x = p(0);
+        ros_point.y = p(1);
+        ros_point.z = p(2);
+
+        atom_marker.points.push_back(ros_point);
         atom_marker.colors.push_back(atom_color);
 
         pub.publish(atom_marker);
       } else {
         // Loop over all atoms and add to marker.
         for (size_t ii = 0; ii < atoms_.size(); ii++) {
-          const gu::Vec3f p = atoms_[ii]->GetPosition();
-          line_marker.points.push_back(gr::ToRosPoint(p));
+          const Vector3f p = atoms_[ii]->GetPosition();
+          geometry_msgs::Point ros_point;
+          ros_point.x = p(0);
+          ros_point.y = p(1);
+          ros_point.z = p(2);
+
+          line_marker.points.push_back(ros_point);
           line_marker.colors.push_back(line_color);
 
-          atom_marker.points.push_back(gr::ToRosPoint(p));
+          atom_marker.points.push_back(ros_point);
           atom_marker.colors.push_back(atom_color);
         }
 

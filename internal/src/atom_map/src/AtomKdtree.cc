@@ -36,7 +36,11 @@
  */
 
 #include <atom_map/AtomKdtree.h>
+
 #include <iostream>
+#include <Eigen/Core>
+
+using Eigen::Vector3f;
 
 namespace atom {
   AtomKdtree::AtomKdtree() :
@@ -148,10 +152,10 @@ namespace atom {
 
     // Copy the input point into FLANN's Matrix type.
     const int kNumColumns = 3;
-    flann::Matrix<float> flann_point(atom->GetPosition().data.data(), 1, kNumColumns);
+    flann::Matrix<float> flann_point(atom->GetPosition().data(), 1, kNumColumns);
 
 #if 0
-    const gu::Vec3f pos = atom->GetPosition();
+    const Vector3f pos = atom->GetPosition();
     flann::Matrix<float> flann_point(new float[kNumColumns], 1, kNumColumns);
     flann_point[0][0] = pos(0);
     flann_point[0][1] = pos(1);
@@ -193,7 +197,7 @@ namespace atom {
 
     // Find all neighbors within a radius of one atomic diameter.
     std::vector<Atom::Ptr> neighbors;
-    gu::Vec3f pos = atom->GetPosition();
+    Vector3f pos = atom->GetPosition();
     if (!RadiusSearch(pos(0), pos(1), pos(2), 2.0 * atom->GetRadius(), &neighbors))
       return false;
 

@@ -88,17 +88,38 @@ namespace atom {
 
   // Load parameters and register callbacks.
   bool AtomMapExample::LoadParameters(const ros::NodeHandle& n) {
-    if (!pu::Get("atom_example/data_topic", data_topic_)) return false;
-    if (!pu::Get("atom_example/filtered_cloud_topic", filtered_cloud_topic_))
-      return false;
-    if (!pu::Get("atom_example/filter_leaf_size", filter_leaf_size_)) return false;
-    if (!pu::Get("atom_example/buffer_all", buffer_all_)) return false;
-    if (!pu::Get("atom_example/pose_topic", pose_topic_)) return false;
-    if (!pu::Get("atom_example/fixed_frame", fixed_frame_)) return false;
-    if (!pu::Get("atom_example/save_on_close", save_on_close_)) return false;
-    if (!pu::Get("atom_example/file_to_save", file_to_save_)) return false;
-    if (!pu::Get("atom_example/path_topic", path_topic_)) return false;
-    if (!pu::Get("atom_example/path_sdf_manifold", path_sdf_manifold_)) return false;
+    std::string key;
+
+    // Load all parameters.
+    if (!ros::param::search("atom_example/data_topic", key)) return false;
+    if (!ros::param::get(key, data_topic_)) return false;
+
+    if (!ros::param::search("atom_example/filtered_cloud_topic", key)) return false;
+    if (!ros::param::get(key, filtered_cloud_topic_)) return false;
+
+    if (!ros::param::search("atom_example/filter_leaf_size", key)) return false;
+    if (!ros::param::get(key, filter_leaf_size_)) return false;
+
+    if (!ros::param::search("atom_example/buffer_all", key)) return false;
+    if (!ros::param::get(key, buffer_all_)) return false;
+
+    if (!ros::param::search("atom_example/pose_topic", key)) return false;
+    if (!ros::param::get(key, pose_topic_)) return false;
+
+    if (!ros::param::search("atom_example/fixed_frame", key)) return false;
+    if (!ros::param::get(key, fixed_frame_)) return false;
+
+    if (!ros::param::search("atom_example/save_on_close", key)) return false;
+    if (!ros::param::get(key, save_on_close_)) return false;
+
+    if (!ros::param::search("atom_example/file_to_save", key)) return false;
+    if (!ros::param::get(key, file_to_save_)) return false;
+
+    if (!ros::param::search("atom_example/path_topic", key)) return false;
+    if (!ros::param::get(key, path_topic_)) return false;
+
+    if (!ros::param::search("atom_example/path_sdf_manifold", key)) return false;
+    if (!ros::param::get(key, path_sdf_manifold_)) return false;
 
     return true;
   }
@@ -199,9 +220,14 @@ namespace atom {
   // Callback to process incoming pose messages.
   void AtomMapExample::AddPoseCallback(const geometry_msgs::PoseStamped::ConstPtr& pose) {
     // Extract pose as a 4x4 matrix in SE(3).
-    const gu::Transform3 tf = gr::FromROS(pose->pose);
-    const Eigen::Matrix3d rotation = tf.rotation.Eigen();
-    const Eigen::Vector3d translation = tf.translation.Eigen();
+    const Eigen::Vector3d translation(pose->pose.position.x,
+                                      pose->pose.position.y,
+                                      pose->pose.position.z);
+    const Eigen::Quaterniond quat(pose->pose.orientation.x,
+                                  pose->pose.orientation.y,
+                                  pose->pose.orientation.z,
+                                  pose->pose.orientation.w);
+    const Eigen::Matrix3d rotation = quat.toRotationMatrix();
 
     Eigen::Matrix4d Rt = Eigen::Matrix4d::Identity();
     Rt.block(0, 0, 3, 3) = rotation;
@@ -248,9 +274,14 @@ namespace atom {
       }
 
       // Transform point cloud into world frame.
-      const gu::Transform3 transform = gr::FromROS(tf.transform);
-      const Eigen::Matrix3d rotation = transform.rotation.Eigen();
-      const Eigen::Vector3d translation = transform.translation.Eigen();
+      const Eigen::Vector3d translation(tf.transform.translation.x,
+                                        tf.transform.translation.y,
+                                        tf.transform.translation.z);
+      const Eigen::Quaterniond quat(tf.transform.rotation.w,
+                                    tf.transform.rotation.x,
+                                    tf.transform.rotation.y,
+                                    tf.transform.rotation.z);
+      const Eigen::Matrix3d rotation = quat.toRotationMatrix();
 
       pose.block(0, 0, 3, 3) = rotation;
       pose.block(0, 3, 3, 1) = translation;

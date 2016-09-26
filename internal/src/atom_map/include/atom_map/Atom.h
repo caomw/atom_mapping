@@ -48,11 +48,13 @@
 #ifndef ATOM_MAPPING_ATOM_H
 #define ATOM_MAPPING_ATOM_H
 
-#include <geometry_utils/Vector3.h>
+#include <Eigen/Core>
 
 #include <pcl/point_types.h>
 #include <memory>
 #include <vector>
+
+using Eigen::Vector3f;
 
 namespace atom {
 class Atom {
@@ -70,7 +72,7 @@ class Atom {
   float GetSignedDistance() const;
   float GetSignedDistanceVariance() const;
   float GetRadius() const;
-  geometry_utils::Vec3f& GetPosition();
+  Vector3f& GetPosition();
 
   // Setters.
   static void SetRadius(float r);
@@ -79,7 +81,7 @@ class Atom {
   void SetProbability(float p);
   void SetLogOdds(float l);
   void SetSignedDistance(float d);
-  void SetPosition(const geometry_utils::Vec3f& p);
+  void SetPosition(const Vector3f& p);
 
   // Update the probability value stored in this atom. The weight parameter
   // is the fraction of overlap between two atoms. Currently, we use this
@@ -129,7 +131,7 @@ class Atom {
   float sdf_variance_;
 
   // Position in 3D space.
-  geometry_utils::Vec3f position_;
+  Vector3f position_;
 
   // Atomic radius. Other atoms cannot be inserted into the map within this
   // radius.

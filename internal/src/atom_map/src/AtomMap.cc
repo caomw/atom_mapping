@@ -48,10 +48,6 @@
 #include <random>
 #include <math.h>
 
-namespace gu = geometry_utils;
-namespace gr = gu::ros;
-namespace pu = parameter_utils;
-
 namespace atom {
 
 AtomMap::AtomMap() : initialized_(false) {}
@@ -173,9 +169,9 @@ void AtomMap::MaybeInsertAtom(const Atom::Ptr& atom) {
 
   std::vector<Atom::Ptr> neighbors;
   pcl::PointXYZ position;
-  position.x = atom->GetPosition().X();
-  position.y = atom->GetPosition().Y();
-  position.z = atom->GetPosition().Z();
+  position.x = atom->GetPosition()(0);
+  position.y = atom->GetPosition()(1);
+  position.z = atom->GetPosition()(2);
 
   if (!map_.RadiusSearch(position, 2.0 * radius_ - 1e-4, &neighbors)) {
     ROS_WARN("%s: Error in radius search during Update().", name_.c_str());
@@ -230,7 +226,7 @@ bool AtomMap::GetConnectedNeighbors(Atom::Ptr& atom,
   connected->clear();
 
   // Unpack.
-  const gu::Vec3f p = atom->GetPosition();
+  const Vector3f p = atom->GetPosition();
 
   // Do a radius search.
   std::vector<Atom::Ptr> neighbors;
@@ -298,46 +294,97 @@ bool AtomMap::RegisterCallbacks(const ros::NodeHandle& n) {
 }
 
 bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
+  std::string key;
+
   // General parameters.
-  if (!pu::Get("atom/radius", radius_)) return false;
-  if (!pu::Get("atom/connectedness_radius", connectedness_radius_)) return false;
-  if (!pu::Get("atom/update_occupancy", update_occupancy_)) return false;
-  if (!pu::Get("atom/update_signed_distance", update_signed_distance_))
-    return false;
-  if (!pu::Get("atom/only_show_occupied", only_show_occupied_)) return false;
-  if (!pu::Get("atom/occupied_threshold", occupied_threshold_)) return false;
-  if (!pu::Get("atom/free_threshold", free_threshold_)) return false;
-  if (!pu::Get("atom/sdf_threshold", sdf_threshold_)) return false;
-  if (!pu::Get("atom/probability_hit", probability_hit_)) return false;
-  if (!pu::Get("atom/probability_miss", probability_miss_)) return false;
-  if (!pu::Get("atom/probability_clamp_high", probability_clamp_high_))
-    return false;
-  if (!pu::Get("atom/probability_clamp_low", probability_clamp_low_))
-    return false;
-  if (!pu::Get("atom/voxel_grid", voxel_grid_)) return false;
-  if (!pu::Get("atom/surface_normal_radius", surface_normal_radius_))
-    return false;
-  if (!pu::Get("atom/occupancy_topic", occupancy_topic_)) return false;
-  if (!pu::Get("atom/sdf_topic", sdf_topic_)) return false;
-  if (!pu::Get("atom/pcld_topic", pcld_topic_)) return false;
-  if (!pu::Get("atom/fixed_frame_id", fixed_frame_id_)) return false;
+  if (!ros::param::search("atom/radius", key)) return false;
+  if (!ros::param::get(key, radius_)) return false;
+
+  if (!ros::param::search("atom/connectedness_radius", key)) return false;
+  if (!ros::param::get(key, connectedness_radius_)) return false;
+
+  if (!ros::param::search("atom/update_occupancy", key)) return false;
+  if (!ros::param::get(key, update_occupancy_)) return false;
+
+  if (!ros::param::search("atom/update_signed_distance", key)) return false;
+  if (!ros::param::get(key, update_signed_distance_)) return false;
+
+  if (!ros::param::search("atom/only_show_occupied", key)) return false;
+  if (!ros::param::get(key, only_show_occupied_)) return false;
+
+  if (!ros::param::search("atom/occupied_threshold", key)) return false;
+  if (!ros::param::get(key, occupied_threshold_)) return false;
+
+  if (!ros::param::search("atom/free_threshold", key)) return false;
+  if (!ros::param::get(key, free_threshold_)) return false;
+
+  if (!ros::param::search("atom/sdf_threshold", key)) return false;
+  if (!ros::param::get(key, sdf_threshold_)) return false;
+
+  if (!ros::param::search("atom/probability_hit", key)) return false;
+  if (!ros::param::get(key, probability_hit_)) return false;
+
+  if (!ros::param::search("atom/probability_miss", key)) return false;
+  if (!ros::param::get(key, probability_miss_)) return false;
+
+  if (!ros::param::search("atom/probability_clamp_high", key)) return false;
+  if (!ros::param::get(key, probability_clamp_high_)) return false;
+
+  if (!ros::param::search("atom/probability_clamp_low", key)) return false;
+  if (!ros::param::get(key, probability_clamp_low_)) return false;
+
+  if (!ros::param::search("atom/voxel_grid", key)) return false;
+  if (!ros::param::get(key, voxel_grid_)) return false;
+
+  if (!ros::param::search("atom/surface_normal_radius", key)) return false;
+  if (!ros::param::get(key, surface_normal_radius_)) return false;
+
+  if (!ros::param::search("atom/occupancy_topic", key)) return false;
+  if (!ros::param::get(key, occupancy_topic_)) return false;
+
+  if (!ros::param::search("atom/sdf_topic", key)) return false;
+  if (!ros::param::get(key, sdf_topic_)) return false;
+
+  if (!ros::param::search("atom/pcld_topic", key)) return false;
+  if (!ros::param::get(key, pcld_topic_)) return false;
+
+  if (!ros::param::search("atom/fixed_frame_id", key)) return false;
+  if (!ros::param::get(key, fixed_frame_id_)) return false;
 
   // Raytracing parameters.
-  if (!pu::Get("atom/raytracing/min_scan_range", min_scan_range_)) return false;
-  if (!pu::Get("atom/raytracing/max_scan_range", max_scan_range_)) return false;
-  if (!pu::Get("atom/raytracing/max_occupied_backoff", max_occupied_backoff_))
-    return false;
-  if (!pu::Get("atom/raytracing/max_normal_backoff", max_normal_backoff_)) return false;
-  if (!pu::Get("atom/raytracing/max_samples_normal", max_samples_normal_)) return false;
-  if (!pu::Get("atom/raytracing/angular_resolution", angular_resolution_)) return false;
-  if (!pu::Get("atom/raytracing/angular_interleaving", angular_interleaving_))
-    return false;
-  if (!pu::Get("atom/raytracing/lambda", lambda_)) return false;
+  if (!ros::param::search("atom/raytracing/min_scan_range", key)) return false;
+  if (!ros::param::get(key, min_scan_range_)) return false;
+
+  if (!ros::param::search("atom/raytracing/max_scan_range", key)) return false;
+  if (!ros::param::get(key, max_scan_range_)) return false;
+
+  if (!ros::param::search("atom/raytracing/max_occupied_backoff", key)) return false;
+  if (!ros::param::get(key, max_occupied_backoff_)) return false;
+
+  if (!ros::param::search("atom/raytracing/max_normal_backoff", key)) return false;
+  if (!ros::param::get(key, max_normal_backoff_)) return false;
+
+  if (!ros::param::search("atom/raytracing/max_samples_normal", key)) return false;
+  if (!ros::param::get(key, max_samples_normal_)) return false;
+
+  if (!ros::param::search("atom/raytracing/angular_resolution", key)) return false;
+  if (!ros::param::get(key, angular_resolution_)) return false;
+
+  if (!ros::param::search("atom/raytracing/angular_interleaving", key)) return false;
+  if (!ros::param::get(key, angular_interleaving_)) return false;
+
+  if (!ros::param::search("atom/raytracing/lambda", key)) return false;
+  if (!ros::param::get(key, lambda_)) return false;
 
   // Gaussian process regression parameters.
-  if (!pu::Get("atom/gp/gamma", gamma_)) return false;
-  if (!pu::Get("atom/gp/noise", noise_variance_)) return false;
-  if (!pu::Get("atom/gp/num_neighbors", num_neighbors_)) return false;
+  if (!ros::param::search("atom/gp/gamma", key)) return false;
+  if (!ros::param::get(key, gamma_)) return false;
+
+  if (!ros::param::search("atom/gp/noise", key)) return false;
+  if (!ros::param::get(key, noise_variance_)) return false;
+
+  if (!ros::param::search("atom/gp/num_neighbors", key)) return false;
+  if (!ros::param::get(key, num_neighbors_)) return false;
 
   // Radius and clamping are constant across all atoms. Call static setters.
   Atom::SetRadius(radius_);
@@ -386,7 +433,13 @@ void AtomMap::PublishOccupancy() const {
   m.scale.x = 2.0 * radius_;
   m.scale.y = 2.0 * radius_;
   m.scale.z = 2.0 * radius_;
-  m.pose = gr::ToRosPose(gu::Transform3::Identity());
+  m.pose.position.x = 0.0;
+  m.pose.position.y = 0.0;
+  m.pose.position.z = 0.0;
+  m.pose.orientation.x = 0.0;
+  m.pose.orientation.y = 0.0;
+  m.pose.orientation.z = 0.0;
+  m.pose.orientation.w = 1.0;
 
   // Loop over all atoms and add to marker.
   const std::vector<Atom::Ptr> atoms = map_.GetAtoms();
@@ -399,8 +452,13 @@ void AtomMap::PublishOccupancy() const {
 
     // Maybe only show if probably occupied.
     if (!only_show_occupied_ || probability_occupied > occupied_threshold_) {
-      const gu::Vec3f p = atoms[ii]->GetPosition();
-      m.points.push_back(gr::ToRosPoint(p));
+      const Vector3f p = atoms[ii]->GetPosition();
+      geometry_msgs::Point ros_point;
+      ros_point.x = p(0);
+      ros_point.y = p(1);
+      ros_point.z = p(2);
+
+      m.points.push_back(ros_point);
       m.colors.push_back(ProbabilityToRosColor(probability_occupied));
     }
   }
@@ -427,7 +485,13 @@ void AtomMap::PublishSignedDistance() const {
   m.scale.x = 2.0 * radius_;
   m.scale.y = 2.0 * radius_;
   m.scale.z = 2.0 * radius_;
-  m.pose = gr::ToRosPose(gu::Transform3::Identity());
+  m.pose.position.x = 0.0;
+  m.pose.position.y = 0.0;
+  m.pose.position.z = 0.0;
+  m.pose.orientation.x = 0.0;
+  m.pose.orientation.y = 0.0;
+  m.pose.orientation.z = 0.0;
+  m.pose.orientation.w = 1.0;
 
   // Loop over all atoms and add to marker.
   const std::vector<Atom::Ptr> atoms = map_.GetAtoms();
@@ -440,8 +504,13 @@ void AtomMap::PublishSignedDistance() const {
 
     // Maybe only show if probably occupied.
     if (!only_show_occupied_ || std::abs(sdf) < sdf_threshold_) {
-      const gu::Vec3f p = atoms[ii]->GetPosition();
-      m.points.push_back(gr::ToRosPoint(p));
+      const Vector3f p = atoms[ii]->GetPosition();
+      geometry_msgs::Point ros_point;
+      ros_point.x = p(0);
+      ros_point.y = p(1);
+      ros_point.z = p(2);
+
+      m.points.push_back(ros_point);
       m.colors.push_back(SignedDistanceToRosColor(sdf));
     }
   }
@@ -469,7 +538,7 @@ void AtomMap::PublishPointCloud() const {
 
     // Maybe only show if probably occupied.
     if (!only_show_occupied_ || probability_occupied > occupied_threshold_) {
-      const gu::Vec3f p = atoms[ii]->GetPosition();
+      const Vector3f p = atoms[ii]->GetPosition();
       pcld->points.push_back(pcl::PointXYZ(p(0), p(1), p(2)));
     }
   }
@@ -535,7 +604,7 @@ void AtomMap::Save(const std::string& filename) const {
   // Write each atom.
   for (size_t ii = 0; ii < atoms.size(); ii++) {
     Atom::Ptr atom = atoms[ii];
-    const gu::Vec3f position = atom->GetPosition();
+    const Vector3f position = atom->GetPosition();
     const float sdf = atom->GetSignedDistance();
     const float log_odds = atom->GetLogOdds();
     //    if (std::abs(sdf) > sdf_threshold_) continue;
@@ -554,6 +623,5 @@ void AtomMap::Save(const std::string& filename) const {
 
   return;
 }
-
 
 }  // namespace atom

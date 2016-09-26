@@ -41,13 +41,13 @@
 #include <atom_map/Atom.h>
 #include <atom_map/AtomMap.h>
 #include <atom_map/AtomPath.h>
-#include <parameter_utils/ParameterUtils.h>
-#include <geometry_utils/GeometryUtilsROS.h>
-#include <geometry_utils/Vector3.h>
 
 #include <ros/ros.h>
 #include <glog/logging.h>
+#include <Eigen/Core>
 #include <math.h>
+
+using Eigen::Vector3f;
 
 namespace atom {
   class Planner {
@@ -56,7 +56,7 @@ namespace atom {
     virtual ~Planner() {}
 
     // Plan a path.
-    virtual bool Plan(const gu::Vec3f& start_position, const gu::Vec3f& goal_position,
+    virtual bool Plan(const Vector3f& start_position, const Vector3f& goal_position,
                       AtomPath* path) const = 0;
 
   protected:

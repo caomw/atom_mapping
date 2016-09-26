@@ -36,7 +36,10 @@
  */
 
 #include <atom_map/VoxelGrid.h>
-#include <geometry_utils/Vector3.h>
+
+#include <Eigen/Core>
+
+using Eigen::Vector3f;
 
 namespace atom {
   VoxelGrid::VoxelGrid(float leaf_size, float limit_min, float limit_max)
@@ -130,7 +133,7 @@ namespace atom {
     // Map every point in the raw cloud to a voxel, assign unique indices
     // for every voxel, and insert into the registry.
     for (unsigned long ii = 0; ii < raw.size(); ii++) {
-      const geometry_utils::Vec3f pos = raw[ii]->GetPosition();
+      const Vector3f pos = raw[ii]->GetPosition();
       const pcl::PointXYZ p(pos(0), pos(1), pos(2));
 
       // Check not out of bounds.

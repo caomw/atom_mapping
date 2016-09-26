@@ -41,8 +41,6 @@
 #include <iostream>
 #include <math.h>
 
-namespace gu = geometry_utils;
-
 namespace atom {
 
   float Atom::radius_ = 0;
@@ -81,7 +79,7 @@ namespace atom {
     return radius_;
   }
 
-  gu::Vec3f& Atom::GetPosition() {
+  Vector3f& Atom::GetPosition() {
     return position_;
   }
 
@@ -111,7 +109,7 @@ namespace atom {
     sdf_variance_ = ToVariance(d);
   }
 
-  void Atom::SetPosition(const gu::Vec3f& p) {
+  void Atom::SetPosition(const Vector3f& p) {
     position_ = p;
   }
 
@@ -186,7 +184,7 @@ namespace atom {
 
   float Atom::GetDistanceTo(const Atom::Ptr& atom) const {
     CHECK_NOTNULL(atom.get());
-    gu::Vec3f p = atom->GetPosition();
+    Vector3f p = atom->GetPosition();
 
     const float dx = p(0) - position_(0);
     const float dy = p(1) - position_(1);
