@@ -36,7 +36,7 @@
  */
 
 #include <atom_map/AtomMap.h>
-#include <atom_map/ApproximateAtomMap.h>
+#include <atom_map/AtomBuffer.h>
 #include <atom_map/AtomMapParameters.h>
 #include <atom_map/CsvWriter.h>
 
@@ -251,7 +251,7 @@ bool AtomMap::GetConnectedNeighbors(Atom::Ptr& atom,
 // Update the map given a set of observations.
 void AtomMap::Update(const PointCloud::ConstPtr& cloud,
                      const pcl::PointXYZ& robot) {
-  // Create an ApproximateAtomMap from this cloud.
+  // Create an AtomBuffer from this cloud.
   AtomMapParameters params;
   params.radius_ = radius_;
   params.min_scan_range_ = min_scan_range_;
@@ -270,7 +270,7 @@ void AtomMap::Update(const PointCloud::ConstPtr& cloud,
   params.voxel_grid_ = voxel_grid_;
   params.name_ = name_ + "/single_scan";
 
-  ApproximateAtomMap small_map(params, cloud, robot);
+  AtomBuffer small_map(params, cloud, robot);
 
   // Merge miniature map with the larger atom map.
   for (const auto& atom : small_map.GetAtoms())

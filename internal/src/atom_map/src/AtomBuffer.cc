@@ -35,7 +35,7 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#include <atom_map/ApproximateAtomMap.h>
+#include <atom_map/AtomBuffer.h>
 #include <atom_map/VoxelGrid.h>
 
 #include <Eigen/Dense>
@@ -46,8 +46,8 @@ using Eigen::Vector3f;
 
 namespace atom {
 
-  ApproximateAtomMap::~ApproximateAtomMap() {}
-  ApproximateAtomMap::ApproximateAtomMap(const AtomMapParameters& params,
+  AtomBuffer::~AtomBuffer() {}
+  AtomBuffer::AtomBuffer(const AtomMapParameters& params,
                                          const PointCloud::ConstPtr& cloud,
                                          const pcl::PointXYZ& robot)
     : radius_(params.radius_),
@@ -144,7 +144,7 @@ namespace atom {
   }
 
   // Insert Atom into the provided list.
-  void ApproximateAtomMap::InsertAtom(const pcl::PointXYZ& position, float sdf,
+  void AtomBuffer::InsertAtom(const pcl::PointXYZ& position, float sdf,
                                       std::vector<Atom::Ptr>* raw) {
     CHECK_NOTNULL(raw);
 
@@ -170,7 +170,7 @@ namespace atom {
   }
 
   // Return a list of all Atoms in the map.
-  const std::vector<Atom::Ptr>& ApproximateAtomMap::GetAtoms() const {
+  const std::vector<Atom::Ptr>& AtomBuffer::GetAtoms() const {
     return atoms_;
   }
 
@@ -182,7 +182,7 @@ namespace atom {
   // walk along the surface normal but on the unoccupied side of the surface.
   // Moreover, along the ray to the robot, optionally interleave Atoms as they
   // approach the sensor.
-  void ApproximateAtomMap::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
+  void AtomBuffer::SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
                           const pcl::PointXYZ& robot, RaySamples* samples) {
     CHECK_NOTNULL(samples);
 

@@ -35,12 +35,10 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#ifndef ATOM_MAPPING_APPROX_ATOM_MAP_H
-#define ATOM_MAPPING_APPROX_ATOM_MAP_H
+#ifndef ATOM_MAPPING_ATOM_BUFFER_H
+#define ATOM_MAPPING_ATOM_BUFFER_H
 
 #include <atom_map/Atom.h>
-#include <atom_map/ApproximateAtomKdtree.h>
-#include <atom_map/AtomKdtree.h>
 #include <atom_map/AtomMapParameters.h>
 #include <atom_map/RaySamples.h>
 
@@ -56,10 +54,10 @@
 typedef pcl::PointCloud<pcl::PointXYZ> PointCloud;
 
 namespace atom {
-  class ApproximateAtomMap {
+  class AtomBuffer {
   public:
-    ~ApproximateAtomMap();
-    ApproximateAtomMap(const AtomMapParameters& params,
+    ~AtomBuffer();
+    AtomBuffer(const AtomMapParameters& params,
                        const PointCloud::ConstPtr& cloud,
                        const pcl::PointXYZ& robot);
 
@@ -127,7 +125,7 @@ namespace atom {
     // output RaySamples argument.
     void SampleRay(const pcl::PointXYZ& point, const pcl::Normal& normal,
                    const pcl::PointXYZ& robot, RaySamples* samples);
-  }; // class ApproximateAtomMap
+  }; // class AtomBuffer
 } // namespace atom
 
 #endif
