@@ -81,8 +81,8 @@ namespace atom {
     // Subscribers and queues.
     ros::Subscriber point_cloud_subscriber_;
     ros::Subscriber pose_subscriber_;
-    std::queue<const PointCloud::ConstPtr> point_cloud_queue_;
-    std::queue<const Eigen::Matrix4d> pose_queue_;
+    std::queue<PointCloud::ConstPtr> point_cloud_queue_;
+    std::queue<Eigen::Matrix4d> pose_queue_;
 
     // Voxel grid filter leaf size. This should be on the order of the atomic
     // radius, in order to avoid oversampling.
