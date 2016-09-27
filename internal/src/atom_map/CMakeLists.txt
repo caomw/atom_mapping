@@ -8,10 +8,10 @@ if(NOT PCL_FOUND)
   message(FATAL_ERROR "This program requires the PCL library.")
 endif(NOT PCL_FOUND)
 
-find_package(Eigen3 REQUIRED COMPONENTS core dense)
-if(NOT Eigen3_FOUND)
+find_package(Eigen REQUIRED COMPONENTS core dense)
+if(NOT Eigen_FOUND)
   message(FATAL_ERROR "This program requires the Eigen3 library.")
-endif(NOT Eigen3_FOUND)
+endif(NOT Eigen_FOUND)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
