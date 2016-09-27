@@ -81,6 +81,7 @@ Atom::Ptr AtomMap::GetNearestAtom(float x, float y, float z) {
   return neighbors[0];
 }
 
+#if 0
 void AtomMap::GetSignedDistance(float x, float y, float z, float* distance,
                                 float* variance) {
   CHECK_NOTNULL(distance);
@@ -158,6 +159,7 @@ float AtomMap::GetProbability(float x, float y, float z) {
   // There can only be one neighbor.
   return neighbors[0]->GetProbability();
 }
+#endif
 
 void AtomMap::MaybeInsertAtom(const Atom::Ptr& atom) {
   // If the AtomKdtree is empty, just insert this atom.

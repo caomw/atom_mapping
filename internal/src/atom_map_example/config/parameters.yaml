@@ -25,8 +25,8 @@ atom_example:
   filtered_cloud_topic: filtered
 
   # Optionally save to file on close.
-  save_on_close: true
-  file_to_save: /Users/davidfridovichkeil/Documents/Developer/atom_mapping/internal/src/atom_map_example/saved_maps/nsh_250cm.csv
+  save_on_close: false
+  file_to_save: /path/to/file
 
   # Publish path from start to finish points.
   path_topic: path

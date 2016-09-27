@@ -66,9 +66,12 @@ namespace atom {
     bool Initialize(const ros::NodeHandle& n);
 
     // Getters.
+#if 0
     void GetSignedDistance(float x, float y, float z,
                            float* distance, float* variance);
     float GetProbability(float x, float y, float z);
+#endif
+
     Atom::Ptr GetNearestAtom(float x, float y, float z);
     const std::vector<Atom::Ptr>& GetAtoms() const;
 
