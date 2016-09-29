@@ -55,10 +55,10 @@ namespace atom {
       min_distance_(std::numeric_limits<float>::infinity()) {}
 
   // Set voxel side length to be larger than an atomic radius. This may be
-  // tuned later, but preliminary timing suggests that it does not have much
-  // of an effect so long as it is larger than ~4r and not too big.
+  // tuned later, but preliminary timing suggests that it should be on the
+  // order of 1-2 atomic radii.
   void AtomHashGrid::SetAtomicRadius(float atomic_radius) {
-    voxel_size_ = 10.0 * atomic_radius; //1.9 * atomic_radius/sqrt(3.0);
+    voxel_size_ = 2.0 * atomic_radius; //1.9 * atomic_radius/sqrt(3.0);
     initialized_ = true;
   }
 
