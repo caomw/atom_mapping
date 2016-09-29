@@ -42,6 +42,7 @@
 #include <limits.h>
 #include <math.h>
 #include <glog/logging.h>
+#include <unordered_set>
 
 using Eigen::Vector3f;
 
@@ -53,12 +54,50 @@ namespace atom {
       max_distance_(-std::numeric_limits<float>::infinity()),
       min_distance_(std::numeric_limits<float>::infinity()) {}
 
-  // Set atomic radius slightly smaller than tightest packing.
-  // This will throw an "initialized" flag, without which
-  // nothing else will work.
+  // Set voxel side length to be larger than an atomic radius. This may be
+  // tuned later, but preliminary timing suggests that it does not have much
+  // of an effect so long as it is larger than ~4r and not too big.
   void AtomHashGrid::SetAtomicRadius(float atomic_radius) {
-    voxel_size_ = 1.9 * atomic_radius/sqrt(3.0);
+    voxel_size_ = 10.0 * atomic_radius; //1.9 * atomic_radius/sqrt(3.0);
     initialized_ = true;
+  }
+
+  // Populate a set of bins overlapping a particular ball.
+  bool AtomHashGrid::GetOverlappingBins(float x, float y, float z, float r,
+                                        std::vector<AtomIndex>* bins) const {
+    if (!initialized_) {
+#ifdef ENABLE_DEBUG_MESSAGES
+      ROS_WARN("AtomHashGrid was not initialized. Overlapping bin computation will fail.");
+#endif
+      return false;
+    }
+
+    CHECK_NOTNULL(bins);
+    bins->clear();
+
+    // For a bin with center c and side length l, and ball of center a and
+    // radius r, we know that the ball will extend beyond the boundary of the
+    // bin along dimension i in the negative direction if c_i - a_i + r > l/2,
+    // and similarly in the positive direction if a_i - c_i + r > l/2.
+    const AtomIndex quant(x, y, z, voxel_size_);
+    const Vector3f center = quant.GetBinCenter(voxel_size_);
+    bins->push_back(quant);
+
+    // Check each dimension, forward and backward.
+    if (center(0) - x + r > 0.5 * voxel_size_)
+      bins->push_back(AtomIndex(quant.ii_ - 1, quant.jj_, quant.kk_));
+    if (x - center(0) + r > 0.5 * voxel_size_)
+      bins->push_back(AtomIndex(quant.ii_ + 1, quant.jj_, quant.kk_));
+    if (center(1) - y + r > 0.5 * voxel_size_)
+      bins->push_back(AtomIndex(quant.ii_, quant.jj_ - 1, quant.kk_));
+    if (y - center(1) + r > 0.5 * voxel_size_)
+      bins->push_back(AtomIndex(quant.ii_, quant.jj_ + 1, quant.kk_));
+    if (center(2) - z + r > 0.5 * voxel_size_)
+      bins->push_back(AtomIndex(quant.ii_, quant.jj_, quant.kk_ - 1));
+    if (z - center(2) + r > 0.5 * voxel_size_)
+      bins->push_back(AtomIndex(quant.ii_, quant.jj_, quant.kk_ + 1));
+
+    return true;
   }
 
   // Nearest neighbor queries.
@@ -74,31 +113,39 @@ namespace atom {
     CHECK_NOTNULL(neighbors);
     neighbors->clear();
 
-    // Get indices for corners of bounding box.
-    const AtomIndex min_corner(x - r, y - r, z - r, voxel_size_);
-    const AtomIndex max_corner(x + r, y + r, z + r, voxel_size_);
+    // Find the set of all bins overlapping this search domain.
+    std::vector<AtomIndex> search_bins;
+    if (!GetOverlappingBins(x, y, z, r, &search_bins)) {
+#ifdef ENABLE_DEBUG_MESSAGES
+      ROS_WARN("Unable to get overlapping bins. Radius search will fail.");
+#endif
+      return false;
+    }
 
-    // Iterate over all voxel indices in the box, and collect all
-    // atoms within range of the specified coordinates.
-    for (long ii = min_corner.ii_; ii <= max_corner.ii_; ii++) {
-      for (long jj = min_corner.jj_; jj <= max_corner.jj_; jj++) {
-        for (long kk = min_corner.kk_; kk <= max_corner.kk_; kk++) {
-          const AtomIndex query(ii, jj, kk);
+    // Iterate over all search bins, and check all unique Atoms.
+    std::unordered_set<size_t> unique_atom_ids;
+    for (const auto& bin : search_bins) {
+      if (map_.count(bin) == 0)
+        continue;
 
-          if (map_.count(query) > 0) {
-            // If there is an Atom here, check proximity.
-            const Atom::Ptr atom = registry_[map_.at(query)];
-            const Vector3f p = atom->GetPosition();
+      for (const auto& atom_id : map_.at(bin)) {
+        // Check if we have seen this Atom before.
+        if (unique_atom_ids.count(atom_id) > 0)
+          continue;
 
-            const float dx = p(0) - x;
-            const float dy = p(1) - y;
-            const float dz = p(2) - z;
+        unique_atom_ids.insert(atom_id);
 
-            if (dx*dx + dy*dy + dz*dz <= r*r) {
-              // Atom is in range, so add to neighbors.
-              neighbors->push_back(atom);
-            }
-          }
+        // Check proximity.
+        const Atom::Ptr atom = registry_[atom_id];
+        const Vector3f p = atom->GetPosition();
+
+        const float dx = p(0) - x;
+        const float dy = p(1) - y;
+        const float dz = p(2) - z;
+
+        if (dx*dx + dy*dy + dz*dz <= r*r) {
+          // Atom is in range, so add to neighbors.
+          neighbors->push_back(atom);
         }
       }
     }
@@ -120,26 +167,36 @@ namespace atom {
         return false;
     }
 
+    // Get the bin IDs which overlap this Atom.
     const Vector3f p = atom->GetPosition();
-    const AtomIndex index(p(0), p(1), p(2), voxel_size_);
-
-    // Check that this Atom does not land in the same bin as an existing Atom.
-    if (map_.count(index) > 0) {
+    std::vector<AtomIndex> overlapping_bins;
+    if (!GetOverlappingBins(p(0), p(1), p(2), atom->GetRadius(),
+                            &overlapping_bins)) {
 #ifdef ENABLE_DEBUG_MESSAGES
-      ROS_WARN("AtomMap already contains an atom in this bin. Did not insert.");
+      ROS_WARN("Unable to get overlapping bins. Atom insertion will fail.");
 #endif
       return false;
-    } else {
-      map_.insert({index, registry_.size()});
-      registry_.push_back(atom);
+    }
 
-      // Update max and min distances.
-      const float sdf = atom->GetSignedDistance();
-      if (sdf > max_distance_) {
-        max_distance_ = sdf;
-      } else if (sdf < min_distance_) {
-        min_distance_ = sdf;
+    // Insert this Atom into all overlapping bins.
+    for (const auto& bin : overlapping_bins) {
+      if (map_.count(bin) == 0) {
+        std::vector<size_t> atom_index = {registry_.size()};
+        map_.insert({bin, atom_index});
+      } else {
+        map_.at(bin).push_back(registry_.size());
       }
+    }
+
+    // Add to registry.
+    registry_.push_back(atom);
+
+    // Update max and min distances.
+    const float sdf = atom->GetSignedDistance();
+    if (sdf > max_distance_) {
+      max_distance_ = sdf;
+    } else if (sdf < min_distance_) {
+      min_distance_ = sdf;
     }
 
     return true;

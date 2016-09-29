@@ -46,6 +46,10 @@
 #include <math.h>
 #include <limits.h>
 #include <functional>
+#include <Eigen/Core>
+#include <boost/functional/hash.hpp>
+
+using Eigen::Vector3f;
 
 namespace atom {
   struct AtomIndex {
@@ -74,9 +78,19 @@ namespace atom {
 #endif
 
       // Quantize.
-      ii_ = (x < 0) ? -std::ceil(std::abs(x)) : std::ceil(std::abs(x));
-      jj_ = (y < 0) ? -std::ceil(std::abs(y)) : std::ceil(std::abs(y));
-      kk_ = (z < 0) ? -std::ceil(std::abs(z)) : std::ceil(std::abs(z));
+      const float ii = (x < 0) ? -std::ceil(std::abs(x)) : std::ceil(std::abs(x));
+      const float jj = (y < 0) ? -std::ceil(std::abs(y)) : std::ceil(std::abs(y));
+      const float kk = (z < 0) ? -std::ceil(std::abs(z)) : std::ceil(std::abs(z));
+      ii_ = static_cast<long>(ii);
+      jj_ = static_cast<long>(jj);
+      kk_ = static_cast<long>(kk);
+    }
+
+    // Get the center of this bin.
+    Vector3f GetBinCenter(float voxel_size) const {
+      return voxel_size * Vector3f(static_cast<float>(ii_) - 0.5,
+                                   static_cast<float>(jj_) - 0.5,
+                                   static_cast<float>(kk_) - 0.5);
     }
 
     // Need to overload the equality operator.
@@ -91,9 +105,11 @@ namespace atom {
   struct AtomIndexHasher {
     // Hash function for AtomIndex.
     size_t operator()(const AtomIndex& index) const {
-      return (((std::hash<long>()(index.ii_) ^
-                (std::hash<long>()(index.jj_) << 1)) >> 1) ^
-              (std::hash<long>()(index.kk_) << 1));
+      size_t combined_hash = 0;
+      boost::hash_combine(combined_hash, index.ii_);
+      boost::hash_combine(combined_hash, index.jj_);
+      boost::hash_combine(combined_hash, index.kk_);
+      return combined_hash;
     }
   }; // struct AtomIndexHasher
 }

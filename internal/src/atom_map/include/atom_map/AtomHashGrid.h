@@ -74,11 +74,15 @@ namespace atom {
     float GetMinDistance() const;
 
   private:
+    // Populate a set of bins overlapping a particular ball.
+    bool GetOverlappingBins(float x, float y, float z, float r,
+                            std::vector<AtomIndex>* bins) const;
+
     // A hash map to store all Atoms, where the keys are grid indices on
     // an implicit grid of side length sufficiently small that no two Atoms
-    // occupy the same grid cell, and the values are indices into a
+    // occupy the same grid cell, and the values are lists of indices into a
     // vector storing all Atoms.
-    std::unordered_map<AtomIndex, size_t, AtomIndexHasher> map_;
+    std::unordered_map<AtomIndex, std::vector<size_t>, AtomIndexHasher> map_;
     std::vector<Atom::Ptr> registry_;
 
     // Voxel side length -- slightly smaller than side length which separates
