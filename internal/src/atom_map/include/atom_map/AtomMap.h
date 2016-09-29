@@ -39,6 +39,7 @@
 #define ATOM_MAPPING_ATOM_MAP_H
 
 #include <atom_map/Atom.h>
+#include <atom_map/AtomHashGrid.h>
 #include <atom_map/AtomKdtree.h>
 #include <atom_map/RaySamples.h>
 #include <atom_map/CsvWriter.h>
@@ -66,14 +67,14 @@ namespace atom {
     bool Initialize(const ros::NodeHandle& n);
 
     // Getters.
+    const std::vector<Atom::Ptr>& GetAtoms() const;
+    Atom::Ptr GetAtomContaining(float x, float y, float z);
+
 #if 0
     void GetSignedDistance(float x, float y, float z,
                            float* distance, float* variance);
     float GetProbability(float x, float y, float z);
 #endif
-
-    Atom::Ptr GetNearestAtom(float x, float y, float z);
-    const std::vector<Atom::Ptr>& GetAtoms() const;
 
     // Get the neighbors of an Atom in the implicit graph. Returns false
     // if the Atom is not itself in the map.
@@ -94,7 +95,9 @@ namespace atom {
 
   private:
     // A kdtree to hold all the Atoms.
-    AtomKdtree map_;
+    //    AtomKdtree map_;
+    // A spatial hashtable to hold all the Atoms.
+    AtomHashGrid map_;
 
     // Atomic radius.
     float radius_;

@@ -42,14 +42,17 @@
 #include <atom_map/AtomIndex.h>
 
 #include <pcl/point_types.h>
-#include <glog/logging.h>
-#include <math.h>
+#include <unordered_map>
 
 namespace atom {
   class AtomHashGrid {
   public:
-    AtomHashGrid(double atomic_radius);
+    AtomHashGrid();
     ~AtomHashGrid();
+
+    // Set atomic radius. This will throw an "initialized" flag, without which
+    // nothing else will work.
+    void SetAtomicRadius(float atomic_radius);
 
     // Nearest neighbor queries.
     bool RadiusSearch(float x, float y, float z, float r,
@@ -58,7 +61,7 @@ namespace atom {
                       std::vector<Atom::Ptr>* neighbors);
 
     // Insert a new Atom.
-    bool Insert(Atom::Ptr atom);
+    bool Insert(const Atom::Ptr& atom);
 
     // Return a list of all Atoms in the map.
     const std::vector<Atom::Ptr>& GetAtoms() const;
@@ -75,12 +78,13 @@ namespace atom {
     // an implicit grid of side length sufficiently small that no two Atoms
     // occupy the same grid cell, and the values are indices into a
     // vector storing all Atoms.
-    std::unordered_map<AtomHashGridIndex, size_t, AtomIndexHasher> map_;
+    std::unordered_map<AtomIndex, size_t, AtomIndexHasher> map_;
     std::vector<Atom::Ptr> registry_;
 
     // Voxel side length -- slightly smaller than side length which separates
     // two Atoms on opposing corners of a cube.
-    const float voxel_size_;
+    float voxel_size_;
+    bool initialized_;
 
     // Keep track of maximum and minimum signed distances to the surface.
     float max_distance_;

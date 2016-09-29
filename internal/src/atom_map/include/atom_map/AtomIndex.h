@@ -35,11 +35,12 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#ifndef ATOM_MAPPING_ATOM_HASH_GRID_INDEX_H
-#define ATOM_MAPPING_ATOM_HASH_GRID_INDEX_H
+#ifndef ATOM_MAPPING_ATOM_INDEX_H
+#define ATOM_MAPPING_ATOM_INDEX_H
 
 #include <atom_map/Atom.h>
 
+#include <ros/ros.h>
 #include <pcl/point_types.h>
 #include <glog/logging.h>
 #include <math.h>
@@ -48,8 +49,12 @@
 
 namespace atom {
   struct AtomIndex {
-    // Construct from a 3D tuple of floats and a voxel side length.
+    // Default constructor, destructor.
     ~AtomIndex() {}
+    AtomIndex(size_t ii, size_t jj, size_t kk)
+      : ii_(ii), jj_(jj), kk_(kk) {}
+
+    // Construct from a 3D tuple of floats and a voxel side length.
     AtomIndex(float x, float y, float z, float voxel_size) {
       // Divide by voxel size.
       x /= voxel_size;
@@ -64,14 +69,14 @@ namespace atom {
       if (x >= long_max || x <= long_min ||
           y >= long_max || y <= long_min ||
           z >= long_max || z <= long_min) {
-        ROS_WARN("Overflowing long. Index may be inaccurate.")
+        ROS_WARN("Overflowing long. Index may be inaccurate.");
       }
 #endif
 
       // Quantize.
-      ii_ = (x < 0) ? -ceil(abs(x)) : ceil(abs(x));
-      jj_ = (y < 0) ? -ceil(abs(y)) : ceil(abs(y));
-      kk_ = (z < 0) ? -ceil(abs(z)) : ceil(abs(z));
+      ii_ = (x < 0) ? -std::ceil(std::abs(x)) : std::ceil(std::abs(x));
+      jj_ = (y < 0) ? -std::ceil(std::abs(y)) : std::ceil(std::abs(y));
+      kk_ = (z < 0) ? -std::ceil(std::abs(z)) : std::ceil(std::abs(z));
     }
 
     // Need to overload the equality operator.
@@ -86,9 +91,9 @@ namespace atom {
   struct AtomIndexHasher {
     // Hash function for AtomIndex.
     size_t operator()(const AtomIndex& index) const {
-      return (std::hash<long>(index.ii_) ^
-              std::hash<long>(index.jj_) ^
-              std::hash<long>(index.kk_));
+      return (((std::hash<long>()(index.ii_) ^
+                (std::hash<long>()(index.jj_) << 1)) >> 1) ^
+              (std::hash<long>()(index.kk_) << 1));
     }
   }; // struct AtomIndexHasher
 }

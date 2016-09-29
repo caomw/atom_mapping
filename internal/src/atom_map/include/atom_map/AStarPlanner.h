@@ -84,10 +84,10 @@ namespace atom {
     CHECK_NOTNULL(path);
 
     // Find nearest Atoms to start and goal positions.
-    Atom::Ptr start =
-      map_->GetNearestAtom(start_position(0), start_position(1), start_position(2));
-    Atom::Ptr goal =
-      map_->GetNearestAtom(goal_position(0), goal_position(1), goal_position(2));
+    Atom::Ptr start = map_->GetAtomContaining(start_position(0),
+                                              start_position(1), start_position(2));
+    Atom::Ptr goal = map_->GetAtomContaining(start_position(0),
+                                             start_position(1), start_position(2));
 
     if (start == nullptr || goal == nullptr) return false;
 

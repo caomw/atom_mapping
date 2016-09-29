@@ -72,12 +72,13 @@ bool AtomMap::Initialize(const ros::NodeHandle& n) {
 }
 
 // Getters.
-Atom::Ptr AtomMap::GetNearestAtom(float x, float y, float z) {
+Atom::Ptr AtomMap::GetAtomContaining(float x, float y, float z) {
   std::vector<Atom::Ptr> neighbors;
-  if (!map_.GetKNearestNeighbors(x, y, z, 1, &neighbors))
+  if (!map_.RadiusSearch(x, y, z, radius_, &neighbors))
     return nullptr;
 
-  if (neighbors.size() != 1) return nullptr;
+  if (neighbors.size() != 1)
+    return nullptr;
   return neighbors[0];
 }
 
@@ -162,7 +163,7 @@ float AtomMap::GetProbability(float x, float y, float z) {
 #endif
 
 void AtomMap::MaybeInsertAtom(const Atom::Ptr& atom) {
-  // If the AtomKdtree is empty, just insert this atom.
+  // If the AtomMap is empty, just insert this atom.
   if (map_.Size() == 0) {
     if (!map_.Insert(atom))
       ROS_WARN("%s: Error inserting a new Atom.", name_.c_str());
@@ -392,6 +393,9 @@ bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
   Atom::SetRadius(radius_);
   Atom::SetProbabilityClamps(probability_clamp_low_,
                              probability_clamp_high_);
+
+  // Set atomic radius for AtomHashMap.
+  map_.SetAtomicRadius(radius_);
 
   return true;
 }
