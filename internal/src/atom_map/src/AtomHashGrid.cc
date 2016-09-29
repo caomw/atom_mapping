@@ -80,9 +80,9 @@ namespace atom {
 
     // Iterate over all voxel indices in the box, and collect all
     // atoms within range of the specified coordinates.
-    for (size_t ii = min_corner.ii_; ii <= max_corner.ii_; ii++) {
-      for (size_t jj = min_corner.jj_; jj <= max_corner.jj_; jj++) {
-        for (size_t kk = min_corner.kk_; kk <= max_corner.kk_; kk++) {
+    for (long ii = min_corner.ii_; ii <= max_corner.ii_; ii++) {
+      for (long jj = min_corner.jj_; jj <= max_corner.jj_; jj++) {
+        for (long kk = min_corner.kk_; kk <= max_corner.kk_; kk++) {
           const AtomIndex query(ii, jj, kk);
 
           if (map_.count(query) > 0) {

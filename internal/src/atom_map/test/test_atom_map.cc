@@ -46,6 +46,7 @@
 #include <atom_map/Atom.h>
 #include <atom_map/VoxelGrid.h>
 #include <atom_map/AtomKdtree.h>
+#include <atom_map/AtomHashGrid.h>
 
 #include <Eigen/Core>
 #include <math.h>
@@ -109,11 +110,16 @@ TEST(Atom, TestUpdateProbability) {
 
   // Set params.
   const float kProbability = 0.5;
+  const float kClampLow = 0.01;
+  const float kClampHigh = 0.99;
   const float kSignedDistance = 1.0;
+  const float kRadius = 1.0;
   const Vector3f kPosition(1.0, 1.0, 1.0);
   atom->SetProbability(kProbability);
   atom->SetSignedDistance(kSignedDistance);
   atom->SetPosition(kPosition);
+  Atom::SetRadius(kRadius);
+  Atom::SetProbabilityClamps(kClampLow, kClampHigh);
 
   // Update probability a bunch of times with the same small value and
   // make sure that the resulting probability is approximately zero.
@@ -122,7 +128,7 @@ TEST(Atom, TestUpdateProbability) {
   for (size_t ii = 0; ii < kNumUpdates; ii++)
     atom->UpdateProbability(kProbabilityUpdate);
 
-  EXPECT_NEAR(atom->GetProbability(), 0, 1e-4);
+  EXPECT_NEAR(atom->GetProbability(), kClampLow, 1e-4);
 }
 
 // Test that we can update signed distance.
@@ -201,9 +207,9 @@ TEST(AtomKdtree, TestAtomKdtreeRadiusSearch) {
   AtomKdtree tree;
 
   // Set params for random point generation.
-  const float kRadius = 0.5;
+  const float kRadius = 0.01;
   Atom::SetRadius(kRadius);
-  const size_t kNumPoints = 1000;
+  const size_t kNumPoints = 100000;
   const float kLowerBound = -10.0;
   const float kUpperBound = 10.0;
   std::uniform_real_distribution<float> unif(kLowerBound, kUpperBound);
@@ -220,12 +226,52 @@ TEST(AtomKdtree, TestAtomKdtreeRadiusSearch) {
   }
 
   // Check nearest neighbors with a radius search.
-  const size_t kNumChecks = 1000;
+  const size_t kNumChecks = 100000;
   for (size_t ii = 0; ii < kNumChecks; ii++) {
     std::vector<Atom::Ptr> neighbors;
-    const float kSearchRadius = kRadius;
+    const float kSearchRadius = 2.0 * kRadius;
     const pcl::PointXYZ p(unif(rng), unif(rng), unif(rng));
     ASSERT_TRUE(tree.RadiusSearch(p.x, p.y, p.z,
+                                  kSearchRadius, &neighbors));
+
+    for (size_t jj = 0; jj < neighbors.size(); jj++)
+      EXPECT_TRUE(neighbors[jj]->GetDistanceTo(p) < kSearchRadius);
+  }
+}
+
+// Test radius search by making sure all points returned are actually within
+// the specified radius.
+TEST(AtomHashGrid, TestAtomHashGridRadiusSearch) {
+  AtomHashGrid grid;
+
+  // Set params for random point generation.
+  const float kRadius = 0.01;
+  Atom::SetRadius(kRadius);
+  grid.SetAtomicRadius(kRadius);
+
+  const size_t kNumPoints = 100000;
+  const float kLowerBound = -10.0;
+  const float kUpperBound = 10.0;
+  std::uniform_real_distribution<float> unif(kLowerBound, kUpperBound);
+  std::default_random_engine rng;
+
+  // Generate a bunch of random points and add to the tree.
+  for (size_t ii = 0; ii < kNumPoints; ii++) {
+    Atom::Ptr atom = Atom::Create();
+    Vector3f pos(unif(rng), unif(rng), unif(rng));
+    atom->SetPosition(pos);
+
+    // Insert.
+    grid.Insert(atom);
+  }
+
+  // Check nearest neighbors with a radius search.
+  const size_t kNumChecks = 100000;
+  for (size_t ii = 0; ii < kNumChecks; ii++) {
+    std::vector<Atom::Ptr> neighbors;
+    const float kSearchRadius = 2.0 * kRadius;
+    const pcl::PointXYZ p(unif(rng), unif(rng), unif(rng));
+    ASSERT_TRUE(grid.RadiusSearch(p.x, p.y, p.z,
                                   kSearchRadius, &neighbors));
 
     for (size_t jj = 0; jj < neighbors.size(); jj++)
