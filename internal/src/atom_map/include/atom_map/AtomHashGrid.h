@@ -43,6 +43,7 @@
 
 #include <pcl/point_types.h>
 #include <unordered_map>
+#include <list>
 
 namespace atom {
   class AtomHashGrid {
@@ -82,7 +83,7 @@ namespace atom {
     // an implicit grid of side length sufficiently small that no two Atoms
     // occupy the same grid cell, and the values are lists of indices into a
     // vector storing all Atoms.
-    std::unordered_map<AtomIndex, std::vector<unsigned int>, AtomIndexHasher> map_;
+    std::unordered_map<AtomIndex, std::list<unsigned int>, AtomIndexHasher> map_;
     std::vector<Atom::Ptr> registry_;
 
     // Voxel side length -- slightly smaller than side length which separates

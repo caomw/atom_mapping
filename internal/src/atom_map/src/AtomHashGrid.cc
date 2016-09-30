@@ -58,11 +58,12 @@ namespace atom {
   // tuned later, but preliminary timing suggests that it should be on the
   // order of 1-2 atomic radii.
   void AtomHashGrid::SetAtomicRadius(float atomic_radius) {
-    voxel_size_ = 2.0 * atomic_radius; //1.9 * atomic_radius/sqrt(3.0);
+    voxel_size_ = 3.0 * atomic_radius; //1.9 * atomic_radius/sqrt(3.0);
     initialized_ = true;
   }
 
   // Populate a set of bins overlapping a particular ball.
+  // Currently, this only works for r < voxel_size_.
   bool AtomHashGrid::GetOverlappingBins(float x, float y, float z, float r,
                                         std::vector<AtomIndex>* bins) const {
     if (!initialized_) {
@@ -181,7 +182,7 @@ namespace atom {
     // Insert this Atom into all overlapping bins.
     for (const auto& bin : overlapping_bins) {
       if (map_.count(bin) == 0) {
-        std::vector<unsigned int> atom_index =
+        std::list<unsigned int> atom_index =
           {static_cast<unsigned int>(registry_.size())};
         map_.insert({bin, atom_index});
       } else {
