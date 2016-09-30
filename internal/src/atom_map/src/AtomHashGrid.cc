@@ -123,7 +123,7 @@ namespace atom {
     }
 
     // Iterate over all search bins, and check all unique Atoms.
-    std::unordered_set<size_t> unique_atom_ids;
+    std::unordered_set<unsigned int> unique_atom_ids;
     for (const auto& bin : search_bins) {
       if (map_.count(bin) == 0)
         continue;
@@ -181,10 +181,11 @@ namespace atom {
     // Insert this Atom into all overlapping bins.
     for (const auto& bin : overlapping_bins) {
       if (map_.count(bin) == 0) {
-        std::vector<size_t> atom_index = {registry_.size()};
+        std::vector<unsigned int> atom_index =
+          {static_cast<unsigned int>(registry_.size())};
         map_.insert({bin, atom_index});
       } else {
-        map_.at(bin).push_back(registry_.size());
+        map_.at(bin).push_back(static_cast<unsigned int>(registry_.size()));
       }
     }
 
