@@ -19,7 +19,7 @@ atom_example:
 
   # Voxel grid filter leaf size. This should probably be roughly on the order of
   # an atomic radius in order to avoid drastic oversampling.
-  filter_leaf_size: 0.4
+  filter_leaf_size: 0.9
 
   # Topic on which filtered point clouds should be published.
   filtered_cloud_topic: filtered

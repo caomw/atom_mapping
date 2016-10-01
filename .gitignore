@@ -20,6 +20,9 @@ bagfiles/
 figures/
 images/
 
+# Timing data.
+data/
+
 # Simulation
 simulation/
 

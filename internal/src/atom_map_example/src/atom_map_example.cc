@@ -205,7 +205,7 @@ namespace atom {
     ros::WallTime end_time = ros::WallTime::now();
     double total_elapsed = (end_time - start_time).toSec();
     ROS_INFO("%s: Insertion took %5.3f seconds.", name_.c_str(), total_elapsed);
-    //    std::cerr << total_elapsed << std::endl;
+    //std::cerr << total_elapsed << std::endl;
   }
 
   // Publish the filtered cloud.

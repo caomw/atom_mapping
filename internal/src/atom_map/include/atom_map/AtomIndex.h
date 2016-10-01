@@ -55,7 +55,7 @@ namespace atom {
   struct AtomIndex {
     // Default constructor, destructor.
     ~AtomIndex() {}
-    AtomIndex(size_t ii, size_t jj, size_t kk)
+    AtomIndex(int ii, int jj, int kk)
       : ii_(ii), jj_(jj), kk_(kk) {}
 
     // Construct from a 3D tuple of floats and a voxel side length.
@@ -67,13 +67,13 @@ namespace atom {
 
 #ifdef ENABLE_DEBUG_MESSAGES
       // Check that we won't overflow long.
-      float long_max = static_cast<float>(LONG_MAX);
-      float long_min = static_cast<float>(LONG_MIN);
+      float int_max = static_cast<float>(INT_MAX);
+      float int_min = static_cast<float>(INT_MIN);
 
-      if (x >= long_max || x <= long_min ||
-          y >= long_max || y <= long_min ||
-          z >= long_max || z <= long_min) {
-        ROS_WARN("Overflowing long. Index may be inaccurate.");
+      if (x >= int_max || x <= int_min ||
+          y >= int_max || y <= int_min ||
+          z >= int_max || z <= int_min) {
+        ROS_WARN("Overflowing int. Index may be inaccurate.");
       }
 #endif
 
@@ -81,9 +81,9 @@ namespace atom {
       const float ii = (x < 0) ? -std::ceil(std::abs(x)) : std::ceil(std::abs(x));
       const float jj = (y < 0) ? -std::ceil(std::abs(y)) : std::ceil(std::abs(y));
       const float kk = (z < 0) ? -std::ceil(std::abs(z)) : std::ceil(std::abs(z));
-      ii_ = static_cast<long>(ii);
-      jj_ = static_cast<long>(jj);
-      kk_ = static_cast<long>(kk);
+      ii_ = static_cast<int>(ii);
+      jj_ = static_cast<int>(jj);
+      kk_ = static_cast<int>(kk);
     }
 
     // Get the center of this bin.
@@ -98,8 +98,8 @@ namespace atom {
       return (ii_ == other.ii_ && jj_ == other.jj_ && kk_ == other.kk_);
     }
 
-    // A 3D tuple of longs.
-    long ii_, jj_, kk_;
+    // 3D coordinates.
+    int ii_, jj_, kk_;
   }; // struct AtomIndex
 
   struct AtomIndexHasher {

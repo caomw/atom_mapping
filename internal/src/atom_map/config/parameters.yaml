@@ -1,6 +1,6 @@
 atom:
   # Atomic radius.
-  radius: 0.25
+  radius: 0.5
 
   # Connectedness radius. Determines connectedness in the implicit graph.
   connectedness_radius: 1.2
@@ -43,11 +43,11 @@ atom:
   raytracing:
     # Min and max range to consider valid scans.
     min_scan_range: 0.1
-    max_scan_range: 100.0
+    max_scan_range: 25.0
 
     # Maximum distance to raycast into a surface (think of this as the surface
     # thickness).
-    max_occupied_backoff: 0.6
+    max_occupied_backoff: 1.1
 
     # Maximum distance to raycast into free space along the surface normal.
     max_normal_backoff: 2.01
@@ -59,7 +59,7 @@ atom:
     # measurements. For the Velodyne Puck at 10 Hz, this is 0.2 degrees. We also
     # provide a flag to turn on angular interleaving. Lambda is the Lagrange
     # coefficient of the probability of missing an atom (i.e. probability that
-    #  all atoms overlapping a particular atom are not chosen).
+    # all atoms overlapping a particular atom are not chosen).
     angular_resolution: 0.035 #0.02
     angular_interleaving: true
     lambda: 1.0
