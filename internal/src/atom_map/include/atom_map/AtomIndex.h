@@ -88,9 +88,26 @@ namespace atom {
 
     // Get the center of this bin.
     Vector3f GetBinCenter(float voxel_size) const {
-      return voxel_size * Vector3f(static_cast<float>(ii_) - 0.5,
-                                   static_cast<float>(jj_) - 0.5,
-                                   static_cast<float>(kk_) - 0.5);
+      const float x = (ii_ < 0) ? static_cast<float>(ii_) + 0.5 : static_cast<float>(ii_) - 0.5;
+      const float y = (jj_ < 0) ? static_cast<float>(jj_) + 0.5 : static_cast<float>(jj_) - 0.5;
+      const float z = (kk_ < 0) ? static_cast<float>(kk_) + 0.5 : static_cast<float>(kk_) - 0.5;
+      return voxel_size * Vector3f(x, y, z);
+    }
+
+    // Get the min corner coordinates of this bin.
+    Vector3f GetMinCorner(float voxel_size) const {
+      const float x = (ii_ < 0) ? static_cast<float>(ii_) : static_cast<float>(ii_) - 1.0;
+      const float y = (jj_ < 0) ? static_cast<float>(jj_) : static_cast<float>(jj_) - 1.0;
+      const float z = (kk_ < 0) ? static_cast<float>(kk_) : static_cast<float>(kk_) - 1.0;
+      return voxel_size * Vector3f(x, y, z);
+    }
+
+    // Get the max corner coordinates of this bin.
+    Vector3f GetMaxCorner(float voxel_size) const {
+      const float x = (ii_ < 0) ? static_cast<float>(ii_) + 1.0 : static_cast<float>(ii_);
+      const float y = (jj_ < 0) ? static_cast<float>(jj_) + 1.0 : static_cast<float>(jj_);
+      const float z = (kk_ < 0) ? static_cast<float>(kk_) + 1.0 : static_cast<float>(kk_);
+      return voxel_size * Vector3f(x, y, z);
     }
 
     // Need to overload the equality operator.

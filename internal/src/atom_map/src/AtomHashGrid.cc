@@ -58,12 +58,11 @@ namespace atom {
   // tuned later, but preliminary timing suggests that it should be on the
   // order of 1-2 atomic radii.
   void AtomHashGrid::SetAtomicRadius(float atomic_radius) {
-    voxel_size_ = 3.0 * atomic_radius; //1.9 * atomic_radius/sqrt(3.0);
+    voxel_size_ = 5.0 * atomic_radius; //1.9 * atomic_radius/sqrt(3.0);
     initialized_ = true;
   }
 
   // Populate a set of bins overlapping a particular ball.
-  // Currently, this only works for r < voxel_size_.
   bool AtomHashGrid::GetOverlappingBins(float x, float y, float z, float r,
                                         std::vector<AtomIndex>* bins) const {
     if (!initialized_) {
@@ -76,27 +75,43 @@ namespace atom {
     CHECK_NOTNULL(bins);
     bins->clear();
 
-    // For a bin with center c and side length l, and ball of center a and
-    // radius r, we know that the ball will extend beyond the boundary of the
-    // bin along dimension i in the negative direction if c_i - a_i + r > l/2,
-    // and similarly in the positive direction if a_i - c_i + r > l/2.
-    const AtomIndex quant(x, y, z, voxel_size_);
-    const Vector3f center = quant.GetBinCenter(voxel_size_);
-    bins->push_back(quant);
+    // Check every voxel in the bounding box and see if its nearest corner
+    // is in range.
+    const AtomIndex min_corner(x - r, y - r, z - r, voxel_size_);
+    const AtomIndex max_corner(x + r, y + r, z + r, voxel_size_);
 
-    // Check each dimension, forward and backward.
-    if (center(0) - x + r > 0.5 * voxel_size_)
-      bins->push_back(AtomIndex(quant.ii_ - 1, quant.jj_, quant.kk_));
-    if (x - center(0) + r > 0.5 * voxel_size_)
-      bins->push_back(AtomIndex(quant.ii_ + 1, quant.jj_, quant.kk_));
-    if (center(1) - y + r > 0.5 * voxel_size_)
-      bins->push_back(AtomIndex(quant.ii_, quant.jj_ - 1, quant.kk_));
-    if (y - center(1) + r > 0.5 * voxel_size_)
-      bins->push_back(AtomIndex(quant.ii_, quant.jj_ + 1, quant.kk_));
-    if (center(2) - z + r > 0.5 * voxel_size_)
-      bins->push_back(AtomIndex(quant.ii_, quant.jj_, quant.kk_ - 1));
-    if (z - center(2) + r > 0.5 * voxel_size_)
-      bins->push_back(AtomIndex(quant.ii_, quant.jj_, quant.kk_ + 1));
+    for (int ii = min_corner.ii_; ii <= max_corner.ii_; ii++) {
+      for (int jj = min_corner.jj_; jj <= max_corner.jj_; jj++) {
+        for (int kk = min_corner.kk_; kk <= max_corner.kk_; kk++) {
+          const AtomIndex query(ii, jj, kk);
+
+          // Extract this voxel's min and max corner coordinates.
+          const Vector3f min_coords = query.GetMinCorner(voxel_size_);
+          const Vector3f max_coords = query.GetMaxCorner(voxel_size_);
+
+          // Check closest distance between this voxel and the ball.
+          // http://stackoverflow.com/questions/4578967/cube-sphere-intersection-test
+          float squared_dist = r * r;
+          if (x < min_coords(0))
+            squared_dist -= (x - min_coords(0)) * (x - min_coords(0));
+          else if (x > max_coords(0))
+            squared_dist -= (x - max_coords(0)) * (x - max_coords(0));
+          if (y < min_coords(1))
+            squared_dist -= (y - min_coords(1)) * (y - min_coords(1));
+          else if (y > max_coords(1))
+            squared_dist -= (y - max_coords(1)) * (y - max_coords(1));
+          if (z < min_coords(2))
+            squared_dist -= (z - min_coords(2)) * (z - min_coords(2));
+          else if (z > max_coords(2))
+            squared_dist -= (z - max_coords(2)) * (z - max_coords(2));
+
+          if (squared_dist > 0) {
+            // Ball overlaps this voxel.
+            bins->push_back(query);
+          }
+        }
+      }
+    }
 
     return true;
   }
