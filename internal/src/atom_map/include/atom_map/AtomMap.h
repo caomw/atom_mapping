@@ -39,7 +39,6 @@
 #define ATOM_MAPPING_ATOM_MAP_H
 
 #include <atom_map/Atom.h>
-#include <atom_map/AtomHashGrid.h>
 #include <atom_map/AtomKdtree.h>
 #include <atom_map/RaySamples.h>
 #include <csv/CsvWriter.h>
@@ -95,9 +94,7 @@ namespace atom {
 
   private:
     // A kdtree to hold all the Atoms.
-    //    AtomKdtree map_;
-    // A spatial hashtable to hold all the Atoms.
-    AtomHashGrid map_;
+    AtomKdtree map_;
 
     // Atomic radius.
     float radius_;

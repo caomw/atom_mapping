@@ -394,9 +394,6 @@ bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
   Atom::SetProbabilityClamps(probability_clamp_low_,
                              probability_clamp_high_);
 
-  // Set atomic radius for AtomHashMap.
-  map_.SetAtomicRadius(radius_);
-
   return true;
 }
 
