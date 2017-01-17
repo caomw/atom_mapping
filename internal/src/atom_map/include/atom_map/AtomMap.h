@@ -42,7 +42,7 @@
 #include <atom_map/AtomHashGrid.h>
 #include <atom_map/AtomKdtree.h>
 #include <atom_map/RaySamples.h>
-#include <atom_map/CsvWriter.h>
+#include <csv/CsvWriter.h>
 
 #include <ros/ros.h>
 #include <std_msgs/ColorRGBA.h>

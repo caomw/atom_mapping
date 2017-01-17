@@ -58,8 +58,8 @@ namespace atom {
   public:
     ~AtomBuffer();
     AtomBuffer(const AtomMapParameters& params,
-                       const PointCloud::ConstPtr& cloud,
-                       const pcl::PointXYZ& robot);
+               const PointCloud::ConstPtr& cloud,
+               const pcl::PointXYZ& robot);
 
     // Return a list of all Atoms in the map.
     const std::vector<Atom::Ptr>& GetAtoms() const;

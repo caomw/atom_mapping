@@ -37,8 +37,8 @@
 
 #include <glog/logging.h>
 
-#include <atom_map/CsvReader.h>
-#include <atom_map/tokenize.h>
+#include <csv/CsvReader.h>
+#include <csv/tokenize.h>
 
 namespace atom {
 namespace file {

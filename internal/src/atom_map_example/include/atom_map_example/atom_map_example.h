@@ -39,7 +39,7 @@
 #define ATOM_MAPPING_ATOM_MAP_EXAMPLE_H
 
 #include <atom_map/AtomMap.h>
-#include <atom_map/AStarPlanner.h>
+#include <planning/AStarPlanner.h>
 
 #include <pcl/point_types.h>
 #include <pcl/common/transforms.h>

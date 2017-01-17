@@ -39,7 +39,7 @@
 #define ATOM_MAPPING_SHORTEST_PATHS_TREE_H
 
 #include <atom_map/Atom.h>
-#include <atom_map/AtomPath.h>
+#include <planning/AtomPath.h>
 
 #include <glog/logging.h>
 #include <math.h>

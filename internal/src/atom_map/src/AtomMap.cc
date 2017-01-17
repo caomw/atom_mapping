@@ -38,7 +38,7 @@
 #include <atom_map/AtomMap.h>
 #include <atom_map/AtomBuffer.h>
 #include <atom_map/AtomMapParameters.h>
-#include <atom_map/CsvWriter.h>
+#include <csv/CsvWriter.h>
 
 #include <visualization_msgs/Marker.h>
 #include <pcl/conversions.h>

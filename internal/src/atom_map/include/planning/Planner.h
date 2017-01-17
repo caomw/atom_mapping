@@ -40,7 +40,7 @@
 
 #include <atom_map/Atom.h>
 #include <atom_map/AtomMap.h>
-#include <atom_map/AtomPath.h>
+#include <planning/AtomPath.h>
 
 #include <ros/ros.h>
 #include <glog/logging.h>

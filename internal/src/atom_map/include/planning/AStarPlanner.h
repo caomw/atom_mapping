@@ -38,11 +38,11 @@
 #ifndef ATOM_MAPPING_ASTAR_PLANNER_H
 #define ATOM_MAPPING_ASTAR_PLANNER_H
 
-#include <atom_map/Planner.h>
 #include <atom_map/Atom.h>
 #include <atom_map/AtomMap.h>
-#include <atom_map/AtomPath.h>
-#include <atom_map/ShortestPathsTree.h>
+#include <planning/Planner.h>
+#include <planning/AtomPath.h>
+#include <planning/ShortestPathsTree.h>
 
 #include <Eigen/Core>
 #include <glog/logging.h>
