@@ -161,12 +161,13 @@ namespace atom {
     flann_point[0][1] = pos(1);
     flann_point[0][2] = pos(2);
 #endif
+
     // If this is the first point in the index, create the index and exit.
     if (index_ == nullptr) {
       // Single kd-tree.
-      const int kNumTrees = 1;
-      index_.reset(new flann::KDTreeIndex<flann::L2<float>>(
-          flann_point, flann::KDTreeIndexParams(kNumTrees)));
+      const int kMaxPointsPerLeaf = 20;
+      index_.reset(new flann::KDTreeSingleIndex<flann::L2<float>>(
+          flann_point, flann::KDTreeSingleIndexParams(kMaxPointsPerLeaf)));
 
       index_->buildIndex();
     } else {
