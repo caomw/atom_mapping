@@ -72,7 +72,8 @@ namespace atom {
     const int num_neighbors_found =
       index_->knnSearch(flann_query, query_match_indices,
                         query_distances, static_cast<int>(k),
-                        flann::SearchParams(-1, 0.0));
+                        flann::SearchParams(
+                          flann::CHECKS_UNLIMITED, 0.0, false));
 
     // Assign output.
     for (size_t ii = 0; ii < num_neighbors_found; ii++)
@@ -117,7 +118,8 @@ namespace atom {
     int num_neighbors_found =
       index_->radiusSearch(flann_query, query_match_indices,
                            query_distances, r * r,
-                           flann::SearchParams(-1, 0.0, false));
+                           flann::SearchParams(
+                             flann::CHECKS_UNLIMITED, 0.0, false));
     // Assign output.
     for (size_t ii = 0; ii < num_neighbors_found; ii++)
       neighbors->push_back(registry_[ query_match_indices[0][ii] ]);
