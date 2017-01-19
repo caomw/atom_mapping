@@ -39,6 +39,8 @@
 #define ATOM_MAPPING_ATOM_MAP_H
 
 #include <atom_map/Atom.h>
+#include <atom_map/SdfAtom.h>
+#include <atom_map/OccupancyAtom.h>
 #include <atom_map/AtomKdtree.h>
 #include <atom_map/RaySamples.h>
 #include <csv/CsvWriter.h>

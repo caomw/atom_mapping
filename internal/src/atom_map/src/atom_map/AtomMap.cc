@@ -99,6 +99,14 @@ void AtomMap::InterpolateSignedDistance(float x, float y, float z,
     return;
   }
 
+  if (occupancy_mode_) {
+    ROS_WARN("%s: Error. Cannot interpolate SDF in occupancy mode.",
+             name_.c_str());
+    *distance = -1.0;
+    *variance = -1.0;
+    return;
+  }
+
   // Find nearest neighbors.
   std::vector<Atom::Ptr> neighbors;
   if (!map_.GetKNearestNeighbors(x, y, z, num_neighbors_, &neighbors)) {
@@ -141,7 +149,8 @@ void AtomMap::InterpolateSignedDistance(float x, float y, float z,
     p.z = neighbors[ii]->GetPosition()(2);
 
     K12(ii) = CovarianceKernel(p, q);
-    training_dists(ii) = neighbors[ii]->GetSignedDistance();
+    training_dists(ii) =
+      std::static_pointer_cast<SdfAtom>(neighbors[ii])->GetSignedDistance();
   }
 
   // Gaussian conditioning. Use LDLT (stable Cholesky) for speed and because
@@ -154,10 +163,15 @@ void AtomMap::InterpolateSignedDistance(float x, float y, float z,
 }
 
 // Find probability of occupancy.
-float AtomMap::InterolateProbability(float x, float y, float z) {
+float AtomMap::InterpolateProbability(float x, float y, float z) {
   if (!initialized_) {
     ROS_WARN("Error. Not initialized.");
     return 0.5;
+  }
+
+  if (!occupancy_mode_) {
+    ROS_WARN("%s: Error. Must be in occupancy mode to interpolate occupancy.",
+             name_.c_str());
   }
 
   std::vector<Atom::Ptr> neighbors;
@@ -179,7 +193,8 @@ float AtomMap::InterolateProbability(float x, float y, float z) {
     const float weight = neighbor->ComputeOverlapFraction(x, y, z);
 
     total_weight += weight;
-    weighted_sum += weight * neighbor->GetLogOdds();
+    weighted_sum +=
+      weight * std::static_pointer_cast<OccupancyAtom>(neighbor)->GetLogOdds();
   }
 
   return weighted_sum / total_weight;
@@ -234,11 +249,15 @@ void AtomMap::MaybeInsertAtom(const Atom::Ptr& atom) {
       if (weight >= 0.0 && weight <= 1.0) {
         // Update occupancy.
         if (occupancy_mode_)
-          neighbor->UpdateProbability(atom->GetProbability(), weight);
+          std::static_pointer_cast<OccupancyAtom>(neighbor)->
+            UpdateProbability(std::static_pointer_cast<OccupancyAtom>(atom)->
+                              GetProbability(), weight);
 
         // Update signed distance.
         else
-          neighbor->UpdateSignedDistance(atom->GetSignedDistance(), weight);
+          std::static_pointer_cast<SdfAtom>(neighbor)->
+            UpdateSignedDistance(std::static_pointer_cast<SdfAtom>(atom)->
+                                 GetSignedDistance(), weight);
       } else
         ROS_WARN("%s: Weight was out of bounds(%lf). Distance between atoms was %lf.",
                  name_.c_str(), weight, neighbor->GetDistanceTo(atom));
@@ -283,9 +302,15 @@ bool AtomMap::GetConnectedNeighbors(Atom::Ptr& atom,
 
     if (!contains_query && neighbor->GetDistanceTo(atom) < 1e-4)
       contains_query = true;
-    else if ((occupancy_mode_ && neighbor->GetProbability() < free_threshold_) ||
-             (!occupancy_mode_ && neighbor->GetSignedDistance() < sdf_threshold_))
-      connected->push_back(neighbor);
+    else if (occupancy_mode_) {
+      if (std::static_pointer_cast<OccupancyAtom>(neighbor)->
+          GetProbability() < free_threshold_)
+        connected->push_back(neighbor);
+    } else if (!occupancy_mode_) {
+      if (std::static_pointer_cast<SdfAtom>(neighbor)->
+          GetSignedDistance() < sdf_threshold_)
+        connected->push_back(neighbor);
+    }
   }
 
   return contains_query;
@@ -432,8 +457,10 @@ bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
 
   // Radius and clamping are constant across all atoms. Call static setters.
   Atom::SetRadius(radius_);
-  Atom::SetProbabilityClamps(probability_clamp_low_,
-                             probability_clamp_high_);
+
+  if (occupancy_mode_)
+    OccupancyAtom::SetProbabilityClamps(probability_clamp_low_,
+                                        probability_clamp_high_);
 
   return true;
 }
@@ -466,7 +493,7 @@ float AtomMap::CovarianceKernel(const pcl::PointXYZ& p1,
 }
 
 // Publish the full AtomMap colored by occupancy probability. Optionally,
-// only show the occupied atoms.
+// only show the occupied atoms. Assume in occupancy mode.
 void AtomMap::PublishOccupancy() const {
   if (!initialized_) {
     ROS_WARN("Error. Not initialized.");
@@ -505,7 +532,8 @@ void AtomMap::PublishOccupancy() const {
 #endif
 
   for (size_t ii = 0; ii < atoms.size(); ii++) {
-    const float probability_occupied = atoms[ii]->GetProbability();
+    const float probability_occupied =
+      std::static_pointer_cast<OccupancyAtom>(atoms[ii])->GetProbability();
 
     // Maybe only show if probably occupied.
     if (!only_show_occupied_ || probability_occupied > occupied_threshold_) {
@@ -523,7 +551,8 @@ void AtomMap::PublishOccupancy() const {
   occupancy_pub_.publish(m);
 }
 
-// Publish the full AtomMap colored by signed distance.
+// Publish the full AtomMap colored by signed distance. Assume not
+// in occupancy mode.
 void AtomMap::PublishSignedDistance() const {
   if (!initialized_) {
     ROS_WARN("Error. Not initialized.");
@@ -562,7 +591,8 @@ void AtomMap::PublishSignedDistance() const {
 #endif
 
   for (size_t ii = 0; ii < atoms.size(); ii++) {
-    const float sdf = atoms[ii]->GetSignedDistance();
+    const float sdf =
+      std::static_pointer_cast<SdfAtom>(atoms[ii])->GetSignedDistance();
 
     // Maybe only show if probably occupied.
     if (!only_show_occupied_ || std::abs(sdf) < sdf_threshold_) {
@@ -606,10 +636,12 @@ void AtomMap::PublishPointCloud() const {
     // Maybe only show if probably occupied.
     if (only_show_occupied_) {
       if (occupancy_mode_ &&
-          (atoms[ii]->GetProbability() > occupied_threshold_)) {
+          (std::static_pointer_cast<OccupancyAtom>(atoms[ii])->
+           GetProbability() > occupied_threshold_)) {
         pcld->points.push_back(pcl::PointXYZ(p(0), p(1), p(2)));
       } else if (!occupancy_mode_ &&
-                 (std::abs(atoms[ii]->GetSignedDistance()) < sdf_threshold_)) {
+                 (std::abs(std::static_pointer_cast<SdfAtom>(atoms[ii])->
+                           GetSignedDistance()) < sdf_threshold_)) {
         pcld->points.push_back(pcl::PointXYZ(p(0), p(1), p(2)));
       }
     } else {
@@ -684,17 +716,22 @@ void AtomMap::Save(const std::string& filename) const {
   for (size_t ii = 0; ii < atoms.size(); ii++) {
     Atom::Ptr atom = atoms[ii];
     const Vector3f position = atom->GetPosition();
-    const float sdf = atom->GetSignedDistance();
-    const float log_odds = atom->GetLogOdds();
-    //    if (std::abs(sdf) > sdf_threshold_) continue;
 
     // Pack.
     std::vector<double> data;
     data.push_back(static_cast<double>(position(0)));
     data.push_back(static_cast<double>(position(1)));
     data.push_back(static_cast<double>(position(2)));
-    data.push_back(static_cast<double>(log_odds));
-    data.push_back(static_cast<double>(sdf));
+
+    if (occupancy_mode_) {
+      const float log_odds =
+        std::static_pointer_cast<OccupancyAtom>(atom)->GetLogOdds();
+      data.push_back(static_cast<double>(log_odds));
+    } else {
+      const float sdf =
+        std::static_pointer_cast<SdfAtom>(atom)->GetSignedDistance();
+      data.push_back(static_cast<double>(sdf));
+    }
 
     // Write.
     writer.WriteLine(data);

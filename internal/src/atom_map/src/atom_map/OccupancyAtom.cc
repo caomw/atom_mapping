@@ -53,7 +53,7 @@ namespace atom {
     : Atom(p) {}
 
   // Factory method.
-  Atom::Ptr Create(const Vector3f& p) {
+  Atom::Ptr OccupancyAtom::Create(const Vector3f& p) {
     Atom::Ptr ptr(new OccupancyAtom(p));
     return ptr;
   }

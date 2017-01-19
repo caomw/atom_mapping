@@ -39,6 +39,8 @@
 #define ATOM_MAPPING_SHORTEST_PATHS_TREE_H
 
 #include <atom_map/Atom.h>
+#include <atom_map/SdfAtom.h>
+#include <atom_map/OccupancyAtom.h>
 #include <planning/AtomPath.h>
 
 #include <glog/logging.h>
@@ -133,15 +135,18 @@ namespace shortest_paths {
     bool Contains(Atom::Ptr& node) { return registry_.count(node) > 0; }
 
     // Comparitor. If sdf_manifold_ is specified, then add the perpendicular distance
-    // from the node to the manifold into the score.
+    // from the node to the manifold into the score. Obviously if sdf_manifold_
+    // is positive, then we must not be in occupancy mode.
     struct NodeComparitor {
       bool operator()(Node::Ptr& node1, Node::Ptr& node2) {
         const float manifold_dist1 =
           (sdf_manifold_ < 0.0) ? 0.0
-          : std::abs(node1->GetAtom()->GetSignedDistance() - sdf_manifold_);
+          : std::abs(std::static_pointer_cast<SdfAtom>(node1->GetAtom())->
+                     GetSignedDistance() - sdf_manifold_);
         const float manifold_dist2 =
           (sdf_manifold_ < 0.0) ? 0.0
-          : std::abs(node2->GetAtom()->GetSignedDistance() - sdf_manifold_);
+          : std::abs(std::static_pointer_cast<SdfAtom>(node2->GetAtom())->
+                     GetSignedDistance() - sdf_manifold_);
 
         const float score1 = manifold_dist1 +
           node1->GetPathLength() + node1->GetAtom()->GetDistanceTo(goal_);

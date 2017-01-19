@@ -49,13 +49,13 @@ namespace atom {
     : Atom(p) {}
 
   // Factory method.
-  Atom::Ptr Create(const Vector3f& p) {
+  Atom::Ptr SdfAtom::Create(const Vector3f& p) {
     Atom::Ptr ptr(new SdfAtom(p));
     return ptr;
   }
 
   // Getters.
-  float SdfAtom::GetSignedDistance() const { return sdf_; }
+  float SdfAtom::GetSignedDistance() const { return sdf_mean_; }
   float SdfAtom::GetSignedDistanceVariance() const { return sdf_variance_; }
 
   // Setters.

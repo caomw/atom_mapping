@@ -35,11 +35,14 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
+#include <atom_map/SdfAtom.h>
+#include <atom_map/OccupancyAtom.h>
 #include <atom_map/AtomBuffer.h>
 #include <atom_map/VoxelGrid.h>
 
 #include <Eigen/Dense>
 #include <iostream>
+#include <memory>
 #include <math.h>
 
 using Eigen::Vector3f;
@@ -161,14 +164,16 @@ namespace atom {
     // Set probability of occupancy.
     if (occupancy_mode_) {
       if (sdf > 0.0)
-        atom->SetProbability(probability_miss_);
+        std::static_pointer_cast<OccupancyAtom>(atom)->SetProbability(
+                                                         probability_miss_);
       else
-        atom->SetProbability(probability_hit_);
+        std::static_pointer_cast<OccupancyAtom>(atom)->SetProbability(
+                                                         probability_hit_);
     }
 
     // Set signed distance.
     if (!occupancy_mode_)
-      atom->SetSignedDistance(sdf);
+      std::static_pointer_cast<SdfAtom>(atom)->SetSignedDistance(sdf);
 
     // Insert.
     raw->push_back(atom);
@@ -246,7 +251,7 @@ namespace atom {
         samples->occupied_distances_.push_back(-backoff);
       }
 
-      if (update_signed_distance_) {
+      if (!occupancy_mode_) {
         // Start at the surface and walk along the surface normal (toward free
         // space).
         const size_t dense_samples_normal =
@@ -271,7 +276,7 @@ namespace atom {
       }
     }
 
-    if (update_occupancy_) {
+    if (occupancy_mode_) {
       // Start at the surface and walk toward the robot. Initially, backoff just
       // enough to be tangent to the surface.
       float ray_initial_backoff = radius_ / (dx * nx + dy * ny + dz * nz);

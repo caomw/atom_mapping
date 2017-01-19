@@ -39,6 +39,8 @@
 #define ATOM_MAPPING_ATOM_KDTREE_H
 
 #include <atom_map/Atom.h>
+#include <atom_map/OccupancyAtom.h>
+#include <atom_map/SdfAtom.h>
 
 #include <flann/flann.h>
 #include <pcl/point_types.h>
@@ -50,6 +52,9 @@ namespace atom {
   public:
     AtomKdtree();
     ~AtomKdtree();
+
+    // Set occupancy mode.
+    void SetOccupancyMode(bool mode);
 
     // Nearest neighbor queries.
     bool GetKNearestNeighbors(float x, float y, float z, size_t k,
@@ -79,6 +84,9 @@ namespace atom {
     // indices, which are then mapped to Atom::Ptr types in an array.
     std::shared_ptr< flann::KDTreeSingleIndex< flann::L2<float> > > index_;
     std::vector<Atom::Ptr> registry_;
+
+    // Occupancy mode flag.
+    bool occupancy_mode_;
 
     // Keep track of maximum and minimum signed distances to the surface.
     float max_distance_;

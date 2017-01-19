@@ -64,9 +64,9 @@ namespace atom {
   public:
     typedef std::shared_ptr<Atom> Ptr;
 
-    // Getters.
+    // Getters. Position getter not const so that FLANN can use it internally.
     float GetRadius() const;
-    const Vector3f& GetPosition() const;
+    Vector3f& GetPosition();
 
     // Statuc setter.
     static void SetRadius(float r);
@@ -97,7 +97,7 @@ namespace atom {
     static float radius_;
 
     // Position in 3D space.
-    const Vector3f position_;
+    Vector3f position_;
 
     // Signed distance estimate. By convention, this will be a positive number for
     // atoms that are in free space, and negative for those that are within obstacles.

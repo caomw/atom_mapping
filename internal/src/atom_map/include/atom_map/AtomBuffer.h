@@ -39,6 +39,8 @@
 #define ATOM_MAPPING_ATOM_BUFFER_H
 
 #include <atom_map/Atom.h>
+#include <atom_map/SdfAtom.h>
+#include <atom_map/OccupancyAtom.h>
 #include <atom_map/AtomMapParameters.h>
 #include <atom_map/RaySamples.h>
 

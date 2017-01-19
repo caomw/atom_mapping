@@ -53,7 +53,7 @@ namespace atom {
 
   // Getters.
   float Atom::GetRadius() const { return radius_; }
-  const Vector3f& Atom::GetPosition() const { return position_; }
+  Vector3f& Atom::GetPosition() { return position_; }
 
   // Static setter.
   void Atom::SetRadius(float r) { radius_ = r; }

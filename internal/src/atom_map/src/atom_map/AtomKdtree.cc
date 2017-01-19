@@ -43,8 +43,12 @@
 namespace atom {
   AtomKdtree::AtomKdtree()
     : max_distance_(-std::numeric_limits<float>::infinity()),
-      min_distance_(std::numeric_limits<float>::infinity()) {}
+      min_distance_(std::numeric_limits<float>::infinity()),
+      occupancy_mode_(true) {}
   AtomKdtree::~AtomKdtree() {}
+
+  // Set occupancy mode.
+  void AtomKdtree::SetOccupancyMode(bool mode) { occupancy_mode_ = mode; }
 
   // Nearest neighbor queries.
   bool AtomKdtree::GetKNearestNeighbors(float x, float y, float z, size_t k,
@@ -72,8 +76,7 @@ namespace atom {
     const int num_neighbors_found =
       index_->knnSearch(flann_query, query_match_indices,
                         query_distances, static_cast<int>(k),
-                        flann::SearchParams(
-                          flann::CHECKS_UNLIMITED, 0.0, false));
+                        flann::SearchParams(-1, 0.0, false));
 
     // Assign output.
     for (size_t ii = 0; ii < num_neighbors_found; ii++)
@@ -118,8 +121,7 @@ namespace atom {
     int num_neighbors_found =
       index_->radiusSearch(flann_query, query_match_indices,
                            query_distances, r * r,
-                           flann::SearchParams(
-                             flann::CHECKS_UNLIMITED, 0.0, false));
+                           flann::SearchParams(-1, 0.0, false));
     // Assign output.
     for (size_t ii = 0; ii < num_neighbors_found; ii++)
       neighbors->push_back(registry_[ query_match_indices[0][ii] ]);
@@ -153,8 +155,9 @@ namespace atom {
 
       index_->buildIndex();
     } else {
-      // If the index is already created, add the data point to the index. Rebuild
-      // every time the index floats in size to occasionally rebalance the kdtree.
+      // If the index is already created, add the data point to the index.
+      // Rebuild every time the index floats in size to occasionally rebalance
+      // the kdtree.
       const int kRebuildThreshold = 2;
       index_->addPoints(flann_point, kRebuildThreshold);
     }
@@ -163,11 +166,13 @@ namespace atom {
     registry_.push_back(atom);
 
     // Update max and min distances.
-    const float sdf = atom->GetSignedDistance();
-    if (sdf > max_distance_) {
-      max_distance_ = sdf;
-    } else if (sdf < min_distance_) {
-      min_distance_ = sdf;
+    if (!occupancy_mode_) {
+      const float sdf =
+        std::static_pointer_cast<SdfAtom>(atom)->GetSignedDistance();
+      if (sdf > max_distance_)
+        max_distance_ = sdf;
+      else if (sdf < min_distance_)
+        min_distance_ = sdf;
     }
 
     return true;
