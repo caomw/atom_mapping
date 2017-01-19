@@ -445,8 +445,11 @@ void AtomMap::TimerCallback(const ros::TimerEvent& event) const {
     return;
   }
 
-  PublishOccupancy();
-  PublishSignedDistance();
+  if (occupancy_mode_)
+    PublishOccupancy();
+  else
+    PublishSignedDistance();
+
   PublishPointCloud();
 }
 
@@ -598,11 +601,18 @@ void AtomMap::PublishPointCloud() const {
 #endif
 
   for (size_t ii = 0; ii < atoms.size(); ii++) {
-    const float probability_occupied = atoms[ii]->GetProbability();
+    const Vector3f p = atoms[ii]->GetPosition();
 
     // Maybe only show if probably occupied.
-    if (!only_show_occupied_ || probability_occupied > occupied_threshold_) {
-      const Vector3f p = atoms[ii]->GetPosition();
+    if (only_show_occupied_) {
+      if (occupancy_mode_ &&
+          (atoms[ii]->GetProbability() > occupied_threshold_)) {
+        pcld->points.push_back(pcl::PointXYZ(p(0), p(1), p(2)));
+      } else if (!occupancy_mode_ &&
+                 (std::abs(atoms[ii]->GetSignedDistance()) < sdf_threshold_)) {
+        pcld->points.push_back(pcl::PointXYZ(p(0), p(1), p(2)));
+      }
+    } else {
       pcld->points.push_back(pcl::PointXYZ(p(0), p(1), p(2)));
     }
   }

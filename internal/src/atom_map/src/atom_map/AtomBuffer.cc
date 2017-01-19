@@ -51,10 +51,9 @@ namespace atom {
                                          const PointCloud::ConstPtr& cloud,
                                          const pcl::PointXYZ& robot)
     : radius_(params.radius_),
+      occupancy_mode_(params.occupancy_mode_),
       min_scan_range_(params.min_scan_range_),
       max_scan_range_(params.max_scan_range_),
-      update_occupancy_(params.update_occupancy_),
-      update_signed_distance_(params.update_signed_distance_),
       surface_normal_radius_(params.surface_normal_radius_),
       max_occupied_backoff_(params.max_occupied_backoff_),
       max_normal_backoff_(params.max_normal_backoff_),
@@ -125,12 +124,15 @@ namespace atom {
       InsertAtom(samples.occupied_points_[idx],
                  samples.occupied_distances_[idx], ptr);
 
-    if (update_occupancy_) {
+    // Only insert along the ray in occupancy mode.
+    if (occupancy_mode_) {
       for (const auto& idx : ray_indices)
         InsertAtom(samples.ray_points_[idx],
                    samples.ray_distances_[idx], ptr);
     }
-    if (update_signed_distance_) {
+
+    // Only insert along the normal if not in occupancy mode.
+    if (!occupancy_mode_) {
       for (const auto& idx : normal_indices)
         InsertAtom(samples.normal_points_[idx],
                    samples.normal_distances_[idx], ptr);
@@ -145,14 +147,19 @@ namespace atom {
 
   // Insert Atom into the provided list.
   void AtomBuffer::InsertAtom(const pcl::PointXYZ& position, float sdf,
-                                      std::vector<Atom::Ptr>* raw) {
+                              std::vector<Atom::Ptr>* raw) {
     CHECK_NOTNULL(raw);
 
-    Atom::Ptr atom = Atom::Create();
-    atom->SetPosition(Vector3f(position.x, position.y, position.z));
+    // Create the right sort of Atom.
+    const Vector3f p(position.x, position.y, position.z);
+    Atom::Ptr atom = nullptr;
+    if (occupancy_mode_)
+      atom = OccupancyAtom::Create(p);
+    else
+      atom = SdfAtom::Create(p);
 
     // Set probability of occupancy.
-    if (update_occupancy_) {
+    if (occupancy_mode_) {
       if (sdf > 0.0)
         atom->SetProbability(probability_miss_);
       else
@@ -160,7 +167,7 @@ namespace atom {
     }
 
     // Set signed distance.
-    if (update_signed_distance_)
+    if (!occupancy_mode_)
       atom->SetSignedDistance(sdf);
 
     // Insert.

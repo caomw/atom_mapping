@@ -77,13 +77,12 @@ namespace atom {
     // Atomic radius.
     const float radius_;
 
+    // Occupancy mode flag.
+    const bool occupancy_mode_;
+
     // Min and max scan ranges.
     const float min_scan_range_;
     const float max_scan_range_;
-
-    // Optionally update signed distance and/or occupancy.
-    const bool update_occupancy_;
-    const bool update_signed_distance_;
 
     // Radius for nearest neighbor search for surface normal extraction.
     const float surface_normal_radius_;
