@@ -35,55 +35,51 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#ifndef ATOM_MAPPING_ATOM_KDTREE_H
-#define ATOM_MAPPING_ATOM_KDTREE_H
+#include <atom_map/SdfAtom.h>
 
-#include <atom_map/Atom.h>
-
-#include <flann/flann.h>
-#include <pcl/point_types.h>
 #include <glog/logging.h>
+#include <iostream>
 #include <math.h>
 
 namespace atom {
-  class AtomKdtree {
-  public:
-    AtomKdtree();
-    ~AtomKdtree();
 
-    // Nearest neighbor queries.
-    bool GetKNearestNeighbors(float x, float y, float z, size_t k,
-                              std::vector<Atom::Ptr>* neighbors);
-    bool GetKNearestNeighbors(const pcl::PointXYZ& p, size_t k,
-                              std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(float x, float y, float z, float r,
-                      std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(const pcl::PointXYZ& p, float r,
-                      std::vector<Atom::Ptr>* neighbors);
+  // Constructor/destructor.
+  SdfAtom::~SdfAtom() {}
+  SdfAtom::SdfAtom(const Vector3f& p)
+    : Atom(p) {}
 
-    // Insert a new Atom.
-    bool Insert(const Atom::Ptr& atom);
+  // Factory method.
+  Atom::Ptr Create(const Vector3f& p) {
+    Atom::Ptr ptr(new SdfAtom(p));
+    return ptr;
+  }
 
-    // Return a list of all Atoms in the map.
-    const std::vector<Atom::Ptr>& GetAtoms() const;
+  // Getters.
+  float SdfAtom::GetSignedDistance() const { return sdf_; }
+  float SdfAtom::GetSignedDistanceVariance() const { return sdf_variance_; }
 
-    // Return the size of this tree.
-    size_t Size() const;
+  // Setters.
+  void SdfAtom::SetSignedDistance(float d) {
+    sdf_mean_ = d;
+    sdf_variance_ = ToVariance(d);
+  }
 
-    // Return the maximum and minimum distances of any Atom to the surface.
-    float GetMaxDistance() const;
-    float GetMinDistance() const;
-
-  private:
-    // A Flann kdtree to hold all the Atoms. Searches in this tree return
-    // indices, which are then mapped to Atom::Ptr types in an array.
-    std::shared_ptr< flann::KDTreeSingleIndex< flann::L2<float> > > index_;
-    std::vector<Atom::Ptr> registry_;
-
-    // Keep track of maximum and minimum signed distances to the surface.
-    float max_distance_;
-    float min_distance_;
-  };
-}
-
+  // Update the signed distance function for this atom. Variance is implicitly
+  // the reciprocal of absolute distance, i.e. we trust measurements that say
+  // the atom is closer to a surface more than those that say it is far away.
+  // As above, weight is the overlap fraction between this atom and the one
+  // which caused this update. Currently, we scale variance ~1/(0.5 + weight).
+  // This scaling, however, is completely arbitrary.
+  void SdfAtom::UpdateSignedDistance(float sdf_update, float weight) {
+#ifdef ENABLE_DEBUG_MESSAGES
+    if (weight < 0.0 || weight > 1.0) {
+      VLOG(1) << "Weight is not a number between [0, 1]: "
+              << weight << ".";
+    }
 #endif
+    const float sdf_variance_update = ToVariance(sdf_update) / (0.5 + weight);
+    const float k = sdf_variance_ / (sdf_variance_ + sdf_variance_update);
+    sdf_mean_ += k * (sdf_update - sdf_mean_);
+    sdf_variance_ *= 1.0 - k;
+  }
+} //\namespace atom

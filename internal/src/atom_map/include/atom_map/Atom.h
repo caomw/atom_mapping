@@ -31,17 +31,20 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * Please contact the author(s) of this library if you have any questions.
- * Authors: Erik Nelson            ( eanelson@eecs.berkeley.edu )
- *          David Fridovich-Keil   ( dfk@eecs.berkeley.edu )
+ * Authors: David Fridovich-Keil   ( dfk@eecs.berkeley.edu )
+ *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
 ///////////////////////////////////////////////////////////////////////////////
 //
 // The Atom class defines a single atom in the map. These can be though of as
-// small bubbles of a specified radius centered at a 2D or 3D point, with a
-// probability of being occupied. Additional information can be added, such as
-// signed distance to nearest surface. Atoms are the basic building blocks of
-// atom maps.
+// small bubbles of a specified radius centered at a 2D or 3D point.
+// Atoms are the basic building blocks of AtomMaps.
+//
+// Atoms come in two varieties, which are implemented as derived classes
+// for memory efficiency:
+// (1) occupancy only
+// (2) sdf only
 //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -57,114 +60,70 @@
 using Eigen::Vector3f;
 
 namespace atom {
-class Atom {
- public:
-  ~Atom();
+  class Atom {
+  public:
+    typedef std::shared_ptr<Atom> Ptr;
 
-  typedef std::shared_ptr<Atom> Ptr;
+    // Getters.
+    float GetRadius() const;
+    const Vector3f& GetPosition() const;
 
-  // Factory method.
-  static Ptr Create();
+    // Statuc setter.
+    static void SetRadius(float r);
 
-  // Getters.
-  float GetProbability() const;
-  float GetLogOdds() const;
-  float GetSignedDistance() const;
-  float GetSignedDistanceVariance() const;
-  float GetRadius() const;
-  Vector3f& GetPosition();
+    // Check if this Atom contains a point.
+    bool Contains(float x, float y, float z) const;
+    bool Contains(const pcl::PointXYZ& p) const;
+    bool Contains(const Atom::Ptr& atom) const;
 
-  // Setters.
-  static void SetRadius(float r);
-  static void SetProbabilityClamps(float low, float high);
-  static void SetLogOddsClamps(float low, float high);
-  void SetProbability(float p);
-  void SetLogOdds(float l);
-  void SetSignedDistance(float d);
-  void SetPosition(const Vector3f& p);
+    // Check distance to a point.
+    float GetDistanceTo(float x, float y, float z) const;
+    float GetDistanceTo(const pcl::PointXYZ& p) const;
+    float GetDistanceTo(const Atom::Ptr& atom) const;
 
-  // Update the probability value stored in this atom. The weight parameter
-  // is the fraction of overlap between two atoms. Currently, we use this
-  // as a linear scaling between 0.5 (0) and the update probability (log-odds).
-  void UpdateProbability(float probability_update, float weight = 1.0);
-  void UpdateLogOdds(float log_odds_update, float weight = 1.0);
+    // Compute the overlap fraction of two Atoms. Note that we assume both Atoms
+    // have the same radius for simplicity.
+    float ComputeOverlapFraction(const Atom::Ptr& atom) const;
+    float ComputeOverlapFraction(const pcl::PointXYZ& p) const;
+    float ComputeOverlapFraction(float x, float y, float z) const;
 
-  // Update the signed distance function for this atom. Variance is implicitly
-  // the reciprocal of absolute distance, i.e. we trust measurements that say
-  // the atom is closer to a surface more than those that say it is far away.
-  // As above, weight is the overlap fraction between this atom and the one
-  // which caused this update. Currently, we scale covariance by 1/(0.5 + weight).
-  // This scaling, however, is completely arbitrary.
-  void UpdateSignedDistance(float sdf_update, float weight = 1.0);
+  protected:
+    // Protected constructor and destructor.
+    Atom(const Vector3f& p);
+    virtual ~Atom();
 
-  // Check if this Atom contains a point.
-  bool Contains(float x, float y, float z) const;
-  bool Contains(const pcl::PointXYZ& p) const;
-  bool Contains(const Atom::Ptr& atom) const;
+    // Atomic radius. Other atoms cannot be inserted into the map within this
+    // radius.
+    static float radius_;
 
-  // Check distance to a point.
-  float GetDistanceTo(float x, float y, float z) const;
-  float GetDistanceTo(const pcl::PointXYZ& p) const;
-  float GetDistanceTo(const Atom::Ptr& atom) const;
+    // Position in 3D space.
+    const Vector3f position_;
 
-  // Compute the overlap fraction of two Atoms. Note that we assume both Atoms
-  // have the same radius for simplicity.
-  float ComputeOverlapFraction(const Atom::Ptr& atom) const;
+    // Signed distance estimate. By convention, this will be a positive number for
+    // atoms that are in free space, and negative for those that are within obstacles.
+    float sdf_mean_;
 
-  // Add a neighboring atom to this one.
-  void AddNeighbor(Atom::Ptr neighbor);
-  void ClearNeighbors();
-  const std::vector<Ptr>& GetNeighbors() const;
+    // Uncertainty of the signed distance estimate. Do a simple maximum likelihood
+    // update with each new measurement.
+    float sdf_variance_;
 
- private:
-  // Log-odds probability that this chunk of space is occupied. We use log-odds
-  // to avoid numerical instability when multiplying, e.g., 1e-4 to itself
-  // multiple times.
-  float log_odds_;
+    // Clamping thresholds. Above or below these, do not update probability.
+    static float log_odds_clamp_low_;
+    static float log_odds_clamp_high_;
+  }; //\class Atom
 
-  // Signed distance estimate. By convention, this will be a positive number for
-  // atoms that are in free space, and negative for those that are within obstacles.
-  float sdf_mean_;
+  // Conversion from a probability in [0, 1] to a log-odds probability in
+  // [0, infty).
+  float ToProbability(float log_odds);
 
-  // Uncertainty of the signed distance estimate. Do a simple maximum likelihood
-  // update with each new measurement.
-  float sdf_variance_;
+  // Conversion from a log-odds probability in [0, infty) to a probability in
+  // [0, 1].
+  float ToLogOdds(float probability);
 
-  // Position in 3D space.
-  Vector3f position_;
-
-  // Atomic radius. Other atoms cannot be inserted into the map within this
-  // radius.
-  static float radius_;
-
-  // Clamping thresholds. Above or below these, do not update probability.
-  static float log_odds_clamp_low_;
-  static float log_odds_clamp_high_;
-
-#if 0
-  // Pointers to neighboring atoms. This list is incrementally updated when new
-  // atoms are added to the map, and begins empty.
-  std::vector<Ptr> neighbors_;
-#endif
-
-  // Private constructor.
-  Atom();
-}; //\class Atom
-
-
-// Conversion from a probability in [0, 1] to a log-odds probability in [0,
-// infty).
-float ToProbability(float log_odds);
-
-// Conversion from a log-odds probability in [0, infty) to a probability in [0,
-// 1].
-float ToLogOdds(float probability);
-
-// An arbitrary map from signed distance values to variances. The general idea is
-// that smaller values (by magnitude) are more reliable because there is a smaller
-// chance that there exists a nearer surface.
-float ToVariance(float sdf_update);
-
+  // An arbitrary map from signed distance values to variances. The general idea
+  // is that smaller values (by magnitude) are more reliable because there is a
+  // smaller chance that there exists a nearer surface.
+  float ToVariance(float sdf_update);
 } //\namespace atom
 
 #endif

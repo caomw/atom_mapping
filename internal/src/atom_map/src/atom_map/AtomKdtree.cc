@@ -40,23 +40,11 @@
 #include <iostream>
 #include <Eigen/Core>
 
-using Eigen::Vector3f;
-
 namespace atom {
-  AtomKdtree::AtomKdtree() :
-    max_distance_(-std::numeric_limits<float>::infinity()),
-    min_distance_(std::numeric_limits<float>::infinity()) {}
-  AtomKdtree::~AtomKdtree() {
-#if 0
-    // Free memory from points in the kd tree.
-    if (index_ != nullptr) {
-      for (size_t ii = 0; ii < index_->size(); ++ii) {
-        float* point = index_->getPoint(ii);
-        delete[] point;
-      }
-    }
-#endif
-  }
+  AtomKdtree::AtomKdtree()
+    : max_distance_(-std::numeric_limits<float>::infinity()),
+      min_distance_(std::numeric_limits<float>::infinity()) {}
+  AtomKdtree::~AtomKdtree() {}
 
   // Nearest neighbor queries.
   bool AtomKdtree::GetKNearestNeighbors(float x, float y, float z, size_t k,
@@ -147,20 +135,12 @@ namespace atom {
   }
 
   // Insert a new Atom.
-  bool AtomKdtree::Insert(Atom::Ptr atom) {
+  bool AtomKdtree::Insert(const Atom::Ptr& atom) {
     CHECK_NOTNULL(atom.get());
 
     // Copy the input point into FLANN's Matrix type.
     const int kNumColumns = 3;
     flann::Matrix<float> flann_point(atom->GetPosition().data(), 1, kNumColumns);
-
-#if 0
-    const Vector3f pos = atom->GetPosition();
-    flann::Matrix<float> flann_point(new float[kNumColumns], 1, kNumColumns);
-    flann_point[0][0] = pos(0);
-    flann_point[0][1] = pos(1);
-    flann_point[0][2] = pos(2);
-#endif
 
     // If this is the first point in the index, create the index and exit.
     if (index_ == nullptr) {
@@ -190,43 +170,6 @@ namespace atom {
 
     return true;
   }
-
-#if 0
-  // Find all neighbors for an Atom and set that Atom's neighbors_ field.
-  bool AtomKdtree::SetNeighbors(Atom::Ptr atom) {
-    CHECK_NOTNULL(atom.get());
-
-    // Find all neighbors within a radius of one atomic diameter.
-    std::vector<Atom::Ptr> neighbors;
-    Vector3f pos = atom->GetPosition();
-    if (!RadiusSearch(pos(0), pos(1), pos(2), 2.0 * atom->GetRadius(), &neighbors))
-      return false;
-
-    // Add all neighbors. Check if any are within one atomic radius. If so,
-    // clear neighbors and return false.
-    atom->ClearNeighbors();
-    for (size_t ii = 0; ii < neighbors.size(); ii++) {
-      if (neighbors[ii]->Contains(atom)) {
-        atom->ClearNeighbors();
-        return false;
-      }
-
-      atom->AddNeighbor(neighbors[ii]);
-    }
-
-    return true;
-  }
-
-  // Update neighbors' lists of neighboring Atoms to include a new Atom.
-  void AtomKdtree::UpdateNeighbors(Atom::Ptr atom) {
-    CHECK_NOTNULL(atom.get());
-
-    // Add this atom to each neighbor.
-    std::vector<Atom::Ptr> neighbors = atom->GetNeighbors();
-    for (size_t ii = 0; ii < neighbors.size(); ii++)
-      neighbors[ii]->AddNeighbor(atom);
-  }
-#endif
 
   // Return a list of all Atoms in the map.
   const std::vector<Atom::Ptr>& AtomKdtree::GetAtoms() const {

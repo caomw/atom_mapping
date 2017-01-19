@@ -43,126 +43,22 @@
 
 namespace atom {
 
-  float Atom::radius_ = 0;
-  float Atom::log_odds_clamp_low_ = 0;
-  float Atom::log_odds_clamp_high_ = 0;
+  // Set static radius to something sensible.
+  float Atom::radius_ = 0.5;
 
+  // Protected constructory/destructor.
   Atom::~Atom() {}
-  Atom::Atom()
-      : log_odds_(ToLogOdds(0.5)),
-        sdf_mean_(0.0),
-        sdf_variance_(std::numeric_limits<float>::infinity()),
-        position_(0.0, 0.0, 0.0) {}
+  Atom::Atom(const Vector3f& p)
+    : position_(p) {}
 
-  Atom::Ptr Atom::Create() {
-    Atom::Ptr atom(new Atom());
-    return atom;
-  }
+  // Getters.
+  float Atom::GetRadius() const { return radius_; }
+  const Vector3f& Atom::GetPosition() const { return position_; }
 
-  float Atom::GetProbability() const {
-    return ToProbability(log_odds_);
-  }
+  // Static setter.
+  void Atom::SetRadius(float r) { radius_ = r; }
 
-  float Atom::GetLogOdds() const {
-    return log_odds_;
-  }
-
-  float Atom::GetSignedDistance() const {
-    return sdf_mean_;
-  }
-
-  float Atom::GetSignedDistanceVariance() const {
-    return sdf_variance_;
-  }
-
-  float Atom::GetRadius() const {
-    return radius_;
-  }
-
-  Vector3f& Atom::GetPosition() {
-    return position_;
-  }
-
-  void Atom::SetRadius(float r) {
-    radius_ = r;
-  }
-
-  void Atom::SetProbabilityClamps(float low, float high) {
-    SetLogOddsClamps(ToLogOdds(low), ToLogOdds(high));
-  }
-
-  void Atom::SetLogOddsClamps(float low, float high) {
-    log_odds_clamp_low_ = low;
-    log_odds_clamp_high_ = high;
-  }
-
-  void Atom::SetProbability(float p) {
-    log_odds_ = ToLogOdds(p);
-  }
-
-  void Atom::SetLogOdds(float l) {
-    log_odds_ = l;
-  }
-
-  void Atom::SetSignedDistance(float d) {
-    sdf_mean_ = d;
-    sdf_variance_ = ToVariance(d);
-  }
-
-  void Atom::SetPosition(const Vector3f& p) {
-    position_ = p;
-  }
-
-  void Atom::UpdateProbability(float probability_update, float weight) {
-#ifdef ENABLE_DEBUG_MESSAGES
-    if (probability_update < 0.0 || probability_update > 1.0) {
-      VLOG(1) << "Probability update is not a probability in [0, 1]: "
-              << probability_update << ".";
-    }
-    if (weight < 0.0 || weight > 1.0) {
-      VLOG(1) << "Weight is not a number between [0, 1]: "
-              << weight << ".";
-    }
-#endif
-
-    log_odds_ += weight * ToLogOdds(probability_update);
-
-    // Enforce clamping.
-    if (log_odds_ > log_odds_clamp_high_) log_odds_ = log_odds_clamp_high_;
-    else if (log_odds_ < log_odds_clamp_low_) log_odds_ = log_odds_clamp_low_;
-  }
-
-  void Atom::UpdateLogOdds(float log_odds_update, float weight) {
-#ifdef ENABLE_DEBUG_MESSAGES
-    if (log_odds_update < 0.0) {
-      VLOG(1) << "Log-odds update is less than zero: " << log_odds_update << ".";
-    }
-    if (weight < 0.0 || weight > 1.0) {
-      VLOG(1) << "Weight is not a number between [0, 1]: "
-              << weight << ".";
-    }
-#endif
-
-    log_odds_ += weight * log_odds_update;
-
-    // Enforce clamping.
-    if (log_odds_ > log_odds_clamp_high_) log_odds_ = log_odds_clamp_high_;
-    else if (log_odds_ < log_odds_clamp_low_) log_odds_ = log_odds_clamp_low_;
-  }
-
-  void Atom::UpdateSignedDistance(float sdf_update, float weight) {
-#ifdef ENABLE_DEBUG_MESSAGES
-    if (weight < 0.0 || weight > 1.0) {
-      VLOG(1) << "Weight is not a number between [0, 1]: "
-              << weight << ".";
-    }
-#endif
-    const float sdf_variance_update = ToVariance(sdf_update) / (0.5 + weight);
-    const float k = sdf_variance_ / (sdf_variance_ + sdf_variance_update);
-    sdf_mean_ += k * (sdf_update - sdf_mean_);
-    sdf_variance_ *= 1.0 - k;
-  }
-
+  // Check if this Atom contains a point.
   bool Atom::Contains(float x, float y, float z) const {
     return GetDistanceTo(x, y, z) <= radius_;
   }
@@ -175,6 +71,7 @@ namespace atom {
     return GetDistanceTo(p) <= radius_;
   }
 
+  // Compute the distance to a point.
   float Atom::GetDistanceTo(float x, float y, float z) const {
     const float dx = x - position_(0);
     const float dy = y - position_(1);
@@ -206,21 +103,21 @@ namespace atom {
       (3.0 * pow(radius_, 2) - 0.25 * pow(distance, 2));
   }
 
-#if 0
-  void Atom::AddNeighbor(Atom::Ptr neighbor) {
-    CHECK_NOTNULL(neighbor.get());
-    neighbors_.push_back(neighbor);
+  float Atom::ComputeOverlapFraction(const pcl::PointXYZ& p) const {
+    const float distance = GetDistanceTo(p);
+
+    return 1 - (0.25 / pow(radius_, 3)) * distance *
+      (3.0 * pow(radius_, 2) - 0.25 * pow(distance, 2));
   }
 
-  void Atom::ClearNeighbors() {
-    neighbors_.clear();
+  float Atom::ComputeOverlapFraction(float x, float y, float z) const {
+    const float distance = GetDistanceTo(x, y, z);
+
+    return 1 - (0.25 / pow(radius_, 3)) * distance *
+      (3.0 * pow(radius_, 2) - 0.25 * pow(distance, 2));
   }
 
-  const std::vector<Atom::Ptr>& Atom::GetNeighbors() const {
-    return neighbors_;
-  }
-#endif
-
+  // Helpers to convert between log odds and probability.
   float ToProbability(float log_odds) {
 #ifdef ENABLE_DEBUG_MESSAGES
     if (log_odds < 0.0) {
@@ -240,9 +137,9 @@ namespace atom {
     return log(probability / (1.0 - probability));
   }
 
+  // Helper to compute 'variance' of an SDF update.
   float ToVariance(float sdf_update) {
     return sdf_update * sdf_update; // This is arbitrary.
-    //return 1.0;
   }
 
 } //\namespace atom

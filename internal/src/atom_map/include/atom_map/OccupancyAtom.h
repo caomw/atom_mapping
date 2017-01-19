@@ -35,55 +35,55 @@
  *          Erik Nelson            ( eanelson@eecs.berkeley.edu )
  */
 
-#ifndef ATOM_MAPPING_ATOM_KDTREE_H
-#define ATOM_MAPPING_ATOM_KDTREE_H
+///////////////////////////////////////////////////////////////////////////////
+//
+// The OccupancyAtom class derives from the Atom class, and includes only
+// occupancy probability estimation (and NOT signed distance function).
+//
+///////////////////////////////////////////////////////////////////////////////
+
+#ifndef ATOM_MAPPING_OCCUPANCY_ATOM_H
+#define ATOM_MAPPING_OCCUPANCY_ATOM_H
 
 #include <atom_map/Atom.h>
 
-#include <flann/flann.h>
-#include <pcl/point_types.h>
-#include <glog/logging.h>
-#include <math.h>
-
 namespace atom {
-  class AtomKdtree {
+  class OccupancyAtom : public Atom {
   public:
-    AtomKdtree();
-    ~AtomKdtree();
+    ~OccupancyAtom();
 
-    // Nearest neighbor queries.
-    bool GetKNearestNeighbors(float x, float y, float z, size_t k,
-                              std::vector<Atom::Ptr>* neighbors);
-    bool GetKNearestNeighbors(const pcl::PointXYZ& p, size_t k,
-                              std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(float x, float y, float z, float r,
-                      std::vector<Atom::Ptr>* neighbors);
-    bool RadiusSearch(const pcl::PointXYZ& p, float r,
-                      std::vector<Atom::Ptr>* neighbors);
+    // Factory method.
+    static Atom::Ptr Create(const Vector3f& p);
 
-    // Insert a new Atom.
-    bool Insert(const Atom::Ptr& atom);
+    // Getters.
+    float GetProbability() const;
+    float GetLogOdds() const;
 
-    // Return a list of all Atoms in the map.
-    const std::vector<Atom::Ptr>& GetAtoms() const;
+    // Setters.
+    static void SetProbabilityClamps(float low, float high);
+    static void SetLogOddsClamps(float low, float high);
+    void SetProbability(float p);
+    void SetLogOdds(float l);
 
-    // Return the size of this tree.
-    size_t Size() const;
-
-    // Return the maximum and minimum distances of any Atom to the surface.
-    float GetMaxDistance() const;
-    float GetMinDistance() const;
+    // Update the probability value stored in this atom. The weight parameter
+    // is the fraction of overlap between two atoms. Currently, we use this
+    // as a linear scaling between 0.5 (0) and the update probability (log-odds).
+    void UpdateProbability(float probability_update, float weight = 1.0);
+    void UpdateLogOdds(float log_odds_update, float weight = 1.0);
 
   private:
-    // A Flann kdtree to hold all the Atoms. Searches in this tree return
-    // indices, which are then mapped to Atom::Ptr types in an array.
-    std::shared_ptr< flann::KDTreeSingleIndex< flann::L2<float> > > index_;
-    std::vector<Atom::Ptr> registry_;
+    // Private constructor.
+    OccupancyAtom(const Vector3f& p);
 
-    // Keep track of maximum and minimum signed distances to the surface.
-    float max_distance_;
-    float min_distance_;
-  };
-}
+    // Log-odds probability that this chunk of space is occupied. We use
+    // log-odds to avoid numerical instability when updating.
+    float log_odds_;
+
+    // Clamping thresholds. Above or below these, do not update probability.
+    static float log_odds_clamp_low_;
+    static float log_odds_clamp_high_;
+  }; //\class OccupancyAtom
+
+} //\namespace atom
 
 #endif

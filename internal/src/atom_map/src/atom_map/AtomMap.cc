@@ -73,6 +73,11 @@ bool AtomMap::Initialize(const ros::NodeHandle& n) {
 
 // Getters.
 Atom::Ptr AtomMap::GetAtomContaining(float x, float y, float z) {
+  if (!initialized_) {
+    ROS_WARN("Error. Not initialized.");
+    return nullptr;
+  }
+
   std::vector<Atom::Ptr> neighbors;
   if (!map_.RadiusSearch(x, y, z, radius_, &neighbors))
     return nullptr;
@@ -82,11 +87,17 @@ Atom::Ptr AtomMap::GetAtomContaining(float x, float y, float z) {
   return neighbors[0];
 }
 
-#if 0
-void AtomMap::GetSignedDistance(float x, float y, float z, float* distance,
-                                float* variance) {
+void AtomMap::InterpolateSignedDistance(float x, float y, float z,
+                                        float* distance, float* variance) {
   CHECK_NOTNULL(distance);
   CHECK_NOTNULL(variance);
+
+  if (!initialized_) {
+    ROS_WARN("Error. Not initialized.");
+    *distance = -1.0;
+    *variance = -1.0;
+    return;
+  }
 
   // Find nearest neighbors.
   std::vector<Atom::Ptr> neighbors;
@@ -142,27 +153,45 @@ void AtomMap::GetSignedDistance(float x, float y, float z, float* distance,
   *variance = 1.0 - K12.transpose() * cholesky.solve(K12);
 }
 
-// Find probability of occupancy. Return -1 if error or if this point does
-// not lie within an Atom.
-float AtomMap::GetProbability(float x, float y, float z) {
+// Find probability of occupancy.
+float AtomMap::InterolateProbability(float x, float y, float z) {
+  if (!initialized_) {
+    ROS_WARN("Error. Not initialized.");
+    return 0.5;
+  }
+
   std::vector<Atom::Ptr> neighbors;
-  if (!map_.RadiusSearch(x, y, z, radius_, &neighbors)) {
+  if (!map_.RadiusSearch(x, y, z, 2.0 * radius_, &neighbors)) {
     ROS_WARN("%s: Error in radius search during GetProbability().",
              name_.c_str());
-    return -1.0;
+    return 0.5;
   }
 
   if (neighbors.size() == 0) {
     ROS_WARN("%s: Nearest neighbor is too far away.", name_.c_str());
-    return -1.0;
+    return 0.5;
   }
 
-  // There can only be one neighbor.
-  return neighbors[0]->GetProbability();
-}
-#endif
+  // Compute a weighted average of the log odds values of all neighbors.
+  float weighted_sum = 0.0;
+  float total_weight = 0.0;
+  for (const auto& neighbor : neighbors) {
+    const float weight = neighbor->ComputeOverlapFraction(x, y, z);
 
+    total_weight += weight;
+    weighted_sum += weight * neighbor->GetLogOdds();
+  }
+
+  return weighted_sum / total_weight;
+}
+
+// Try to add a single atom.
 void AtomMap::MaybeInsertAtom(const Atom::Ptr& atom) {
+  if (!initialized_) {
+    ROS_WARN("Error. Not initialized.");
+    return;
+  }
+
   // If the AtomMap is empty, just insert this atom.
   if (map_.Size() == 0) {
     if (!map_.Insert(atom))
@@ -192,23 +221,24 @@ void AtomMap::MaybeInsertAtom(const Atom::Ptr& atom) {
     for (size_t jj = 0; jj < neighbors.size(); jj++) {
       Atom::Ptr neighbor = neighbors[jj];
 
+#ifdef ENABLE_DEBUG_MESSAGES
       if (atom->GetDistanceTo(neighbor) > 2.0 * radius_) {
         ROS_WARN("%s: Neighbor is too far away: %lf > %lf.", name_.c_str(),
                  atom->GetDistanceTo(neighbor), 2.0 * radius_);
         continue;
       }
+#endif
 
       // Compute overlap fraction.
       const float weight = atom->ComputeOverlapFraction(neighbor);
       if (weight >= 0.0 && weight <= 1.0) {
         // Update occupancy.
-        if (update_occupancy_)
+        if (occupancy_mode_)
           neighbor->UpdateProbability(atom->GetProbability(), weight);
 
         // Update signed distance.
-        if (update_signed_distance_) {
+        else
           neighbor->UpdateSignedDistance(atom->GetSignedDistance(), weight);
-        }
       } else
         ROS_WARN("%s: Weight was out of bounds(%lf). Distance between atoms was %lf.",
                  name_.c_str(), weight, neighbor->GetDistanceTo(atom));
@@ -218,6 +248,10 @@ void AtomMap::MaybeInsertAtom(const Atom::Ptr& atom) {
 
 // Return a list of all Atoms in the map.
 const std::vector<Atom::Ptr>& AtomMap::GetAtoms() const {
+  if (!initialized_) {
+    ROS_WARN("Error. Not initialized.");
+  }
+
   return map_.GetAtoms();
 }
 
@@ -225,6 +259,11 @@ const std::vector<Atom::Ptr>& AtomMap::GetAtoms() const {
 // if the Atom is not itself in the map.
 bool AtomMap::GetConnectedNeighbors(Atom::Ptr& atom,
                                     std::vector<Atom::Ptr>* connected) {
+  if (!initialized_) {
+    ROS_WARN("Error. Not initialized.");
+    return false;
+  }
+
   CHECK_NOTNULL(connected);
   connected->clear();
 
@@ -244,7 +283,8 @@ bool AtomMap::GetConnectedNeighbors(Atom::Ptr& atom,
 
     if (!contains_query && neighbor->GetDistanceTo(atom) < 1e-4)
       contains_query = true;
-    else if (neighbor->GetProbability() < free_threshold_)
+    else if ((occupancy_mode_ && neighbor->GetProbability() < free_threshold_) ||
+             (!occupancy_mode_ && neighbor->GetSignedDistance() < sdf_threshold_))
       connected->push_back(neighbor);
   }
 
@@ -254,13 +294,17 @@ bool AtomMap::GetConnectedNeighbors(Atom::Ptr& atom,
 // Update the map given a set of observations.
 void AtomMap::Update(const PointCloud::ConstPtr& cloud,
                      const pcl::PointXYZ& robot) {
+  if (!initialized_) {
+    ROS_WARN("Error. Not initialized.");
+    return;
+  }
+
   // Create an AtomBuffer from this cloud.
   AtomMapParameters params;
   params.radius_ = radius_;
+  params.occupancy_mode_ = occupancy_mode_;
   params.min_scan_range_ = min_scan_range_;
   params.max_scan_range_ = max_scan_range_;
-  params.update_occupancy_ = update_occupancy_;
-  params.update_signed_distance_ = update_signed_distance_;
   params.surface_normal_radius_ = surface_normal_radius_;
   params.max_occupied_backoff_ = max_occupied_backoff_;
   params.max_normal_backoff_ = max_normal_backoff_;
@@ -303,14 +347,11 @@ bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
   if (!ros::param::search("atom/radius", key)) return false;
   if (!ros::param::get(key, radius_)) return false;
 
+  if (!ros::param::search("atom/occupancy_mode", key)) return false;
+  if (!ros::param::get(key, occupancy_mode_)) return false;
+
   if (!ros::param::search("atom/connectedness_radius", key)) return false;
   if (!ros::param::get(key, connectedness_radius_)) return false;
-
-  if (!ros::param::search("atom/update_occupancy", key)) return false;
-  if (!ros::param::get(key, update_occupancy_)) return false;
-
-  if (!ros::param::search("atom/update_signed_distance", key)) return false;
-  if (!ros::param::get(key, update_signed_distance_)) return false;
 
   if (!ros::param::search("atom/only_show_occupied", key)) return false;
   if (!ros::param::get(key, only_show_occupied_)) return false;
@@ -399,6 +440,11 @@ bool AtomMap::LoadParameters(const ros::NodeHandle& n) {
 
 // Timer callback. Call all publishers on a timer.
 void AtomMap::TimerCallback(const ros::TimerEvent& event) const {
+  if (!initialized_) {
+    ROS_WARN("Error. Not initialized.");
+    return;
+  }
+
   PublishOccupancy();
   PublishSignedDistance();
   PublishPointCloud();
@@ -419,6 +465,11 @@ float AtomMap::CovarianceKernel(const pcl::PointXYZ& p1,
 // Publish the full AtomMap colored by occupancy probability. Optionally,
 // only show the occupied atoms.
 void AtomMap::PublishOccupancy() const {
+  if (!initialized_) {
+    ROS_WARN("Error. Not initialized.");
+    return;
+  }
+
   if (occupancy_pub_.getNumSubscribers() <= 0) return;
 
   // Initialize marker.
@@ -471,6 +522,11 @@ void AtomMap::PublishOccupancy() const {
 
 // Publish the full AtomMap colored by signed distance.
 void AtomMap::PublishSignedDistance() const {
+  if (!initialized_) {
+    ROS_WARN("Error. Not initialized.");
+    return;
+  }
+
   if (sdf_pub_.getNumSubscribers() <= 0) return;
 
   // Initialize marker.
@@ -523,6 +579,11 @@ void AtomMap::PublishSignedDistance() const {
 
 // Publish the occupied part of the AtomMap as a point cloud.
 void AtomMap::PublishPointCloud() const {
+  if (!initialized_) {
+    ROS_WARN("Error. Not initialized.");
+    return;
+  }
+
   if (pcld_pub_.getNumSubscribers() <= 0) return;
 
   // Initialize a new point cloud.
@@ -591,6 +652,11 @@ std_msgs::ColorRGBA AtomMap::SignedDistanceToRosColor(float sdf) const {
 // Save to '.csv' file. Each line contains x, y, z coordinates followed by sdf.
 // Only includes atoms whose signed distance is within the threshold.
 void AtomMap::Save(const std::string& filename) const {
+  if (!initialized_) {
+    ROS_WARN("Error. Not initialized.");
+    return;
+  }
+
   ROS_INFO("%s: Saving to %s.", name_.c_str(), filename.c_str());
   const std::vector<Atom::Ptr> atoms = map_.GetAtoms();
 

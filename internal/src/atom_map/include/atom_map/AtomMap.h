@@ -69,11 +69,10 @@ namespace atom {
     const std::vector<Atom::Ptr>& GetAtoms() const;
     Atom::Ptr GetAtomContaining(float x, float y, float z);
 
-#if 0
-    void GetSignedDistance(float x, float y, float z,
-                           float* distance, float* variance);
-    float GetProbability(float x, float y, float z);
-#endif
+    // Interpolate sdf and probability at a point.
+    void InterpolateSignedDistance(float x, float y, float z,
+                                   float* distance, float* variance);
+    float InterpolateProbability(float x, float y, float z);
 
     // Get the neighbors of an Atom in the implicit graph. Returns false
     // if the Atom is not itself in the map.
@@ -96,11 +95,15 @@ namespace atom {
     // A kdtree to hold all the Atoms.
     AtomKdtree map_;
 
+    // Occupancy mode flag. If this is true, use OccupancyAtoms.
+    // Otherwise use SdfAtoms.
+    bool occupancy_mode_;
+
     // Atomic radius.
     float radius_;
 
-    // Connectedness radius. Atoms within this distance of any given Atom are considered
-    // to be 'connected' in the implicit graph.
+    // Connectedness radius. Atoms within this distance of any given Atom
+    // are considered to be 'connected' in the implicit graph.
     float connectedness_radius_;
 
     // Min and max scan ranges.
