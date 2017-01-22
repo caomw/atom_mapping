@@ -1,8 +1,8 @@
 atom_example:
   # Topic with transformed point clouds.
-  data_topic: /blam/blam_slam/base_frame_point_cloud
+  #data_topic: /blam/blam_slam/base_frame_point_cloud
   #data_topic: /velodyne_points
-  #data_topic: /atom_map_example/filtered
+  data_topic: /atom_map_example/filtered
 
   # Optionally buffer up both point clouds and poses and use all the data
   # even if it is not in real-time. If this flag is not set, then the default

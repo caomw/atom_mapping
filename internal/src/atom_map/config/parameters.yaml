@@ -3,6 +3,7 @@ atom:
   radius: 0.5
 
   # Mode flag. If set, uses OccupancyAtoms. Otherwise uses SdfAtoms.
+  occupancy_mode: true
 
   # Connectedness radius. Determines connectedness in the implicit graph.
   connectedness_radius: 1.2

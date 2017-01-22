@@ -82,7 +82,7 @@ namespace atom {
   private:
     // A Flann kdtree to hold all the Atoms. Searches in this tree return
     // indices, which are then mapped to Atom::Ptr types in an array.
-    std::shared_ptr< flann::KDTreeSingleIndex< flann::L2<float> > > index_;
+    std::shared_ptr< flann::KDTreeIndex< flann::L2<float> > > index_;
     std::vector<Atom::Ptr> registry_;
 
     // Occupancy mode flag.

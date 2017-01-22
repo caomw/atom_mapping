@@ -170,7 +170,7 @@ namespace atom {
       first_pose_ = false;
     }
 
-#if 1
+#if 0
     // Voxel grid filter.
     PointCloud::Ptr filtered_cloud(new PointCloud);
     VoxelGrid grid_filter(filter_leaf_size_);
@@ -185,7 +185,7 @@ namespace atom {
     pcl::transformPointCloud(*filtered_cloud, *transformed_cloud, pose);
 #endif
 
-#if 0
+#if 1
     // Assume incoming cloud is already filtered.
     PointCloud::Ptr transformed_cloud(new PointCloud);
     pcl::transformPointCloud(*cloud, *transformed_cloud, pose);

@@ -149,16 +149,16 @@ namespace atom {
     // If this is the first point in the index, create the index and exit.
     if (index_ == nullptr) {
       // Single kd-tree.
-      const int kMaxPointsPerLeaf = 20;
-      index_.reset(new flann::KDTreeSingleIndex<flann::L2<float>>(
-          flann_point, flann::KDTreeSingleIndexParams(kMaxPointsPerLeaf)));
+      const int kNumTrees = 1;
+      index_.reset(new flann::KDTreeIndex<flann::L2<float>>(
+          flann_point, flann::KDTreeIndexParams(kNumTrees)));
 
       index_->buildIndex();
     } else {
       // If the index is already created, add the data point to the index.
       // Rebuild every time the index floats in size to occasionally rebalance
       // the kdtree.
-      const int kRebuildThreshold = 2;
+      const float kRebuildThreshold = 1.1;
       index_->addPoints(flann_point, kRebuildThreshold);
     }
 
