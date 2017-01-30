@@ -2,7 +2,7 @@
 
 import numpy as np
 
-atom_times_kd = np.loadtxt("./atom_timing_500cm_nsh.txt")
-atom_times_hash = np.loadtxt("./atom_timing_500cm_nsh_hashing.txt")
-print "Average insertion time for AtomMap with kdtree was %f seconds." % atom_times_kd.mean()
-print "Average insertion time for AtomMap with hashing was %f seconds." % atom_times_hash.mean()
+atom_times = np.loadtxt("./revision/lbl_atom_1m_timing_sdf.txt")
+#octo_times = np.loadtxt("./revision/nsh_octo_1m_timing.txt")
+print "Average insertion time for AtomMap was %f seconds." % atom_times.mean()
+#print "Average insertion time for OctoMap was %f seconds." % octo_times.mean()

@@ -46,7 +46,7 @@
 #include <atom_map_example/atom_map_example.h>
 #include <signal.h>
 
-#define SAVE false
+#define SAVE true
 
 // Signal-safe flag.
 sig_atomic_t volatile request_shutdown_ = 0;

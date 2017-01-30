@@ -170,7 +170,7 @@ namespace atom {
       first_pose_ = false;
     }
 
-#if 0
+#if 1
     // Voxel grid filter.
     PointCloud::Ptr filtered_cloud(new PointCloud);
     VoxelGrid grid_filter(filter_leaf_size_);
@@ -185,7 +185,7 @@ namespace atom {
     pcl::transformPointCloud(*filtered_cloud, *transformed_cloud, pose);
 #endif
 
-#if 1
+#if 0
     // Assume incoming cloud is already filtered.
     PointCloud::Ptr transformed_cloud(new PointCloud);
     pcl::transformPointCloud(*cloud, *transformed_cloud, pose);
@@ -205,7 +205,9 @@ namespace atom {
     ros::WallTime end_time = ros::WallTime::now();
     double total_elapsed = (end_time - start_time).toSec();
     ROS_INFO("%s: Insertion took %5.3f seconds.", name_.c_str(), total_elapsed);
-    //std::cerr << total_elapsed << std::endl;
+
+    // For recording statistics directly to file.
+    //    std::cerr << total_elapsed << std::endl;
   }
 
   // Publish the filtered cloud.

@@ -1,9 +1,9 @@
 atom:
   # Atomic radius.
-  radius: 0.5
+  radius: 0.3
 
   # Mode flag. If set, uses OccupancyAtoms. Otherwise uses SdfAtoms.
-  occupancy_mode: true
+  occupancy_mode: false
 
   # Connectedness radius. Determines connectedness in the implicit graph.
   connectedness_radius: 1.2
@@ -48,7 +48,7 @@ atom:
 
     # Maximum distance to raycast into a surface (think of this as the surface
     # thickness).
-    max_occupied_backoff: 1.1
+    max_occupied_backoff: 0.7
 
     # Maximum distance to raycast into free space along the surface normal.
     max_normal_backoff: 2.01

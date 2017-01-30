@@ -8,12 +8,13 @@
 clear all; close all; clc;
 
 %%
+MODE = 0; % 0 = occ, 1 = sdf
 RADIUS = 0.3;
 SDF_MIN = -1.2;
 SDF_MAX = 1.2;
 
 %% Load an AtomMap.
-data = csvread('../saved_maps/nsh_high_res.csv');
+data = csvread('../saved_maps/nsh_300cm_occ.csv');
 
 %% Display a 2D scatterplot of the data projected onto the x-y plane.
 %figure;
@@ -46,27 +47,57 @@ resolution = 0.25;
 size(X)
 
 %% Evaluate GP at each voxel in mesh.
-[sdfs, vars] = arrayfun(@(x, y, z) InterpolateGP(x, y, z, kdtree, subset), X, Y, Z);
+if MODE == 1
+    [sdfs, vars] = arrayfun(@(x, y, z) ...
+        InterpolateGP(x, y, z, kdtree, subset), X, Y, Z);
+else
+    [occs, vars] = arrayfun(@(x, y, z) ...
+        InterpolateGP(x, y, z, kdtree, subset), X, Y, Z);
+end
 
 %% Plot
 figure; hold on; set(gca, 'fontsize', 16);
-isosurface(X, Y, Z, sdfs, 0, vars); colormap bone;
-freezeColors;
-%scatter3(subset(:, 1), subset(:, 2), subset(:, 3))
-% figure; hold on;
 
-%pcshow(subset(:, 1:3), 'MarkerSize', 18);
-colormap cool;
-min_sdf = min(subset(:, 4)) - 0.1;
-max_sdf = max(subset(:, 4)) + 0.1;
-[atom_x, atom_y, atom_z] = sphere;
-for ii = 1:size(subset, 1)
-    color = ones(size(atom_x)) * (subset(ii, 4) - min_sdf) / (max_sdf - min_sdf);
-%    color(:, 3) = 1.0 - color(:, 1);
-    surf(RADIUS * atom_x + subset(ii, 1), ...
-         RADIUS * atom_y + subset(ii, 2), ...
-         RADIUS * atom_z + subset(ii, 3), ...
-         color, 'facealpha', 0.9, 'edgealpha', 0.0);
+if MODE == 1
+    isosurface(X, Y, Z, sdfs, 0, vars); colormap bone;
+    freezeColors;
+    %scatter3(subset(:, 1), subset(:, 2), subset(:, 3))
+    % figure; hold on;
+
+    %pcshow(subset(:, 1:3), 'MarkerSize', 18);
+    colormap cool;
+    min_sdf = min(subset(:, 4)) - 0.1;
+    max_sdf = max(subset(:, 4)) + 0.1;
+    [atom_x, atom_y, atom_z] = sphere;
+    for ii = 1:size(subset, 1)
+        color = ones(size(atom_x)) * (subset(ii, 4) - min_sdf) / (max_sdf - min_sdf);
+    %    color(:, 3) = 1.0 - color(:, 1);
+        surf(RADIUS * atom_x + subset(ii, 1), ...
+             RADIUS * atom_y + subset(ii, 2), ...
+             RADIUS * atom_z + subset(ii, 3), ...
+             color, 'facealpha', 0.9, 'edgealpha', 0.0);
+    end
+else
+    isosurface(X, Y, Z, occs, 0, vars); colormap bone;
+    freezeColors;
+    %scatter3(subset(:, 1), subset(:, 2), subset(:, 3))
+    % figure; hold on;
+
+    %pcshow(subset(:, 1:3), 'MarkerSize', 18);
+    colormap cool;
+    min_occ = min(subset(:, 4)) - 0.1;
+    max_occ = max(subset(:, 4)) + 0.1;
+    [atom_x, atom_y, atom_z] = sphere;
+    for ii = 1:size(subset, 1)
+        color = ones(size(atom_x)) * (subset(ii, 4) - min_occ) /...
+            (max_occ - min_occ);
+    %    color(:, 3) = 1.0 - color(:, 1);
+        surf(RADIUS * atom_x + subset(ii, 1), ...
+             RADIUS * atom_y + subset(ii, 2), ...
+             RADIUS * atom_z + subset(ii, 3), ...
+             color, 'facealpha', 0.9, 'edgealpha', 0.0);
+    end
+
 end
 
 axis equal;

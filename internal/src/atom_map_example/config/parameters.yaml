@@ -1,8 +1,8 @@
 atom_example:
   # Topic with transformed point clouds.
-  #data_topic: /blam/blam_slam/base_frame_point_cloud
+  data_topic: /blam/blam_slam/base_frame_point_cloud
   #data_topic: /velodyne_points
-  data_topic: /atom_map_example/filtered
+  #data_topic: /atom_map_example/filtered
 
   # Optionally buffer up both point clouds and poses and use all the data
   # even if it is not in real-time. If this flag is not set, then the default
@@ -19,14 +19,14 @@ atom_example:
 
   # Voxel grid filter leaf size. This should probably be roughly on the order of
   # an atomic radius in order to avoid drastic oversampling.
-  filter_leaf_size: 0.9
+  filter_leaf_size: 0.3
 
   # Topic on which filtered point clouds should be published.
   filtered_cloud_topic: filtered
 
   # Optionally save to file on close.
-  save_on_close: false
-  file_to_save: /path/to/file
+  save_on_close: true
+  file_to_save: /Users/davidfridovichkeil/Documents/Developer/atom_mapping/internal/src/atom_map_example/saved_maps/nsh_300cm_sdf.csv
 
   # Publish path from start to finish points.
   path_topic: path
